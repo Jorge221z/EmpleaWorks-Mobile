@@ -8,7 +8,7 @@ export default function TabTwoScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Mis Ofertas</Text>
       <Text style={{ marginTop: 0, fontSize: 16 }}>Gestiona tus solicitudes y perfil</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255, 255, 255, 0.1)" />
       <EditScreenInfo path="app/(tabs)/two.tsx" />
     </View>
   );

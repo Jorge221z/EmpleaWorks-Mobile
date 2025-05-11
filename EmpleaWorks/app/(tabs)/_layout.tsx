@@ -51,7 +51,7 @@ export default function TabLayout() {
         name="two"
         options={{
           title: 'Mis ofertas',
-          tabBarIcon: ({ color }) => <TabBarIcon name="bookmark" color='{color}' />, // Icono cambiado a 'bookmark'
+          tabBarIcon: ({ color }) => <TabBarIcon name="bookmark" color={color} />, // Icono cambiado a 'bookmark'
         }}
       />
     </Tabs>
