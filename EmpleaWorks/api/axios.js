@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Configuración de la instancia de axios
 const api = axios.create({
-  baseURL: 'http://emplea.works/api', // URL de tu backend
+  baseURL: 'http://192.168.18.27/api', // Cambia esto por la IP local de tu PC
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -32,6 +32,7 @@ export const register = async (userData) => {
     await AsyncStorage.setItem('auth_token', token);
     return { user, token };
   } catch (error) {
+    console.error('Register error:', error?.response?.data || error); // <-- Added for debugging
     throw error.response?.data || { message: 'Error en el registro' };
   }
 };
@@ -69,11 +70,18 @@ export const getProfile = async () => {
 };
 
 // Función para actualizar el perfil del usuario
-export const updateProfile = async (profileData) => {
+export const updateProfile = async (profileData, isFormData = false) => {
   try {
-    const response = await api.post('/profile', profileData);
+    const config = {};
+    if (isFormData) {
+      config.headers = {
+        'Content-Type': 'multipart/form-data',
+      };
+    }
+    const response = await api.post('/profile', profileData, config);
     return response.data;
   } catch (error) {
+    console.error('updateProfile error:', error?.response?.data || error);
     throw error.response?.data || { message: 'Error al actualizar perfil' };
   }
 };
@@ -107,7 +115,7 @@ export const getOfferDetails = async (offerId) => {
   } catch (error) {
     throw error.response?.data || { message: 'Error al obtener detalles de la oferta' };
   }
-};
+};    
 
 // Función para cerrar sesión (opcional)
 export const logout = async () => {
@@ -117,3 +125,73 @@ export const logout = async () => {
     console.error('Error al cerrar sesión:', error);
   }
 };
+
+// Listar todas las ofertas
+export const getOffers = async () => {
+  try {
+    const response = await api.get('/offers');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Error al obtener ofertas' };
+  }
+};
+
+// Obtener una oferta específica
+export const getOffer = async (offerId) => {
+  try {
+    const response = await api.get(`/offers/${offerId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Error al obtener la oferta' };
+  }
+};
+
+// Crear una nueva oferta
+export const createOffer = async (offerData) => {
+  try {
+    const response = await api.post('/offers', offerData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Error al crear la oferta' };
+  }
+};
+
+// Aplicar a una oferta
+export const applyToOffer = async (applicationData) => {
+  try {
+    const response = await api.post(`/offers/${applicationData.offer_id}/apply`, applicationData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Error al aplicar a la oferta' };
+  }
+};
+
+// Actualizar una oferta
+export const updateOffer = async (offerId, offerData) => {
+  try {
+    const response = await api.put(`/offers/${offerId}`, offerData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Error al actualizar la oferta' };
+  }
+};
+
+// Eliminar una oferta
+export const deleteOffer = async (offerId) => {
+  try {
+    const response = await api.delete(`/offers/${offerId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Error al eliminar la oferta' };
+  }
+};
+
+export const getDashboard = async () => {
+  try {
+    const response = await api.get('/dashboard');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Error al obtener el dashboard' };
+  }
+};
+
