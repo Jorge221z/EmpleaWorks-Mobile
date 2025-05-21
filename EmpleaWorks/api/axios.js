@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Configuración de la instancia de axios
 const api = axios.create({
-  baseURL: 'http://192.168.18.27/api', // Cambia esto por la IP local de tu PC
+  baseURL: 'https://emplea.works/api', // Cambia esto por la IP local de tu PC
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
