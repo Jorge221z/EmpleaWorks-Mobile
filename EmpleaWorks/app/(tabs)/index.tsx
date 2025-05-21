@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import EditScreenInfo from '@/components/EditScreenInfo';
 import { Text, View } from '@/components/Themed';
 import { use, useEffect, useState } from 'react';
@@ -40,26 +40,28 @@ export default function TabOneScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null); //lo tipamos por necesidad ya que usamos Typescript
 
-//Aqui haremos la funcion que recupera los datos del dashboard desde axios
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        const response = await getDashboard(); //llamamos a la fución de axios
-        
-        setDashboardData(response);
-        
-        setLoading(false); //dejamos de cargar ya que se ha producido éxito
-      } catch (error) {
+  // Extraer la función fetchDashboardData fuera del useEffect para poder reutilizarla
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const response = await getDashboard(); //llamamos a la fución de axios
+      
+      setDashboardData(response);
+      
+      setLoading(false); //dejamos de cargar ya que se ha producido éxito
+    } catch (error) {
 
-        console.error("Failed while trying to fetch dashboard data: ", error);
-        setError(error instanceof Error ? error.message : String(error)); 
-        
-        setLoading(false);
-        };
-      };
-      fetchDashboardData();
-    }, []);
+      console.error("Failed while trying to fetch dashboard data: ", error);
+      setError(error instanceof Error ? error.message : String(error)); 
+      
+      setLoading(false);
+    }
+  };
+
+  //Aqui haremos la funcion que recupera los datos del dashboard desde axios
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
       
 
   return (
@@ -71,18 +73,33 @@ export default function TabOneScreen() {
       {loading && <Text>Cargando ofertas...</Text>}
       {error && <Text style={{ color: 'red' }}>Error: {error}</Text>}
       
-      {/* Depuración */}
+      {/* Botón de recarga para desarrollo */}
+      <TouchableOpacity 
+        style={styles.reloadButton} 
+        onPress={fetchDashboardData}
+        disabled={loading}
+      >
+        <Text style={styles.reloadButtonText}>
+          {loading ? "Cargando..." : "Recargar datos"}
+        </Text>
+      </TouchableOpacity>
+      
+      {/*Esta parte servira durante las primeras fases de desarollo creo yo */}
       <Text style={{marginVertical: 10}}>Estado de datos: {dashboardData ? "Datos cargados" : "Sin datos"}</Text>
       {dashboardData && <Text>Hay {dashboardData.offers?.length || 0} ofertas disponibles</Text>}
       
       {dashboardData && dashboardData.offers && dashboardData.offers.length > 0 ? (
-        <View style={styles.offerCard}>
-          <Text style={styles.offerTitle}>{dashboardData.offers[0].name}</Text>
-          <Text style={styles.offerDetail}>Categoría: {dashboardData.offers[0].category}</Text>
-          <Text style={styles.offerDetail}>Ubicación: {dashboardData.offers[0].job_location}</Text>
-          <Text style={styles.offerDetail}>Tipo de contrato: {dashboardData.offers[0].contract_type}</Text>
-          <Text style={styles.offerDetail}>Titulación: {dashboardData.offers[0].degree}</Text>
-        </View>
+        <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.offersContainer}>
+          {dashboardData.offers.map((offer) => (
+            <View key={offer.id} style={styles.offerCard}>
+              <Text style={styles.offerTitle}>{offer.name}</Text>
+              <Text style={styles.offerDetail}>Categoría: {offer.category}</Text>
+              <Text style={styles.offerDetail}>Ubicación: {offer.job_location}</Text>
+              <Text style={styles.offerDetail}>Tipo de contrato: {offer.contract_type}</Text>
+              <Text style={styles.offerDetail}>Titulación: {offer.degree}</Text>
+            </View>
+          ))}
+        </ScrollView>
       ) : !loading && (
         <Text style={{marginTop: 20}}>No hay ofertas disponibles</Text>
       )}
@@ -94,8 +111,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'flex-start', // Cambiado para alinear arriba
-    paddingTop: 15, // espacio desde arriba
+    justifyContent: 'flex-start',
+    paddingTop: 15,
+    width: '100%',
   },
   title: {
     fontSize: 20,
@@ -107,17 +125,26 @@ const styles = StyleSheet.create({
     height: 1,
     width: '80%',
   },
+  scrollContainer: {
+    width: '100%', 
+    paddingHorizontal: 16,
+  },
+  offersContainer: {
+    alignItems: 'center',
+    paddingBottom: 20,
+  },
   offerCard: {
     backgroundColor: '#f5f5f5',
     padding: 16,
     borderRadius: 8,
-    width: '90%',
+    width: '100%',
+    marginVertical: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
-    marginTop: 25
+    elevation: 3,
+    marginTop: 15
   },
   offerTitle: {
     fontSize: 18,
@@ -127,5 +154,15 @@ const styles = StyleSheet.create({
   offerDetail: {
     fontSize: 14,
     marginBottom: 4,
-  }
+  },
+  reloadButton: {
+    backgroundColor: '#007bff',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  reloadButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
 });
