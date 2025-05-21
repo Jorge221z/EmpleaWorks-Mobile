@@ -16,6 +16,7 @@ import {
   updateOffer,
   deleteOffer,
   logout,
+  getDashboard,
 } from '../../api/axios'; // Ajusta la ruta según tu estructura
 
 const TestApi = () => {
@@ -62,7 +63,7 @@ const TestApi = () => {
       // 4. Listar todas las ofertas
       console.log('Probando getOffers...');
       const offers = await getOffers();
-      // console.log('Ofertas obtenidas:', offers);
+      console.log('Ofertas obtenidas:', offers);
 
       // 5. Obtener una oferta específica
       console.log('Probando getOffer...');
@@ -164,15 +165,65 @@ const TestApi = () => {
     }
   };
 
+  // Nuevo test: solo candidateDashboard, creando y borrando cuenta
+  const testDashboardOnly = async () => {
+    try {
+      console.log('=== Prueba solo dashboard (crear, consultar, borrar) ===');
+      // 1. Crear cuenta candidato
+      const candidateData = {
+        name: `Candidate${Date.now()}`,
+        email: `candidate${Date.now()}@example.com`,
+        role: 'candidate',
+        password: 'passworD-123',
+        password_confirmation: 'passworD-123',
+      };
+      const candidateRegister = await register(candidateData);
+      console.log('Registro candidato exitoso:', candidateRegister);
+
+      // 2. Login candidato
+      const candidateLogin = await login({
+        email: candidateData.email,
+        password: 'passworD-123',
+      });
+      console.log('Login candidato exitoso:', candidateLogin);
+
+      // 3. Obtener dashboard
+      const dashboardResponse = await getCandidateDashboard();
+      console.log('Dashboard obtenido (solo test):', dashboardResponse);
+
+      // 4. Borrar cuenta candidato (enviando password como string)
+      const deleteResponse = await deleteProfile('passworD-123');
+      console.log('Cuenta de candidato eliminada:', deleteResponse);
+
+      console.log('=== Fin prueba solo dashboard ===');
+    } catch (error) {
+      console.error('Error en testDashboardOnly:', error);
+    }
+  };
+
+  // Test solo para getDashboard
+  const testGetDashboard = async () => {
+    try {
+      console.log('=== Probando getDashboard ===');
+      const dashboard = await getDashboard();
+      console.log('Dashboard obtenido:', dashboard);
+      console.log('=== Fin prueba getDashboard ===');
+    } catch (error) {
+      console.error('Error en testGetDashboard:', error);
+    }
+  };
+
   useEffect(() => {
-    // Llamar a testApi cuando el componente se monta
-    testApi();
   }, []);
 
   return (
     <View>
       <Text style={{ color: 'white' }}>Probando API... Revisa la consola para los resultados.</Text>
       <Button title="Volver a probar" onPress={testApi} />
+      <View style={{ height: 20 }} />
+      <Button title="Probar solo Dashboard" onPress={testDashboardOnly} />
+      <View style={{ height: 20 }} />
+      <Button title="Probar getDashboard" onPress={testGetDashboard} />
     </View>
   );
 };
