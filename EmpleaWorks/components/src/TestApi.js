@@ -22,6 +22,14 @@ import {
 const TestApi = () => {
   // Mover la función fuera del useEffect para que sea accesible desde el botón
   const testApi = async () => {
+    // Variables para rastrear recursos creados que necesitan ser eliminados
+    let companyEmail = null;
+    let companyPassword = 'passworD-123';
+    let candidateEmail = null;
+    let candidatePassword = 'passworD-123';
+    let createdOfferId = null;
+    let createdApplyId = null;
+    
     try {
       console.log('=== Iniciando pruebas de API ===');
 
@@ -31,17 +39,18 @@ const TestApi = () => {
         name: `Company${Date.now()}`,
         email: `company${Date.now()}@example.com`,
         role: 'company',
-        password: 'passworD-123',
-        password_confirmation: 'passworD-123',
+        password: companyPassword,
+        password_confirmation: companyPassword,
       };
+      companyEmail = companyData.email;
       const companyRegister = await register(companyData);
       console.log('Registro empresa exitoso:', companyRegister);
 
       // 2. Login empresa
       console.log('Probando login (empresa)...');
       const companyLogin = await login({
-        email: companyData.email,
-        password: 'passworD-123',
+        email: companyEmail,
+        password: companyPassword,
       });
       console.log('Login empresa exitoso:', companyLogin);
 
@@ -58,6 +67,7 @@ const TestApi = () => {
         closing_date: '2025-12-31',
       };
       const createdOffer = await createOffer(offerData);
+      createdOfferId = createdOffer.offer.id;
       console.log('Oferta creada:', createdOffer);
 
       // 4. Listar todas las ofertas
@@ -67,7 +77,7 @@ const TestApi = () => {
 
       // 5. Obtener una oferta específica
       console.log('Probando getOffer...');
-      const offer = await getOffer(createdOffer.offer.id);
+      const offer = await getOffer(createdOfferId);
       console.log('Oferta obtenida:', offer);
 
       // 6. Registro de candidato
@@ -76,17 +86,18 @@ const TestApi = () => {
         name: `Candidate${Date.now()}`,
         email: `candidate${Date.now()}@example.com`,
         role: 'candidate',
-        password: 'passworD-123',
-        password_confirmation: 'passworD-123',
+        password: candidatePassword,
+        password_confirmation: candidatePassword,
       };
+      candidateEmail = candidateData.email;
       const candidateRegister = await register(candidateData);
       console.log('Registro candidato exitoso:', candidateRegister);
 
       // 7. Login candidato
       console.log('Probando login (candidato)...');
       const candidateLogin = await login({
-        email: candidateData.email,
-        password: 'passworD-123',
+        email: candidateEmail,
+        password: candidatePassword,
       });
       console.log('Login candidato exitoso:', candidateLogin);
 
@@ -113,11 +124,12 @@ const TestApi = () => {
         console.log('Probando applyToOffer...');
         const applicationData = {
           phone: '+123456789',
-          email: candidateData.email,
+          email: candidateEmail,
           cl: 'Carta de presentación de prueba',
-          offer_id: createdOffer.offer.id,
+          offer_id: createdOfferId,
         };
         const applyResponse = await applyToOffer(applicationData);
+        createdApplyId = applyResponse.id; // Guardamos el ID de la aplicación si la API lo devuelve
         console.log('Aplicación enviada:', applyResponse);
       } else {
         console.warn('No se probó applyToOffer porque no se subió un CV real.');
@@ -130,12 +142,12 @@ const TestApi = () => {
 
       // 11. Obtener detalles de una oferta específica
       console.log('Probando getOfferDetails...');
-      const offerDetails = await getOfferDetails(createdOffer.offer.id);
+      const offerDetails = await getOfferDetails(createdOfferId);
       console.log('Detalles de la oferta obtenidos:', offerDetails);
 
       // 12. Actualizar oferta como empresa
       console.log('Probando updateOffer...');
-      await login({ email: companyData.email, password: 'passworD-123' });
+      await login({ email: companyEmail, password: companyPassword });
       const updatedOfferData = {
         name: `Oferta Actualizada ${Date.now()}`,
         description: 'Descripción actualizada',
@@ -146,22 +158,51 @@ const TestApi = () => {
         job_location: offerDetails.job_location,
         closing_date: offerDetails.closing_date,
       };
-      const updatedOffer = await updateOffer(createdOffer.offer.id, updatedOfferData);
+      const updatedOffer = await updateOffer(createdOfferId, updatedOfferData);
       console.log('Oferta actualizada:', updatedOffer);
 
-      // 13. Eliminar oferta como empresa
-      console.log('Probando deleteOffer...');
-      const deleteResponse = await deleteOffer(createdOffer.offer.id);
-      console.log('Oferta eliminada:', deleteResponse);
-
-      // 14. Cerrar sesión
-      console.log('Probando logout...');
-      await logout();
-      console.log('Sesión cerrada');
-
-      console.log('=== Pruebas de API completadas ===');
+      console.log('=== Pruebas de API completadas exitosamente ===');
     } catch (error) {
       console.error('Error en las pruebas:', error);
+    } finally {
+      console.log('=== Iniciando limpieza de recursos creados ===');
+      
+      try {
+        // 1. Eliminar ofertas como empresa
+        if (createdOfferId) {
+          console.log('Asegurando login como empresa para eliminar ofertas...');
+          await login({ email: companyEmail, password: companyPassword });
+          
+          console.log(`Eliminando oferta ID: ${createdOfferId}...`);
+          const deleteOfferResponse = await deleteOffer(createdOfferId);
+          console.log('Oferta eliminada:', deleteOfferResponse);
+        }
+        
+        // 2. Eliminar cuenta de candidato
+        if (candidateEmail) {
+          console.log('Eliminando cuenta de candidato...');
+          await login({ email: candidateEmail, password: candidatePassword });
+          const deleteCandidateResponse = await deleteProfile(candidatePassword);
+          console.log('Cuenta de candidato eliminada:', deleteCandidateResponse);
+        }
+        
+        // 3. Eliminar cuenta de empresa
+        if (companyEmail) {
+          console.log('Eliminando cuenta de empresa...');
+          await login({ email: companyEmail, password: companyPassword });
+          const deleteCompanyResponse = await deleteProfile(companyPassword);
+          console.log('Cuenta de empresa eliminada:', deleteCompanyResponse);
+        }
+        
+        // 4. Cerrar sesión
+        console.log('Cerrando sesión...');
+        await logout();
+        console.log('Sesión cerrada');
+      } catch (cleanupError) {
+        console.error('Error durante la limpieza de recursos:', cleanupError);
+      }
+      
+      console.log('=== Proceso de limpieza finalizado ===');
     }
   };
 
@@ -219,7 +260,7 @@ const TestApi = () => {
   return (
     <View>
       <Text style={{ color: 'white' }}>Probando API... Revisa la consola para los resultados.</Text>
-      <Button title="Volver a probar" onPress={testApi} />
+      <Button title="Probar API completa" onPress={testApi} />
       <View style={{ height: 20 }} />
       <Button title="Probar solo Dashboard" onPress={testDashboardOnly} />
       <View style={{ height: 20 }} />
