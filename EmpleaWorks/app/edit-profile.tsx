@@ -305,9 +305,9 @@ export default function EditProfileScreen() {
           
           console.log('CV preparado para envío');
         } else {
-          // Si se quitó el CV (está a null), enviamos null explícitamente
-          formData.append('cv', 'null');
-          console.log('Solicitando eliminación de CV');
+          // Si se quitó el CV (está a null), usamos un campo específico para indicar la eliminación
+          formData.append('delete_cv', '1');
+          console.log('Solicitando eliminación de CV con delete_cv=1');
         }
       }
       

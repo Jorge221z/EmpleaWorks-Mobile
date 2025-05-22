@@ -89,6 +89,9 @@ export const updateProfile = async (profileData, isFormData = false) => {
     const isRemovingImage = profileData.get && 
       (profileData.get('delete_image') === '1' || profileData.get('remove_image') === 'true');
     
+    // Verificamos si estamos enviando una solicitud para eliminar el CV
+    const isRemovingCV = profileData.get && profileData.get('delete_cv') === '1';
+    
     if (isRemovingImage) {
       console.log('Se ha solicitado eliminar la imagen de perfil');
       
@@ -111,6 +114,27 @@ export const updateProfile = async (profileData, isFormData = false) => {
       }
     }
     
+    if (isRemovingCV) {
+      console.log('Se ha solicitado eliminar el CV');
+      
+      // Si el backend espera un campo específico para eliminar, aseguramos que esté presente
+      if (!profileData.get('delete_cv')) {
+        profileData.append('delete_cv', '1');
+      }
+      
+      // Quitamos cualquier valor que podría estar causando problemas
+      try {
+        if (profileData._parts) {
+          // FormData interno puede ser una matriz de pares clave-valor
+          profileData._parts = profileData._parts.filter(part => 
+            part[0] !== 'cv' && part[1] !== 'null'
+          );
+        }
+      } catch (e) {
+        console.log('No se pudo limpiar _parts para CV:', e);
+      }
+    }
+    
     console.log('Enviando solicitud de actualización de perfil...');
     console.log('FormData contiene estos campos:', 
       profileData._parts ? profileData._parts.map(p => p[0]).join(', ') : 'No disponible');
@@ -122,6 +146,11 @@ export const updateProfile = async (profileData, isFormData = false) => {
     if (isRemovingImage && response.data) {
       console.log('Respuesta al eliminar imagen:', 
         response.data.image ? 'Imagen presente en respuesta' : 'Imagen eliminada correctamente');
+    }
+    
+    if (isRemovingCV && response.data) {
+      console.log('Respuesta al eliminar CV:', 
+        response.data.candidate?.cv ? 'CV presente en respuesta' : 'CV eliminado correctamente');
     }
     
     return response.data;
