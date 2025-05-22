@@ -1,33 +1,160 @@
-import { StyleSheet, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import { StyleSheet, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicator, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
 import { router, useLocalSearchParams, useRouter } from 'expo-router';
-import { getUser } from '@/api/axios';
+
+import { getUser, getProfile } from '@/api/axios';
+
+// Función para obtener los datos completos del usuario (incluyendo candidato)
+const getFullUserData = async () => {
+  try {
+    // Obtener datos básicos del usuario
+    const timestamp = new Date().getTime();
+    const user = await getUser(`?_t=${timestamp}`);
+    
+    // Si no tenemos acceso a candidate en la respuesta inicial, intentamos recuperar los datos de localStorage
+    if (!user.candidate && localStorage) {
+      try {
+        const storedCandidate = localStorage.getItem('userCandidate');
+        if (storedCandidate) {
+          user.candidate = JSON.parse(storedCandidate);
+        }
+      } catch (e) {
+        console.warn('Error al recuperar datos del candidato del almacenamiento local:', e);
+      }
+    }
+    
+    return user;
+  } catch (error) {
+    console.error('Error al obtener datos completos del usuario:', error);
+    throw error;
+  }
+};
 
 export default function ProfileScreen() {
-  const { user, logout, isAuthenticated, setUser } = useAuth();
+  const { user: contextUser, logout, isAuthenticated, setUser } = useAuth();
+  // Estado local para almacenar los datos del candidato
+  const [candidateData, setCandidateData] = useState(contextUser?.candidate);
+  // Añadir estado local para el usuario
+  const [localUser, setLocalUser] = useState(contextUser);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const params = useLocalSearchParams();
   const expoRouter = useRouter();
+  
+  // Referencia para evitar múltiples cargas
+  const lastLoadTime = useRef<number>(0);
+  const loadCooldown = 2000; // 2 segundos de cooldown entre cargas
+  // Referencia para rastrear si es la primera carga
+  const isInitialLoad = useRef<boolean>(true);
 
-  // Recargar datos del usuario solo si se pasa el parámetro refresh
+  // Combinar usuario local y datos del candidato
+  const user = {
+    ...localUser,
+    candidate: candidateData || localUser?.candidate
+  };
+
+  // Actualizar el usuario local cuando cambie el del contexto
+  useEffect(() => {
+    if (contextUser) {
+      setLocalUser(contextUser);
+      if (contextUser.candidate) {
+        setCandidateData(contextUser.candidate);
+        // Almacenar en localStorage para futuras referencias
+        try {
+          if (localStorage) {
+            localStorage.setItem('userCandidate', JSON.stringify(contextUser.candidate));
+          }
+        } catch (e) {
+          console.warn('Error al guardar datos del candidato en localStorage:', e);
+        }
+      }
+    }
+  }, [contextUser]);
+
+  // Función para cargar los datos del usuario desde la API con protección de cooldown
+  const loadUserData = useCallback(async () => {
+    // Verificar si ha pasado suficiente tiempo desde la última carga
+    const now = Date.now();
+    if (now - lastLoadTime.current < loadCooldown) {
+      console.log('Carga ignorada por cooldown, espere por favor...');
+      return;
+    }
+    
+    lastLoadTime.current = now;
+    
+    try {
+      setRefreshing(true);
+      setError(null);
+      
+      console.log('Obteniendo datos del perfil...');
+      
+      // Usar getProfile que obtiene datos más completos en una sola petición
+      const profileData = await getProfile();
+      console.log('Datos de perfil recibidos, candidate:', 
+        profileData?.candidate ? 'presente' : 'ausente');
+      
+      if (!profileData?.candidate) {
+        console.warn('Los datos de perfil no incluyen información del candidato');
+      }
+      
+      // Actualizar los datos del candidato si existen
+      if (profileData?.candidate) {
+        setCandidateData(profileData.candidate);
+        console.log('Datos del candidato actualizados:', profileData.candidate);
+      }
+      
+      // Actualizar usuario local siempre
+      setLocalUser(profileData);
+      
+      // Intentar actualizar el contexto también (si está disponible)
+      if (setUser) {
+        setUser(profileData);
+      }
+    } catch (e) {
+      console.error('Error al recargar datos del usuario:', e);
+      setError('No se pudieron cargar los datos actualizados');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [setUser]);
+
+  // Recargar datos cuando se navega a esta pantalla con el parámetro refresh
   useEffect(() => {
     if (params.refresh) {
-      const fetchUser = async () => {
-        try {
-          const freshUser = await getUser();
-          setUser && setUser(freshUser);
-        } catch (e) {
-          // Opcional: manejar error de recarga
-        }
-      };
-      fetchUser();
+      loadUserData();
       // Elimina el parámetro para evitar recargas futuras
       expoRouter.setParams({ refresh: undefined });
     }
-  }, [params.refresh, setUser, expoRouter]);
+  }, [params.refresh, loadUserData, expoRouter]);
+
+  // Reemplazamos el efecto anterior con uno que garantice la carga completa inicial
+  useEffect(() => {
+    // Siempre cargamos los datos completos al iniciar la pantalla
+    if (isAuthenticated) {
+      // Solo en el montaje inicial o si no hay usuario local
+      if (isInitialLoad.current || !localUser) {
+        console.log('Realizando carga inicial de datos de perfil...');
+        isInitialLoad.current = false;
+        loadUserData();
+      }
+    }
+  }, [isAuthenticated, loadUserData, localUser]);
+
+  // Mantener el candidateData actualizado si viene del contexto
+  useEffect(() => {
+    if (contextUser?.candidate && !candidateData) {
+      console.log('Actualizando datos del candidato desde el contexto...');
+      setCandidateData(contextUser.candidate);
+    }
+  }, [contextUser, candidateData]);
+
+  // Función para el Pull-to-refresh manual
+  const onRefresh = useCallback(() => {
+    loadUserData();
+  }, [loadUserData]);
 
   // Función para manejar el proceso de logout
   const handleLogout = async () => {
@@ -63,9 +190,77 @@ export default function ProfileScreen() {
     }
   }, [isAuthenticated]);
 
+  // Función para forzar recarga de datos
+  const forceRefresh = useCallback(() => {
+    console.log('Forzando recarga manual de datos');
+    loadUserData();
+  }, [loadUserData]);
+
+  // Función helper para acceder al apellido (con mejor depuración)
+  const getSurname = (userData: any) => {
+    // Verificar explícitamente cada nivel para evitar errores
+    if (userData?.candidate?.surname) {
+      return userData.candidate.surname;
+    }
+    
+    // Comprobamos también el estado candidateData si userData no tiene la información
+    if (candidateData?.surname) {
+      return candidateData.surname;
+    }
+    
+    // Si no hay apellido, mostramos un mensaje de depuración
+    if (__DEV__) {
+      console.log('Apellido no encontrado. Datos actuales:', {
+        userCandidate: userData?.candidate,
+        candidateDataState: candidateData
+      });
+    }
+    
+    return userData?.surname || '';
+  };
+
+  // Función de depuración para mostrar contenido completo en la consola
+  const debugUserData = () => {
+    console.log('============= DATOS ACTUALES =============');
+    console.log('Usuario local:', localUser);
+    console.log('Datos de candidato:', candidateData);
+    console.log('Usuario combinado:', user);
+    console.log('Apellido calculado:', getSurname(user));
+    console.log('==========================================');
+  };
+
   return (
-    <ScrollView style={styles.scrollContainer}>
+    <ScrollView 
+      style={styles.scrollContainer}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={['#007bff']}
+          tintColor={'#007bff'}
+        />
+      }
+    >
       <View style={styles.container}>
+        {/* Indicador de recarga */}
+        {refreshing && (
+          <View style={styles.refreshIndicator}>
+            <ActivityIndicator size="small" color="#007bff" />
+            <Text style={styles.refreshText}>Actualizando perfil...</Text>
+          </View>
+        )}
+        
+        {/* Botón para forzar recarga y debug (solo en desarrollo) */}
+        <TouchableOpacity 
+          style={styles.debugButton} 
+          onPress={() => {
+            forceRefresh();
+            debugUserData();
+          }}
+        >
+          <Text style={styles.debugButtonText}>Debug y Actualizar</Text>
+        </TouchableOpacity>
+
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
             <Image 
@@ -76,7 +271,7 @@ export default function ProfileScreen() {
           </View>
           <Text style={styles.title}>Mi Perfil</Text>
           <Text style={styles.subtitle}>
-            {user?.name || 'Usuario'} {user?.surname || ''}
+            {user?.name || 'Usuario'} {getSurname(user)}
           </Text>
           <Text style={styles.email}>{user?.email || 'correo@ejemplo.com'}</Text>
         </View>
@@ -89,7 +284,7 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.infoContainer}>
             <Text style={styles.infoLabel}>Apellidos:</Text>
-            <Text style={styles.infoValue}>{user?.surname || 'No disponible'}</Text>
+            <Text style={styles.infoValue}>{getSurname(user) || 'No disponible'}</Text>
           </View>
           <View style={styles.infoContainer}>
             <Text style={styles.infoLabel}>Email:</Text>
@@ -215,5 +410,30 @@ const styles = StyleSheet.create({
     color: '#dc3545',
     textAlign: 'center',
     marginTop: 10,
+  },
+  refreshIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    backgroundColor: '#f0f9ff',
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  refreshText: {
+    marginLeft: 10,
+    color: '#007bff',
+    fontSize: 14,
+  },
+  debugButton: {
+    backgroundColor: '#f0f0f0',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  debugButtonText: {
+    color: '#333',
+    fontSize: 12,
   },
 });

@@ -63,8 +63,10 @@ export const getUser = async () => {
 export const getProfile = async () => {
   try {
     const response = await api.get('/profile');
+    console.log('Respuesta completa de getProfile:', response.data);
     return response.data;
   } catch (error) {
+    console.error('getProfile error:', error?.response?.data || error);
     throw error.response?.data || { message: 'Error al obtener perfil' };
   }
 };
