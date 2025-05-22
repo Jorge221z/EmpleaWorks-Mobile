@@ -471,7 +471,11 @@ export default function EditProfileScreen() {
                 ) : (
                   <>
                     <FontAwesome name="file-pdf-o" size={24} color="#007bff" style={styles.cvIcon} />
-                    <Text style={styles.cvButtonText}>
+                    <Text 
+                      style={styles.cvButtonText}
+                      numberOfLines={1}
+                      ellipsizeMode="middle"
+                    >
                       {cvName ? cvName : "Seleccionar CV"}
                     </Text>
                   </>
@@ -611,9 +615,13 @@ const styles = StyleSheet.create({
   cvButtonText: {
     color: '#007bff',
     fontSize: 16,
+    flex: 1,        // Añadido para que el texto tome el espacio disponible
+    flexShrink: 1,  // Permite que el texto se encoja si es necesario
+    marginLeft: 5,  // Espacio entre el icono y el texto
   },
   cvIcon: {
-    marginRight: 10, // Add space between the icon and text
+    marginRight: 10,
+    flexShrink: 0,  // Evita que el icono se encoja
   },
   removeCvButton: {
     backgroundColor: '#f8f9fa',
