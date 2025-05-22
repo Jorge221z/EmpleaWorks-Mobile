@@ -85,9 +85,45 @@ export const updateProfile = async (profileData, isFormData = false) => {
       console.log('Enviando datos como FormData con headers adecuados');
     }
     
+    // Verificamos si estamos enviando una solicitud para eliminar la imagen
+    const isRemovingImage = profileData.get && 
+      (profileData.get('delete_image') === '1' || profileData.get('remove_image') === 'true');
+    
+    if (isRemovingImage) {
+      console.log('Se ha solicitado eliminar la imagen de perfil');
+      
+      // IMPORTANTE: NO añadir 'image' si estamos eliminando para evitar errores de validación
+      // Si el backend espera un campo específico para eliminar, solo usamos ese
+      if (!profileData.get('delete_image')) {
+        profileData.append('delete_image', '1');
+      }
+      
+      // Quitamos cualquier valor que podría estar causando problemas
+      try {
+        if (profileData._parts) {
+          // FormData interno puede ser una matriz de pares clave-valor
+          profileData._parts = profileData._parts.filter(part => 
+            part[0] !== 'image' && part[0] !== 'image[0]' && part[1] !== 'null'
+          );
+        }
+      } catch (e) {
+        console.log('No se pudo limpiar _parts:', e);
+      }
+    }
+    
     console.log('Enviando solicitud de actualización de perfil...');
+    console.log('FormData contiene estos campos:', 
+      profileData._parts ? profileData._parts.map(p => p[0]).join(', ') : 'No disponible');
+    
     const response = await api.post('/profile', profileData, config);
     console.log('Respuesta de actualización recibida:', response.status);
+    
+    // Depurar la respuesta para identificar posibles problemas
+    if (isRemovingImage && response.data) {
+      console.log('Respuesta al eliminar imagen:', 
+        response.data.image ? 'Imagen presente en respuesta' : 'Imagen eliminada correctamente');
+    }
+    
     return response.data;
   } catch (error) {
     console.error('updateProfile error:', error?.response?.data || error);

@@ -37,6 +37,7 @@ export default function EditProfileScreen() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingCV, setUploadingCV] = useState(false);
+  const [imageRemoved, setImageRemoved] = useState(false); // Nuevo estado para rastrear si la imagen fue eliminada
 
   // Añadir estados para rastrear si un campo se ha modificado
   const [newCvSelected, setNewCvSelected] = useState(false);
@@ -228,6 +229,27 @@ export default function EditProfileScreen() {
     });
   };
 
+  // Función para eliminar la imagen de perfil actual
+  const removeProfileImage = () => {
+    Alert.alert(
+      'Eliminar imagen de perfil',
+      '¿Estás seguro de que quieres eliminar tu foto de perfil actual?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'Eliminar', 
+          style: 'destructive', 
+          onPress: () => {
+            setProfileImage(null);
+            setImageRemoved(true); // Marcamos que la imagen ha sido eliminada explícitamente
+            setNewImageSelected(true); // Marcamos que ha habido un cambio en la imagen
+            console.log('Imagen de perfil eliminada');
+          }
+        }
+      ]
+    );
+  };
+
   const handleSave = async () => {
     setLoading(true);
     logUserData(); // Imprimir datos actuales para depuración
@@ -244,23 +266,30 @@ export default function EditProfileScreen() {
       if (email) formData.append('email', email);
       if (description) formData.append('description', description);
       
-      // Procesar la imagen si se seleccionó una nueva
-      if (newImageSelected && profileImage) {
-        console.log('Preparando imagen para subir...');
-        
-        // Obtenemos datos del archivo
-        const uri = profileImage;
-        const uriParts = uri.split('.');
-        const fileExtension = uriParts[uriParts.length - 1];
-        
-        // Creamos el objeto para la imagen que el servidor puede procesar
-        formData.append('image', {
-          uri,
-          name: `photo.${fileExtension}`,
-          type: `image/${fileExtension === 'jpg' ? 'jpeg' : fileExtension}`
-        } as any);
-        
-        console.log('Imagen preparada para envío');
+      // Procesar la imagen si se seleccionó una nueva o se eliminó
+      if (newImageSelected) {
+        if (imageRemoved || !profileImage) {
+          // Enfoque corregido: no enviamos 'null' al campo image, sino un campo separado
+          // que indique la eliminación
+          formData.append('delete_image', '1');
+          console.log('Solicitando eliminación de imagen de perfil con delete_image=1');
+        } else if (profileImage) {
+          console.log('Preparando imagen para subir...');
+          
+          // Obtenemos datos del archivo
+          const uri = profileImage;
+          const uriParts = uri.split('.');
+          const fileExtension = uriParts[uriParts.length - 1];
+          
+          // Creamos el objeto para la imagen que el servidor puede procesar
+          formData.append('image', {
+            uri,
+            name: `photo.${fileExtension}`,
+            type: `image/${fileExtension === 'jpg' ? 'jpeg' : fileExtension}`
+          } as any);
+          
+          console.log('Imagen preparada para envío');
+        }
       }
       
       // Procesar el CV si se seleccionó uno nuevo o se eliminó
@@ -291,15 +320,40 @@ export default function EditProfileScreen() {
       if (setUser) {
         console.log('Actualizando usuario en el contexto');
         setUser(updated.user || updated);
+        
+        // Forzar limpieza de imágenes en cache si la imagen fue eliminada
+        if (imageRemoved) {
+          // Intentar limpiar cualquier referencia a la imagen anterior en el contexto
+          if (updated.user) {
+            updated.user.image = null;
+            if (updated.user.candidate) {
+              updated.user.candidate.profileImage = null;
+            }
+          } else {
+            updated.image = null;
+            if (updated.candidate) {
+              updated.candidate.profileImage = null;
+            }
+          }
+        }
+      }
+      
+      // Limpiar cualquier dato en caché del perfil
+      try {
+        await AsyncStorage.removeItem('edit_profile_data');
+        // Opcionalmente, borrar otros datos en caché relacionados con el perfil
+      } catch (e) {
+        console.error('Error limpiando caché:', e);
       }
       
       Alert.alert('Perfil actualizado', 'Tus datos han sido guardados.', [
         {
           text: 'OK',
           onPress: () => {
+            // Forzar una recarga completa al volver a la pantalla de perfil
             router.replace({
               pathname: '/(tabs)/profile',
-              params: { refresh: 'true' }
+              params: { refresh: 'true', timestamp: Date.now().toString() }
             });
           },
         },
@@ -336,38 +390,51 @@ export default function EditProfileScreen() {
           <>
             {/* Selector de imagen de perfil */}
             <View style={styles.imageSection}>
-              <TouchableOpacity 
-                style={styles.profileImageContainer} 
-                onPress={pickImage}
-                disabled={uploadingImage}
-              >
-                {profileImage ? (
-                  <Image 
-                    source={{ uri: profileImage }} 
-                    style={styles.profileImage} 
-                    defaultSource={require('@/assets/images/default-avatar.png')}
-                    onError={(e) => {
-                      console.log('Error loading profile image:', e.nativeEvent.error);
-                      setProfileImage(null);
-                    }}
-                  />
-                ) : (
-                  <Image 
-                    source={require('@/assets/images/default-avatar.png')} 
-                    style={styles.profileImage} 
-                  />
+              <View style={styles.profileImageWrapper}>
+                <TouchableOpacity 
+                  style={styles.profileImageContainer} 
+                  onPress={pickImage}
+                  disabled={uploadingImage}
+                >
+                  {profileImage ? (
+                    <Image 
+                      source={{ uri: profileImage }} 
+                      style={styles.profileImage} 
+                      defaultSource={require('@/assets/images/default-avatar.png')}
+                      onError={(e) => {
+                        console.log('Error loading profile image:', e.nativeEvent.error);
+                        setProfileImage(null);
+                      }}
+                    />
+                  ) : (
+                    <Image 
+                      source={require('@/assets/images/default-avatar.png')} 
+                      style={styles.profileImage} 
+                    />
+                  )}
+                  {uploadingImage ? (
+                    <View style={styles.imageOverlay}>
+                      <ActivityIndicator color="#fff" />
+                    </View>
+                  ) : (
+                    <View style={styles.imageOverlay}>
+                      <FontAwesome name="camera" size={24} color="#fff" />
+                      <Text style={styles.changeImageText}>Cambiar</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                {/* Botón para eliminar la imagen de perfil */}
+                {profileImage && !uploadingImage && (
+                  <TouchableOpacity 
+                    style={styles.removeImageButton}
+                    onPress={removeProfileImage}
+                  >
+                    <FontAwesome name="trash" size={16} color="#fff" />
+                    <Text style={styles.removeImageText}>Eliminar</Text>
+                  </TouchableOpacity>
                 )}
-                {uploadingImage ? (
-                  <View style={styles.imageOverlay}>
-                    <ActivityIndicator color="#fff" />
-                  </View>
-                ) : (
-                  <View style={styles.imageOverlay}>
-                    <FontAwesome name="camera" size={24} color="#fff" />
-                    <Text style={styles.changeImageText}>Cambiar</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
+              </View>
             </View>
 
             <TextInput
@@ -471,6 +538,9 @@ const styles = StyleSheet.create({
   imageSection: {
     alignItems: 'center',
     marginBottom: 24,
+  },
+  profileImageWrapper: {
+    alignItems: 'center',
   },
   profileImageContainer: {
     width: 120,
@@ -590,5 +660,21 @@ const styles = StyleSheet.create({
     marginTop: 15,
     fontSize: 16,
     color: '#555'
+  },
+  removeImageButton: {
+    backgroundColor: '#dc3545',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginTop: 10,
+  },
+  removeImageText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginLeft: 5,
   },
 });

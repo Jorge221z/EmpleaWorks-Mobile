@@ -91,13 +91,24 @@ export default function ProfileScreen() {
       
       console.log('Obteniendo datos del perfil...');
       
-      // Usar getProfile que obtiene datos más completos en una sola petición
-      const profileData = await getProfile();
+      // Limpiar cualquier dato en caché antes de cargar
+      setLocalUser(null);
+      setCandidateData(null);
+      
+      // Añadir un parámetro aleatorio para evitar caché
+      const timestamp = Date.now();
+      const profileData = await getProfile(`?_nocache=${timestamp}`);
       console.log('Datos de perfil recibidos, candidate:', 
         profileData?.candidate ? 'presente' : 'ausente');
       
-      if (!profileData?.candidate) {
-        console.warn('Los datos de perfil no incluyen información del candidato');
+      // Verificar explícitamente si la imagen se ha eliminado
+      if (!profileData.image && !profileData?.candidate?.profileImage) {
+        console.log('No se encontró imagen de perfil en la respuesta, confirmando eliminación');
+        // Asegurar que no haya referencias a imágenes anteriores
+        profileData.image = null;
+        if (profileData.candidate) {
+          profileData.candidate.profileImage = null;
+        }
       }
       
       // Actualizar los datos del candidato si existen
@@ -124,11 +135,33 @@ export default function ProfileScreen() {
   // Recargar datos cuando se navega a esta pantalla con el parámetro refresh
   useEffect(() => {
     if (params.refresh) {
+      console.log('Forzando recarga completa de datos del perfil debido a parámetro refresh');
+      
+      // Limpiar la caché de imágenes si hay un timestamp (indica actualización con posible eliminación de imagen)
+      if (params.timestamp) {
+        console.log('Detectada actualización de perfil con timestamp, limpiando caché de datos');
+        // Limpiar cualquier caché de usuario o imagen
+        try {
+          if (localStorage) {
+            localStorage.removeItem('userCandidate');
+          }
+        } catch (e) {
+          console.warn('Error al limpiar localStorage:', e);
+        }
+        
+        // Forzar limpieza de caché de AsyncStorage relacionada con el perfil
+        AsyncStorage.removeItem('user_profile_cache').catch(err => 
+          console.warn('Error al limpiar caché de perfil:', err)
+        );
+      }
+      
+      // Forzar una recarga completa
       loadUserData();
+      
       // Elimina el parámetro para evitar recargas futuras
-      expoRouter.setParams({ refresh: undefined });
+      expoRouter.setParams({ refresh: undefined, timestamp: undefined });
     }
-  }, [params.refresh, loadUserData, expoRouter]);
+  }, [params.refresh, params.timestamp, loadUserData, expoRouter]);
 
   // Reemplazamos el efecto anterior con uno que garantice la carga completa inicial
   useEffect(() => {
@@ -234,6 +267,9 @@ export default function ProfileScreen() {
 
   // Función helper para obtener la URL de la imagen de perfil
   const getUserProfileImage = (userData: any) => {
+    // Si se está refrescando, no mostrar ninguna imagen para evitar caché
+    if (refreshing) return null;
+    
     let imagePath = null;
     
     // First check the image field at root level
@@ -247,25 +283,22 @@ export default function ProfileScreen() {
       imagePath = userData?.profileImage;
     }
     
-    // If we have an image path, ensure it's a complete URL
-    if (imagePath) {
-      // Log the raw image path for debugging
-      console.log('Raw image path:', imagePath);
-      
-      // Check if it's already a complete URL
-      if (imagePath.startsWith('http')) {
-        return imagePath;
-      } else {
-        // Try a simpler direct URL format
-        // Don't modify the path that comes from the API
-        const imageUrl = `https://emplea.works/storage/${imagePath}`;
-        console.log('Constructed image URL:', imageUrl);
-        return imageUrl;
-      }
+    // Si no hay ruta de imagen, devolver null explícitamente
+    if (!imagePath) {
+      console.log('No se encontró ruta de imagen, retornando null');
+      return null;
     }
     
-    console.log('No image path found, userData:', userData);
-    return null;
+    // If we have an image path, ensure it's a complete URL
+    if (imagePath.startsWith('http')) {
+      return imagePath;
+    } else {
+      // Try a simpler direct URL format
+      // Don't modify the path that comes from the API
+      const imageUrl = `https://emplea.works/storage/${imagePath}`;
+      console.log('Constructed image URL:', imageUrl);
+      return imageUrl;
+    }
   };
 
   // Función helper para comprobar si el usuario tiene CV
