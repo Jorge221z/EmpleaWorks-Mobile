@@ -12,6 +12,13 @@ interface AuthContextType {
   error: string | null;
 }
 
+/** Nuestra autenticación funciona de la siguiente forma:
+ *  una vez que el usuario se registra/logea se almacena un token en el dispositivo movil y 
+ *  mientras que este permanezca almacenado no será necesario inicar sesión en el dispositivo  */
+ 
+
+
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
