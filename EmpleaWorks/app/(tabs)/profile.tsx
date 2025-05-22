@@ -1,13 +1,33 @@
-import { StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { StyleSheet, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams, useRouter } from 'expo-router';
+import { getUser } from '@/api/axios';
 
 export default function ProfileScreen() {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, setUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const params = useLocalSearchParams();
+  const expoRouter = useRouter();
+
+  // Recargar datos del usuario solo si se pasa el parámetro refresh
+  useEffect(() => {
+    if (params.refresh) {
+      const fetchUser = async () => {
+        try {
+          const freshUser = await getUser();
+          setUser && setUser(freshUser);
+        } catch (e) {
+          // Opcional: manejar error de recarga
+        }
+      };
+      fetchUser();
+      // Elimina el parámetro para evitar recargas futuras
+      expoRouter.setParams({ refresh: undefined });
+    }
+  }, [params.refresh, setUser, expoRouter]);
 
   // Función para manejar el proceso de logout
   const handleLogout = async () => {
@@ -22,6 +42,18 @@ export default function ProfileScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Nueva función para mostrar el popup de confirmación
+  const confirmLogout = () => {
+    Alert.alert(
+      'Confirmar cierre de sesión',
+      '¿Estás seguro de que deseas cerrar sesión?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Cerrar sesión', style: 'destructive', onPress: handleLogout }
+      ]
+    );
   };
 
   // Verificar autenticación
@@ -67,13 +99,17 @@ export default function ProfileScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Opciones</Text>
-          <TouchableOpacity style={styles.button} onPress={() => console.log('Editar perfil')}>
+          <TouchableOpacity style={styles.button} onPress={() => router.push('/edit-profile')}>
             <Text style={styles.buttonText}>Editar Perfil</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.button} onPress={() => console.log('Cambiar contraseña')}>
             <Text style={styles.buttonText}>Cambiar Contraseña</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout} disabled={loading}>
+          <TouchableOpacity
+            style={[styles.button, styles.logoutButton]}
+            onPress={confirmLogout}
+            disabled={loading}
+          >
             <Text style={styles.logoutButtonText}>{loading ? "Cerrando sesión..." : "Cerrar Sesión"}</Text>
           </TouchableOpacity>
         </View>

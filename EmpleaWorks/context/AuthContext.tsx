@@ -10,6 +10,7 @@ interface AuthContextType {
   register: (userData: any) => Promise<void>;
   logout: () => Promise<void>;
   error: string | null;
+  setUser?: (user: any | null) => void;
 }
 
 /** Nuestra autenticación funciona de la siguiente forma:
