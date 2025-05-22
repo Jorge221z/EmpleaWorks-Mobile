@@ -1,8 +1,9 @@
 import { StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import EditScreenInfo from '@/components/EditScreenInfo';
 import { Text, View } from '@/components/Themed';
-import { use, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getDashboard } from '@/api/axios';
+import { useAuth } from '@/context/AuthContext'; // Importamos useAuth
+import { router } from 'expo-router'; // Importamos router para redirección
 
 // Define interfaces para los tipos de datos
 interface Company {
@@ -35,12 +36,28 @@ interface DashboardData {
 }
 
 export default function TabOneScreen() {
-
+  // Obtenemos la función logout del contexto de autenticación
+  const { logout, isAuthenticated } = useAuth();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null); //lo tipamos por necesidad ya que usamos Typescript
+  const [error, setError] = useState<string | null>(null);
 
-  // Extraer la función fetchDashboardData fuera del useEffect para poder reutilizarla
+  // Función para manejar el proceso de logout (similar a la de AuthContext)
+  const handleLogout = async () => {
+    try {
+      setLoading(true);
+      await logout();
+      // Después de cerrar sesión, redirige al usuario a la página de login
+      router.replace('/login');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      setError('Error al cerrar sesión');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Función para obtener datos del dashboard
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
@@ -58,10 +75,14 @@ export default function TabOneScreen() {
     }
   };
 
-  //Aqui haremos la funcion que recupera los datos del dashboard desde axios
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+    
+    // Redirección si el usuario no está autenticado en el contexto
+    if (!isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [isAuthenticated]);
       
 
   return (
@@ -72,13 +93,24 @@ export default function TabOneScreen() {
       
       {loading && <Text>Cargando ofertas...</Text>}
       {error && <Text style={{ color: 'red' }}>Error: {error}</Text>}
+
+      {/* Botón de logout - ahora usa handleLogout */}
+      <TouchableOpacity
+        style={styles.reloadButton}
+        onPress={handleLogout}
+        disabled={loading}
+      >
+        <Text style={styles.reloadButtonText}>
+          {loading ? "Cerrando sesión" : "Logout"}
+        </Text>
+      </TouchableOpacity>
       
-      {/* Botón de recarga para desarrollo */}
+      {/* Botón de recarga de API para desarrollo */}
       <TouchableOpacity 
         style={styles.reloadButton} 
         onPress={fetchDashboardData}
         disabled={loading}
-      >
+      >        
         <Text style={styles.reloadButtonText}>
           {loading ? "Cargando..." : "Recargar datos"}
         </Text>
