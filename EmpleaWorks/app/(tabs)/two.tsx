@@ -6,13 +6,18 @@ import { Text, View } from '@/components/Themed';
 
 import TestApi from '@/components/src/TestApi'; 
 import { getCandidateDashboard } from '@/api/axios';
-import { useAuth } from '@/context/AuthContext'; // Añadimos useAuth
-import { router } from 'expo-router'; // Añadimos router para redirección
+import { useAuth } from '@/context/AuthContext';
+import { router } from 'expo-router';
 
-// Define interfaces for the candidate dashboard data
+// Updated interfaces based on the actual API response
 interface Company {
   id: number;
   name: string;
+  email: string;
+  description: string | null;
+  address: string;
+  logo: string | null;
+  web_link: string | null;
 }
 
 interface Offer {
@@ -22,23 +27,17 @@ interface Offer {
   contract_type: string;
   job_location: string;
   degree: string;
+  description: string;
+  closing_date: string;
   created_at: string;
-  company?: Company;
+  company: Company;
 }
 
-interface Application {
-  id: number;
-  offer: Offer;
-  status: string;
-  created_at: string;
-}
-
-interface CandidateData {
-  applications: Application[];
-}
+// The API returns an array of offers directly
+type CandidateData = Offer[];
 
 export default function TabTwoScreen() {
-  const { logout, isAuthenticated } = useAuth(); // Obtenemos logout e isAuthenticated
+  const { logout, isAuthenticated } = useAuth();
   const [dashboardData, setDashboardData] = useState<CandidateData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,15 +61,26 @@ export default function TabTwoScreen() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await getCandidateDashboard(); //llamamos a la fución de axios
+      const response = await getCandidateDashboard();
       
-      setDashboardData(response);
+      // Asegurar que la respuesta es un array
+      if (Array.isArray(response)) {
+        setDashboardData(response);
+      } else if (response && response.applications) {
+        // Si la API cambia y devuelve el formato esperado originalmente
+        setDashboardData(response.applications);
+      } else {
+        // Si la respuesta no tiene la estructura esperada
+        console.error("Unexpected API response format:", response);
+        setError("Formato de respuesta inesperado");
+        setDashboardData(null);
+      }
       
-      setLoading(false); //dejamos de cargar ya que se ha producido éxito
+      console.log("Dashboard data received:", response);
+      setLoading(false);
     } catch (error) {
       console.error("Failed while trying to fetch candidateDashboard data: ", error);
       setError(error instanceof Error ? error.message : String(error)); 
-      
       setLoading(false);
     }
   };
@@ -112,25 +122,23 @@ export default function TabTwoScreen() {
 
       {/* Sección de información de aplicaciones */}
       <Text style={{marginVertical: 10}}>Estado de datos: {dashboardData ? "Datos cargados" : "Sin datos"}</Text>
-      {dashboardData && dashboardData.applications && (
-        <Text>Hay {dashboardData.applications.length || 0} solicitudes realizadas</Text>
+      {dashboardData && (
+        <Text>Hay {dashboardData.length || 0} solicitudes realizadas</Text>
       )}
       
-      {/* Lista de aplicaciones */}
-      {dashboardData && dashboardData.applications && dashboardData.applications.length > 0 ? (
+      {/* Lista de aplicaciones - actualizada para el nuevo formato */}
+      {dashboardData && dashboardData.length > 0 ? (
         <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.applicationsContainer}>
-          {dashboardData.applications.map((application) => (
-            <View key={application.id} style={styles.applicationCard}>
-              <Text style={styles.applicationTitle}>{application.offer.name}</Text>
-              <Text style={styles.applicationDetail}>Categoría: {application.offer.category}</Text>
-              <Text style={styles.applicationDetail}>Ubicación: {application.offer.job_location}</Text>
-              <Text style={styles.applicationDetail}>Tipo de contrato: {application.offer.contract_type}</Text>
-              <Text style={styles.applicationDetail}>Titulación: {application.offer.degree}</Text>
-              <Text style={styles.applicationStatus}>
-                Estado: <Text style={{fontWeight: 'bold'}}>{application.status}</Text>
-              </Text>
+          {dashboardData.map((offer) => (
+            <View key={offer.id} style={styles.applicationCard}>
+              <Text style={styles.applicationTitle}>{offer.name}</Text>
+              <Text style={styles.applicationDetail}>Categoría: {offer.category}</Text>
+              <Text style={styles.applicationDetail}>Ubicación: {offer.job_location}</Text>
+              <Text style={styles.applicationDetail}>Tipo de contrato: {offer.contract_type}</Text>
+              <Text style={styles.applicationDetail}>Titulación: {offer.degree}</Text>
+              <Text style={styles.applicationDetail}>Empresa: {offer.company?.name || 'No disponible'}</Text>
               <Text style={styles.applicationDate}>
-                Aplicación enviada: {new Date(application.created_at).toLocaleDateString()}
+                Fecha límite: {new Date(offer.closing_date).toLocaleDateString()}
               </Text>
             </View>
           ))}
