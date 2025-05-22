@@ -101,7 +101,8 @@ export const deleteProfile = async (password) => {
 export const getCandidateDashboard = async () => {
   try {
     const response = await api.get('/candidate/dashboard');
-    return response.data.candidateOffers;
+    // Handle both cases: when data is nested or direct
+    return response.data.candidateOffers || response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Error al obtener dashboard' };
   }
