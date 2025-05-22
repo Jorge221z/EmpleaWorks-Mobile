@@ -230,7 +230,7 @@ const TestApi = () => {
 
       // 3. Obtener dashboard
       const dashboardResponse = await getCandidateDashboard();
-      console.log('Dashboard obtenido (solo test):', dashboardResponse);
+      console.log('Dashboard obtenido (solo test):', dashboardResponse); //es normal que esté vacio ya que es un nuevo user//
 
       // 4. Borrar cuenta candidato (enviando password como string)
       const deleteResponse = await deleteProfile('passworD-123');
