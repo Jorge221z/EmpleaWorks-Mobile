@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
 import { router, useLocalSearchParams, useRouter } from 'expo-router';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUser, getProfile } from '@/api/axios';
 
 // Función para obtener los datos completos del usuario (incluyendo candidato)
@@ -229,6 +229,27 @@ export default function ProfileScreen() {
     console.log('==========================================');
   };
 
+  // Función para navegar a la pantalla de edición con datos completos
+  const navigateToEditProfile = () => {
+    const userToEdit = {
+      ...user,
+      userSurname: getSurname(user) // Aseguramos que el apellido esté disponible
+    };
+    
+    // Guardar temporalmente en AsyncStorage para que esté disponible en la pantalla de edición
+    try {
+      AsyncStorage.setItem('edit_profile_data', JSON.stringify({
+        name: user?.name || '',
+        email: user?.email || '',
+        surname: getSurname(user) || ''
+      }));
+    } catch (e) {
+      console.error('Error guardando datos para edición:', e);
+    }
+    
+    router.push('/edit-profile');
+  };
+
   return (
     <ScrollView 
       style={styles.scrollContainer}
@@ -294,7 +315,7 @@ export default function ProfileScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Opciones</Text>
-          <TouchableOpacity style={styles.button} onPress={() => router.push('/edit-profile')}>
+          <TouchableOpacity style={styles.button} onPress={navigateToEditProfile}>
             <Text style={styles.buttonText}>Editar Perfil</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.button} onPress={() => console.log('Cambiar contraseña')}>
