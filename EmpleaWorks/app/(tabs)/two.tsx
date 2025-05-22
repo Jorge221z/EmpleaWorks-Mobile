@@ -76,7 +76,7 @@ export default function TabTwoScreen() {
         setDashboardData(null);
       }
       
-      console.log("Dashboard data received:", response);
+      //console.log("Dashboard data received:", response);
       setLoading(false);
     } catch (error) {
       console.error("Failed while trying to fetch candidateDashboard data: ", error);

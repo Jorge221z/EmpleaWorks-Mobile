@@ -54,6 +54,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <TabBarIcon name="bookmark" color={color} />, // Icono cambiado a 'bookmark'
         }}
       />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Perfil',
+          tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />, // Icono agregado para 'user'
+        }}
+      />
     </Tabs>
   );
 }
