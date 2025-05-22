@@ -379,7 +379,6 @@ export default function EditProfileScreen() {
   return (
     <ScrollView style={styles.scrollView}>
       <View style={styles.container}>
-        <Text style={styles.title}>Editar Perfil</Text>
         
         {initialLoading ? (
           <View style={styles.loadingContainer}>

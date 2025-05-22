@@ -84,6 +84,10 @@ function RootLayoutNav() {
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
           <Stack.Screen name="login" options={{ headerShown: false }} />
           <Stack.Screen name="register" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="edit-profile"
+            options={{ title: 'Editar perfil' }}
+          />
         </Stack>
       </AuthChecker>
     </ThemeProvider>

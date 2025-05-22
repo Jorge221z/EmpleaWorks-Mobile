@@ -50,14 +50,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="two"
         options={{
-          title: 'Mis ofertas',
+          title: 'Candidaturas',
           tabBarIcon: ({ color }) => <TabBarIcon name="bookmark" color={color} />, // Icono cambiado a 'bookmark'
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Perfil',
+          title: 'Mi Perfil',
           tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />, // Icono agregado para 'user'
         }}
       />

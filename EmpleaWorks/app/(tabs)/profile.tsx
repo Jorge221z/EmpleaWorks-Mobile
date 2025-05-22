@@ -406,7 +406,6 @@ export default function ProfileScreen() {
               />
             )}
           </View>
-          <Text style={styles.title}>Mi Perfil</Text>
           <Text style={styles.subtitle}>
             {user?.name || 'Usuario'} {getSurname(user)}
           </Text>
