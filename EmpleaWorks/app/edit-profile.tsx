@@ -146,20 +146,33 @@ export default function EditProfileScreen() {
         return;
       }
       
-      // Abrir selector de imagen
+      // Abrir selector de imagen con configuración mejorada
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.7,
-        base64: true,
+        quality: 0.8,
+        base64: false,
       });
       
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const selectedImage = result.assets[0];
+        
+        // Guardar toda la información de la imagen, no solo la URI
         setProfileImage(selectedImage.uri);
-        setNewImageSelected(true); // Marcamos que se ha seleccionado una nueva imagen
-        console.log('Imagen seleccionada:', selectedImage.uri);
+
+        //
+        const fileExtension = selectedImage.uri.split('.').pop()?.toLowerCase();
+        if (!['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension || '')) {
+          Alert.alert(
+            'Formato no soportado', 
+            'Por favor selecciona una imagen en formato JPG, PNG o GIF.'
+          );
+          return;
+        }
+        
+        setNewImageSelected(true);
+        console.log('Imagen seleccionada:', selectedImage.uri, 'tipo:', selectedImage.type || 'desconocido');
       }
     } catch (error) {
       console.error('Error seleccionando imagen:', error);
@@ -222,34 +235,56 @@ export default function EditProfileScreen() {
     try {
       console.log('Preparando datos para actualización de perfil');
       
-      // Preparar solo los datos que vamos a enviar (campos con valores)
-      const updateData: any = {};
+      // Crear un objeto FormData para enviar archivos correctamente
+      const formData = new FormData();
       
-      // Solo incluimos campos básicos si tienen valor
-      if (name) updateData.name = name;
-      if (surname) updateData.surname = surname;
-      if (email) updateData.email = email;
-      if (description) updateData.description = description;
+      // Añadir campos de texto básicos
+      if (name) formData.append('name', name);
+      if (surname) formData.append('surname', surname);
+      if (email) formData.append('email', email);
+      if (description) formData.append('description', description);
       
-      // Solo incluimos la imagen si se seleccionó una nueva
-      if (newImageSelected) {
-        updateData.image = profileImage; // Usar image en lugar de profileImage
+      // Procesar la imagen si se seleccionó una nueva
+      if (newImageSelected && profileImage) {
+        console.log('Preparando imagen para subir...');
+        
+        // Obtenemos datos del archivo
+        const uri = profileImage;
+        const uriParts = uri.split('.');
+        const fileExtension = uriParts[uriParts.length - 1];
+        
+        // Creamos el objeto para la imagen que el servidor puede procesar
+        formData.append('image', {
+          uri,
+          name: `photo.${fileExtension}`,
+          type: `image/${fileExtension === 'jpg' ? 'jpeg' : fileExtension}`
+        } as any);
+        
+        console.log('Imagen preparada para envío');
       }
       
-      // Solo incluimos el CV si se seleccionó uno nuevo
+      // Procesar el CV si se seleccionó uno nuevo o se eliminó
       if (newCvSelected) {
-        // Si el CV existe y tiene los datos necesarios, lo incluimos
         if (cv && cv.uri) {
-          updateData.cv = cv;
+          console.log('Preparando CV para subir...');
+          
+          formData.append('cv', {
+            uri: cv.uri,
+            name: cv.name || 'document.pdf',
+            type: cv.mimeType || 'application/pdf'
+          } as any);
+          
+          console.log('CV preparado para envío');
         } else {
           // Si se quitó el CV (está a null), enviamos null explícitamente
-          updateData.cv = null;
+          formData.append('cv', 'null');
+          console.log('Solicitando eliminación de CV');
         }
       }
       
-      console.log('Enviando datos de actualización:', Object.keys(updateData));
+      console.log('Enviando datos de actualización con FormData');
       
-      const updated = await updateProfile(updateData);
+      const updated = await updateProfile(formData);
       console.log('Perfil actualizado correctamente');
       
       // Actualizamos el usuario en el contexto si está disponible

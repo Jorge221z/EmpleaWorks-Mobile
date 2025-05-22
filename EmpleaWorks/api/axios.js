@@ -75,15 +75,25 @@ export const getProfile = async () => {
 export const updateProfile = async (profileData, isFormData = false) => {
   try {
     const config = {};
-    if (isFormData) {
+    
+    // Si estamos enviando FormData, configuramos los headers correctamente
+    if (isFormData || profileData instanceof FormData) {
       config.headers = {
         'Content-Type': 'multipart/form-data',
+        'Accept': 'application/json'
       };
+      console.log('Enviando datos como FormData con headers adecuados');
     }
+    
+    console.log('Enviando solicitud de actualización de perfil...');
     const response = await api.post('/profile', profileData, config);
+    console.log('Respuesta de actualización recibida:', response.status);
     return response.data;
   } catch (error) {
     console.error('updateProfile error:', error?.response?.data || error);
+    if (error?.response?.data?.errors?.image) {
+      console.error('Error específico de imagen:', error.response.data.errors.image);
+    }
     throw error.response?.data || { message: 'Error al actualizar perfil' };
   }
 };
