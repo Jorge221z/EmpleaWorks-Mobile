@@ -13,7 +13,7 @@ const getFullUserData = async () => {
     const timestamp = new Date().getTime();
     const user = await getUser(`?_t=${timestamp}`);
     
-    // Si no tenemos acceso a candidate en la respuesta inicial, intentamos recuperar los datos de localStorage
+    // Si no tenemos acceso a candidate en la respuesta inicial, intentamos recuperar los datos de localStorage para mejor rendimiento
     if (!user.candidate && localStorage) {
       try {
         const storedCandidate = localStorage.getItem('userCandidate');
@@ -219,6 +219,73 @@ export default function ProfileScreen() {
     return userData?.surname || '';
   };
 
+  // Función helper para acceder a la descripción del usuario
+  const getUserDescription = (userData: any) => {
+    if (userData?.candidate?.description) {
+      return userData.candidate.description;
+    }
+    
+    if (candidateData?.description) {
+      return candidateData.description;
+    }
+    
+    return userData?.description || '';
+  };
+
+  // Función helper para obtener la URL de la imagen de perfil
+  const getUserProfileImage = (userData: any) => {
+    let imagePath = null;
+    
+    // First check the image field at root level
+    if (userData?.image) {
+      imagePath = userData.image;
+    } else if (userData?.candidate?.profileImage) {
+      imagePath = userData.candidate.profileImage;
+    } else if (candidateData?.profileImage) {
+      imagePath = candidateData.profileImage;
+    } else {
+      imagePath = userData?.profileImage;
+    }
+    
+    // If we have an image path, ensure it's a complete URL
+    if (imagePath) {
+      // Log the raw image path for debugging
+      console.log('Raw image path:', imagePath);
+      
+      // Check if it's already a complete URL
+      if (imagePath.startsWith('http')) {
+        return imagePath;
+      } else {
+        // Try a simpler direct URL format
+        // Don't modify the path that comes from the API
+        const imageUrl = `https://emplea.works/storage/${imagePath}`;
+        console.log('Constructed image URL:', imageUrl);
+        return imageUrl;
+      }
+    }
+    
+    console.log('No image path found, userData:', userData);
+    return null;
+  };
+
+  // Función helper para comprobar si el usuario tiene CV
+  const hasUserCV = (userData: any) => {
+    return !!(userData?.candidate?.cv || candidateData?.cv);
+  };
+
+  // Función para obtener la información del CV
+  const getUserCV = (userData: any) => {
+    if (userData?.candidate?.cv) {
+      return userData.candidate.cv;
+    }
+    
+    if (candidateData?.cv) {
+      return candidateData.cv;
+    }
+    
+    return null;
+  };
+
   // Función de depuración para mostrar contenido completo en la consola
   const debugUserData = () => {
     console.log('============= DATOS ACTUALES =============');
@@ -226,10 +293,13 @@ export default function ProfileScreen() {
     console.log('Datos de candidato:', candidateData);
     console.log('Usuario combinado:', user);
     console.log('Apellido calculado:', getSurname(user));
+    console.log('Descripción:', getUserDescription(user));
+    console.log('Imagen de perfil:', getUserProfileImage(user));
+    console.log('CV:', getUserCV(user));
     console.log('==========================================');
   };
 
-  // Función para navegar a la pantalla de edición con datos completos
+  // Función para navegar a la pantalla de edición with datos completos
   const navigateToEditProfile = () => {
     const userToEdit = {
       ...user,
@@ -241,7 +311,10 @@ export default function ProfileScreen() {
       AsyncStorage.setItem('edit_profile_data', JSON.stringify({
         name: user?.name || '',
         email: user?.email || '',
-        surname: getSurname(user) || ''
+        surname: getSurname(user) || '',
+        description: getUserDescription(user) || '',
+        profileImage: getUserProfileImage(user) || '',
+        cv: getUserCV(user) || null
       }));
     } catch (e) {
       console.error('Error guardando datos para edición:', e);
@@ -284,11 +357,21 @@ export default function ProfileScreen() {
 
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
-            <Image 
-              source={require('@/assets/images/default-avatar.png')}
-              style={styles.avatar}
-              defaultSource={require('@/assets/images/default-avatar.png')} 
-            />
+            {getUserProfileImage(user) ? (
+              <Image 
+                source={{ uri: getUserProfileImage(user) }}
+                style={styles.avatar}
+                defaultSource={require('@/assets/images/default-avatar.png')}
+                onError={(error) => {
+                  console.log('Error cargando imagen de perfil:', error.nativeEvent.error);
+                }}
+              />
+            ) : (
+              <Image 
+                source={require('@/assets/images/default-avatar.png')}
+                style={styles.avatar}
+              />
+            )}
           </View>
           <Text style={styles.title}>Mi Perfil</Text>
           <Text style={styles.subtitle}>
@@ -310,6 +393,18 @@ export default function ProfileScreen() {
           <View style={styles.infoContainer}>
             <Text style={styles.infoLabel}>Email:</Text>
             <Text style={styles.infoValue}>{user?.email || 'No disponible'}</Text>
+          </View>
+          <View style={styles.infoContainer}>
+            <Text style={styles.infoLabel}>CV:</Text>
+            <Text style={styles.infoValue}>
+              {hasUserCV(user) ? 'CV subido ✓' : 'No has subido CV'}
+            </Text>
+          </View>
+          <View style={styles.descriptionContainer}>
+            <Text style={styles.infoLabel}>Descripción:</Text>
+            <Text style={styles.descriptionText}>
+              {getUserDescription(user) || 'No has añadido una descripción todavía'}
+            </Text>
           </View>
         </View>
 
@@ -456,5 +551,18 @@ const styles = StyleSheet.create({
   debugButtonText: {
     color: '#333',
     fontSize: 12,
+  },
+  descriptionContainer: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#eaeaea',
+  },
+  descriptionText: {
+    fontSize: 16,
+    lineHeight: 22,
+    marginTop: 5,
+    color: '#333',
+    fontStyle: 'italic',
   },
 });
