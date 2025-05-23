@@ -24,7 +24,9 @@ api.interceptors.request.use(
   }
 );
 
-// Función para registrar un nuevo usuario
+
+/* AQUI MANEJAMOS EL LOGIN/REGISTER DE FORMA TRADICIONAL */
+
 export const register = async (userData) => {
   try {
     const response = await api.post('/register', userData);
@@ -48,6 +50,57 @@ export const login = async (credentials) => {
     throw error.response?.data || { message: 'Error en el inicio de sesión' };
   }
 };
+
+/* AQUI MANEJAMOS EL LOGIN/REGISTER MEDIANTE GOOGLE */
+
+// Función para obtener la URL de redirección para Google
+export const getGoogleRedirectUrl = async () => {
+  try {
+    const response = await api.get('/auth/google');
+    return response.data.url;
+  } catch (error) {
+    throw error.response?.data || { message: 'Error al obtener URL de Google' };
+  }
+};
+
+// Función para procesar el callback de Google
+export const handleGoogleCallback = async (token) => {
+  try {
+    const response = await api.post('/auth/google/callback', { token });
+    const { token: authToken, user } = response.data;
+    await AsyncStorage.setItem('auth_token', authToken);
+    return { user, token: authToken };
+  } catch (error) {
+    throw error.response?.data || { message: 'Error en la autenticación con Google' };
+  }
+};
+
+// Función específica para Expo - maneja el código de autorización de Google
+export const handleGoogleAuthCode = async (authCode) => {
+  try {
+    const response = await api.post('/auth/google/callback', { 
+      code: authCode,
+      platform: 'mobile'
+    });
+    const { token: authToken, user } = response.data;
+    await AsyncStorage.setItem('auth_token', authToken);
+    return { user, token: authToken };
+  } catch (error) {
+    throw error.response?.data || { message: 'Error en la autenticación con Google desde móvil' };
+  }
+};
+
+// Función para obtener configuración OAuth específica para móvil
+export const getGoogleMobileConfig = async () => {
+  try {
+    const response = await api.get('/auth/google/mobile-config');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Error al obtener configuración móvil de Google' };
+  }
+};
+
+
 
 // Función para obtener datos del usuario autenticado
 export const getUser = async () => {

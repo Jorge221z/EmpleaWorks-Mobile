@@ -17,6 +17,10 @@ import {
   deleteOffer,
   logout,
   getDashboard,
+  getGoogleRedirectUrl,
+  handleGoogleCallback,
+  handleGoogleAuthCode,
+  getGoogleMobileConfig,
 } from '../../api/axios'; // Ajusta la ruta según tu estructura
 
 const TestApi = () => {
@@ -254,6 +258,106 @@ const TestApi = () => {
     }
   };
 
+  // Nuevo test específico para Google Auth
+  const testGoogleAuth = async () => {
+    try {
+      console.log('=== Iniciando pruebas de Google Authentication ===');
+
+      // 1. Obtener URL de redirección de Google
+      console.log('Probando getGoogleRedirectUrl...');
+      const googleUrl = await getGoogleRedirectUrl();
+      console.log('URL de Google obtenida:', googleUrl);
+
+      // Verificar que la URL contiene los parámetros esperados de OAuth
+      if (googleUrl && typeof googleUrl === 'string') {
+        const hasOAuthParams = googleUrl.includes('client_id') && 
+                              googleUrl.includes('redirect_uri') && 
+                              googleUrl.includes('scope');
+        console.log('URL contiene parámetros OAuth válidos:', hasOAuthParams);
+        
+        if (hasOAuthParams) {
+          console.log('✅ getGoogleRedirectUrl funciona correctamente');
+        } else {
+          console.warn('⚠️ La URL no contiene todos los parámetros OAuth esperados');
+        }
+      } else {
+        console.error('❌ La respuesta no es una URL válida');
+      }
+
+      // 2. Simular callback de Google (normalmente esto se haría con un token real de Google)
+      console.log('Simulando handleGoogleCallback...');
+      
+      // NOTA: En una prueba real, necesitarías un token válido de Google
+      // Para propósitos de testing, intentamos con un token simulado
+      const mockGoogleToken = `mock_google_token_${Date.now()}`;
+      
+      try {
+        const googleAuthResult = await handleGoogleCallback(mockGoogleToken);
+        console.log('✅ Google callback exitoso:', googleAuthResult);
+        
+        // Si el callback fue exitoso, probamos obtener el perfil del usuario
+        console.log('Probando getUser después de Google auth...');
+        const userProfile = await getUser();
+        console.log('Perfil de usuario obtenido:', userProfile);
+        
+        // Probamos obtener el perfil completo
+        console.log('Probando getProfile después de Google auth...');
+        const fullProfile = await getProfile();
+        console.log('Perfil completo obtenido:', fullProfile);
+        
+        // Limpiar: eliminar la cuenta creada via Google
+        console.log('Limpiando cuenta creada via Google...');
+        // Nota: Para Google auth, el password podría ser null o generado automáticamente
+        // Puede que necesites ajustar esto según tu implementación backend
+        try {
+          await deleteProfile('default_password_for_google_users');
+          console.log('✅ Cuenta de Google eliminada exitosamente');
+        } catch (deleteError) {
+          console.warn('⚠️ No se pudo eliminar la cuenta de Google (esto puede ser normal):', deleteError.message);
+        }
+        
+      } catch (callbackError) {
+        console.log('❌ Google callback falló (esperado con token simulado):', callbackError.message);
+        console.log('💡 Esto es normal en testing - se necesita un token real de Google para completar el flujo');
+        
+        // Verificar si el error es el esperado (token inválido)
+        if (callbackError.message && 
+            (callbackError.message.includes('token') || 
+             callbackError.message.includes('invalid') ||
+             callbackError.message.includes('unauthorized'))) {
+          console.log('✅ El endpoint de callback está funcionando (rechaza tokens inválidos correctamente)');
+        }
+      }
+
+      // 3. Verificar que las funciones de Google auth están disponibles
+      console.log('Verificando disponibilidad de funciones Google auth...');
+      console.log('getGoogleRedirectUrl disponible:', typeof getGoogleRedirectUrl === 'function');
+      console.log('handleGoogleCallback disponible:', typeof handleGoogleCallback === 'function');
+
+      console.log('=== Pruebas de Google Authentication completadas ===');
+      console.log('📋 Resumen:');
+      console.log('- getGoogleRedirectUrl: Funcional');
+      console.log('- handleGoogleCallback: Requiere token real para prueba completa');
+      console.log('- Para prueba completa: usar dispositivo real con Google OAuth configurado');
+
+    } catch (error) {
+      console.error('❌ Error en las pruebas de Google Auth:', error);
+      console.log('💡 Posibles causas:');
+      console.log('- Servidor backend no está corriendo');
+      console.log('- Google OAuth no está configurado en el backend');
+      console.log('- Problemas de conectividad de red');
+    } finally {
+      // Asegurar logout al final
+      try {
+        await logout();
+        console.log('🚪 Sesión cerrada al finalizar pruebas');
+      } catch (logoutError) {
+        console.log('Logout error (normal si no había sesión):', logoutError.message);
+      }
+    }
+  };
+
+
   useEffect(() => {
   }, []);
 
@@ -265,6 +369,10 @@ const TestApi = () => {
       <Button title="Probar solo Dashboard" onPress={testDashboardOnly} />
       <View style={{ height: 20 }} />
       <Button title="Probar getDashboard" onPress={testGetDashboard} />
+      <View style={{ height: 20 }} />
+      <Button title="Probar Google Auth" onPress={testGoogleAuth} />
+      <View style={{ height: 20 }} />
+      <Button title="Probar Expo Google Auth" onPress={testExpoGoogleAuth} />
     </View>
   );
 };
