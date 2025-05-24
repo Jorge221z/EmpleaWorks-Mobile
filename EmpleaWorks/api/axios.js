@@ -1,5 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 // Configuración de la instancia de axios
 const api = axios.create({
@@ -302,7 +303,23 @@ export const getOfferDetails = async (offerId) => {
 // Función para cerrar sesión (opcional)
 export const logout = async () => {
   try {
+    // Clear local token
     await AsyncStorage.removeItem('auth_token');
+    
+    // Also sign out from Google if available
+    try {
+      if (Platform.OS !== 'web') {
+        const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
+        if (GoogleSignin) {
+          console.log('Cerrando sesión de Google...');
+          await GoogleSignin.signOut();
+          console.log('Sesión de Google cerrada correctamente');
+        }
+      }
+    } catch (googleError) {
+      // Don't fail the main logout if Google sign out fails
+      console.warn('Error al cerrar sesión de Google:', googleError);
+    }
   } catch (error) {
     console.error('Error al cerrar sesión:', error);
   }

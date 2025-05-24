@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { signInWithGoogle } from '@/utils/authUtils';
+import { signInWithGoogle, signOutFromGoogle } from '@/utils/authUtils';
 import { useAuth } from '@/context/AuthContext';
 import Constants from 'expo-constants';
 import { Alert } from 'react-native';
@@ -14,7 +14,7 @@ export function useGoogleAuth() {
   const ANDROID_CLIENT_ID = Constants.expoConfig?.extra?.googleAndroidClientId || '';
   const WEB_CLIENT_ID = Constants.expoConfig?.extra?.googleWebClientId || '';
 
-  const login = async () => {
+  const login = async (forceAccountSelection = true) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -22,13 +22,14 @@ export function useGoogleAuth() {
       console.log('Iniciando login con Google...');
       console.log('Android Client ID:', ANDROID_CLIENT_ID);
       console.log('Web Client ID:', WEB_CLIENT_ID);
+      console.log('Forzar selección de cuenta:', forceAccountSelection ? 'Sí' : 'No');
 
       if (!WEB_CLIENT_ID) {
         throw new Error('Falta configuración Web Client ID');
       }
 
-      // Intentar la autenticación con Google
-      const { user, token } = await signInWithGoogle();
+      // Intentar la autenticación con Google, forzando la selección de cuenta
+      const { user, token } = await signInWithGoogle(forceAccountSelection);
       
       console.log('Login con Google exitoso!');
       console.log('Usuario autenticado:', user?.name || 'Desconocido');
@@ -94,8 +95,18 @@ export function useGoogleAuth() {
     }
   };
 
+  // Add a method to explicitly sign out from Google
+  const signOut = async () => {
+    try {
+      await signOutFromGoogle();
+    } catch (error) {
+      console.warn('Error signing out from Google:', error);
+    }
+  };
+
   return {
     login,
+    signOut,
     isLoading,
     error
   };

@@ -60,8 +60,25 @@ export const handleGoogleLogin = async (idToken: string): Promise<{ user: User; 
   }
 };
 
+/**
+ * Cierra la sesión de Google si existe
+ */
+export const signOutFromGoogle = async (): Promise<void> => {
+  if (Platform.OS === 'web') {
+    return;
+  }
+  
+  try {
+    const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
+    await GoogleSignin.signOut();
+    console.log('Usuario desconectado de Google correctamente');
+  } catch (error) {
+    console.warn('Error al cerrar sesión de Google:', error);
+  }
+};
+
 // Función para iniciar sesión con Google
-export const signInWithGoogle = async () => {
+export const signInWithGoogle = async (forceAccountSelection = false) => {
   try {
     if (Platform.OS === 'web') {
       throw new Error('Google Sign-in no soportado en web aún');
@@ -85,6 +102,12 @@ export const signInWithGoogle = async () => {
       offlineAccess: true, // Solicitar acceso offline para obtener idToken
       // Removido androidClientId ya que causa error
     });
+
+    // If forceAccountSelection is true, sign out first to force account picker
+    if (forceAccountSelection) {
+      console.log('Forzando selección de cuenta: cerrando sesión previa de Google...');
+      await GoogleSignin.signOut();
+    }
 
     // Verifica Google Play Services
     try {
