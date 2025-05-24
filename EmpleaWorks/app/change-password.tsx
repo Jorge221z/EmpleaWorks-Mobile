@@ -110,37 +110,48 @@ export default function ChangePasswordScreen() {
         'Tu contraseña ha sido actualizada correctamente',
         [{ text: 'Aceptar', onPress: () => router.back() }]
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al actualizar contraseña:', error);
 
       // Manejar diferentes tipos de errores de la API
-      if (error.current_password) {
-        setErrors(prev => ({
-          ...prev,
-          currentPassword: error.current_password[0] || 'La contraseña actual es incorrecta'
-        }));
-      } else if (error.password) {
-        setErrors(prev => ({
-          ...prev,
-          newPassword: error.password[0] || 'Error en la nueva contraseña'
-        }));
-      } else if (error.error && typeof error.error === 'object') {
-        // Manejar estructuras de error anidadas
-        const errorMessages = {};
-        Object.keys(error.error).forEach(key => {
-          if (key === 'current_password') {
-            errorMessages.currentPassword = error.error[key][0];
-          } else if (key === 'password') {
-            errorMessages.newPassword = error.error[key][0];
-          }
-        });
-        setErrors(prev => ({ ...prev, ...errorMessages }));
+      if (error && typeof error === 'object') {
+        if (error.current_password) {
+          setErrors(prev => ({
+            ...prev,
+            currentPassword: Array.isArray(error.current_password) 
+              ? error.current_password[0] 
+              : 'La contraseña actual es incorrecta'
+          }));
+        } else if (error.password) {
+          setErrors(prev => ({
+            ...prev,
+            newPassword: Array.isArray(error.password) 
+              ? error.password[0] 
+              : 'Error en la nueva contraseña'
+          }));
+        } else if (error.error && typeof error.error === 'object') {
+          // Manejar estructuras de error anidadas
+          const errorMessages: Record<string, string> = {};
+          Object.keys(error.error).forEach(key => {
+            if (key === 'current_password' && Array.isArray(error.error.current_password)) {
+              errorMessages.currentPassword = error.error.current_password[0];
+            } else if (key === 'password' && Array.isArray(error.error.password)) {
+              errorMessages.newPassword = error.error.password[0];
+            }
+          });
+          setErrors(prev => ({ ...prev, ...errorMessages }));
+        } else {
+          setErrors(prev => ({
+            ...prev,
+            general: typeof error.message === 'string' 
+              ? error.message
+              : 'Error al actualizar la contraseña'
+          }));
+        }
       } else {
         setErrors(prev => ({
           ...prev,
-          general: typeof error === 'string' 
-            ? error 
-            : error.message || 'Error al actualizar la contraseña'
+          general: 'Error al actualizar la contraseña'
         }));
       }
     } finally {

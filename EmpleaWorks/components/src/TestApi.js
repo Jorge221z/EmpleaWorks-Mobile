@@ -623,84 +623,7 @@ const TestApi = () => {
     return false;
   };
 
-  // Función dedicada para ayudar con el problema de SHA-1 y DEVELOPER_ERROR
-  const helpWithSHA1 = () => {
-    console.log('=== GUÍA PARA RESOLVER DEVELOPER_ERROR EN GOOGLE SIGN-IN ===');
-    
-    // Información sobre el dispositivo
-    console.log('📱 INFORMACIÓN DE ENTORNO:');
-    console.log(`• Plataforma: ${Platform.OS}`);
-    console.log(`• Versión: ${Platform.Version}`);
-    console.log(`• Client ID configurado: ${Constants.expoConfig?.extra?.googleAndroidClientId}`);
-    
-    console.log('\n🔑 PROBLEMA IDENTIFICADO:');
-    console.log('El error DEVELOPER_ERROR ocurre porque la huella SHA-1 de tu aplicación');
-    console.log('no está registrada en Google Cloud Console para el Client ID que estás usando.');
-    
-    console.log('\n📋 SOLUCIÓN PASO A PASO:');
-    
-    if (Constants.appOwnership === 'expo') {
-      // Estamos en Expo Go
-      console.log('ESTÁS USANDO EXPO GO:');
-      console.log('Expo Go usa su propio certificado, que no puedes registrar directamente.');
-      console.log('Para autenticación con Google necesitas:');
-      console.log('1. Crear una build independiente con EAS Build:');
-      console.log('   npx eas build --platform android --profile development');
-      console.log('2. O usar expo-auth-session para autenticación web (más simple con Expo Go)');
-    } else {
-      // Estamos en una build independiente (development o production)
-      console.log('ESTÁS USANDO UNA BUILD INDEPENDIENTE:');
-      console.log('Para obtener el SHA-1 de tu build actual:');
-      
-      if (Platform.OS === 'android') {
-        console.log('1. PARA DEVELOPMENT BUILD:');
-        console.log('   a) Ejecuta en tu terminal:');
-        console.log('      cd android && ./gradlew signingReport');
-        console.log('   b) Busca la sección "Task :app:signingReport"');
-        console.log('   c) Encuentra la línea "SHA-1" bajo "Variant: debug"');
-        
-        console.log('\n2. PARA PRODUCTION BUILD:');
-        console.log('   a) Si usas un keystore personalizado, ejecuta:');
-        console.log('      keytool -list -v -keystore <ruta-a-tu-keystore.keystore>');
-        console.log('   b) Si usas Google Play App Signing:');
-        console.log('      • Ve a Google Play Console → Tu app → Configuración → Integridad de la app');
-        console.log('      • Encuentra los SHA-1 de "Certificado de firma de la app" y "Certificado de subida"');
-        console.log('      • Registra AMBOS en Google Cloud Console');
-      }
-    }
-    
-    console.log('\n3. REGISTRAR EL SHA-1 EN GOOGLE CLOUD CONSOLE:');
-    console.log('   a) Ve a https://console.cloud.google.com');
-    console.log('   b) Selecciona tu proyecto');
-    console.log('   c) Ve a "API y servicios" → "Credenciales"');
-    console.log('   d) Encuentra y edita tu ID de cliente OAuth (Android)');
-    console.log('   e) En la sección "Huellas digitales de certificado", añade tu SHA-1');
-    console.log('   f) Guarda los cambios');
-    console.log('   g) Espera unos minutos para que los cambios se propaguen');
-    
-    console.log('\n4. VERIFICA QUE LAS APIS NECESARIAS ESTÉN HABILITADAS:');
-    console.log('   a) En Google Cloud Console, ve a "API y servicios" → "Biblioteca"');
-    console.log('   b) Asegúrate de que estas APIs estén habilitadas:');
-    console.log('      • Google Sign-In API');
-    console.log('      • Google People API');
-    
-    console.log('\n5. HERRAMIENTA ALTERNATIVA PARA OBTENER SHA-1:');
-    console.log('   Puedes crear una app simple de diagnóstico en la Google Play Console');
-    console.log('   que mostrará las huellas SHA-1 que Google reconoce para tu app:');
-    console.log('   https://play.google.com/store/apps/details?id=com.google.android.apps.verifier');
-    
-    console.log('\n💡 NOTA IMPORTANTE:');
-    console.log('Si modificas el archivo app.json y regeneras tu app,');
-    console.log('o cambias entre builds de desarrollo y producción,');
-    console.log('puede que necesites registrar diferentes huellas SHA-1.');
-    
-    console.log('\n✅ VERIFICACIÓN:');
-    console.log('Después de registrar el SHA-1, vuelve a esta pantalla y usa');
-    console.log('el botón "Test Detallado Google Auth" para verificar si el problema está resuelto.');
-    
-    console.log('=== FIN DE LA GUÍA PARA RESOLVER DEVELOPER_ERROR ===');
-  };
-
+  
   useEffect(() => {
   }, []);
 
@@ -708,26 +631,21 @@ const TestApi = () => {
     <View>
       <Text style={{ color: 'white' }}>Probando API... Revisa la consola para los resultados.</Text>
       <Button title="Probar API completa" onPress={testApi} />
-      <View style={{ height: 20 }} />
+      <View style={{ height: 10 }} />
       <Button title="Probar solo Dashboard" onPress={testDashboardOnly} />
-      <View style={{ height: 20 }} />
+      <View style={{ height: 10 }} />
       <Button title="Probar getDashboard" onPress={testGetDashboard} />
-      <View style={{ height: 20 }} />
+      <View style={{ height: 10 }} />
       <Button title="Probar Google Auth" onPress={testGoogleAuth} />
-      <View style={{ height: 20 }} />
+      <View style={{ height: 10 }} />
       <Button title="Test Detallado Google Auth" onPress={testDetailedGoogleAuth} color="#4285F4" />
-      <View style={{ height: 20 }} />
+      <View style={{ height: 10 }} />
       <Button 
         title="Diagnosticar DEVELOPER_ERROR" 
         onPress={testGoogleDeveloperError} 
         color="#D32F2F" 
       />
-      <View style={{ height: 20 }} />
-      <Button 
-        title="Ayuda con SHA-1 para Google Sign-In" 
-        onPress={helpWithSHA1} 
-        color="#00C853" 
-      />
+      
     </View>
   );
 };
