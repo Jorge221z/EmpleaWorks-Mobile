@@ -62,12 +62,17 @@ function AuthRedirect() {
       return;
     }
 
-    const inAuthGroup = segments[0] === '(auth)';
+    // const inAuthGroup = segments[0] === '(auth)'; // Removed because '(auth)' is not a valid segment
     const inTabsGroup = segments[0] === '(tabs)';
     
     // If the user is authenticated but they're on a non-protected route,
     // redirect them to the home page
-    if (isAuthenticated && (segments.length === 0 || segments[0] === 'login' || segments[0] === 'register')) {
+    if (
+      isAuthenticated &&
+      ((!segments[0]) ||
+        segments[0] === 'login' ||
+        segments[0] === 'register')
+    ) {
       console.log('Usuario autenticado redirigiendo a tabs...');
       router.replace('/(tabs)');
     } 

@@ -156,13 +156,19 @@ export const signInWithGoogle = async (forceAccountSelection = false) => {
         }
       } 
       // Verificación de estructura tradicional (en caso de cambio en la biblioteca)
-      else if (userInfo.idToken) {
+      else if ((userInfo as { idToken?: string }).idToken) {
         console.log('idToken encontrado en raíz del objeto');
-        idToken = userInfo.idToken;
-      } else if (userInfo.user && userInfo.user.idToken) {
+        idToken = (userInfo as { idToken?: string }).idToken;
+      } else if (
+        typeof userInfo === 'object' &&
+        userInfo !== null &&
+        'user' in userInfo &&
+        (userInfo as any).user &&
+        (userInfo as any).user.idToken
+      ) {
         console.log('idToken encontrado en user.idToken');
-        idToken = userInfo.user.idToken;
-      } else if (userInfo.serverAuthCode) {
+        idToken = (userInfo as any).user.idToken;
+      } else if ('serverAuthCode' in userInfo && (userInfo as any).serverAuthCode) {
         console.log('serverAuthCode encontrado, pero no idToken');
         throw new Error('Se obtuvo serverAuthCode pero no idToken. El backend debe implementar intercambio de código.');
       }
