@@ -74,6 +74,12 @@ export default function LoginScreen() {
         )}
       </TouchableOpacity>
 
+      <View style={styles.divider}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>O</Text>
+        <View style={styles.dividerLine} />
+      </View>
+
       <TouchableOpacity
         style={[styles.button, styles.googleButton]}
         onPress={handleGoogleLogin}
@@ -84,7 +90,7 @@ export default function LoginScreen() {
         ) : (
           <>
             <FontAwesome name="google" size={18} color="white" style={styles.googleIcon} />
-            <Text style={styles.buttonText}>Iniciar Sesión con Google</Text>
+            <Text style={styles.buttonText}>Continuar con Google</Text>
           </>
         )}
       </TouchableOpacity>
@@ -154,5 +160,20 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#7c28eb',
     fontWeight: 'bold',
+  },
+  divider: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 15,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e0e0e0',
+  },
+  dividerText: {
+    paddingHorizontal: 10,
+    color: '#757575',
   },
 });
