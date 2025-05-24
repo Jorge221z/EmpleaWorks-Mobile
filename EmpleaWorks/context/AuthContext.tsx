@@ -10,7 +10,8 @@ interface AuthContextType {
   register: (userData: any) => Promise<void>;
   logout: () => Promise<void>;
   error: string | null;
-  setUser?: (user: any | null) => void;
+  setUser: (user: any | null) => void;
+  setIsAuthenticated: (value: boolean) => void;
 }
 
 /** Nuestra autenticación funciona de la siguiente forma:
@@ -104,7 +105,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login: handleLogin,
     register: handleRegister,
     logout: handleLogout,
-    error
+    error,
+    setUser,
+    setIsAuthenticated
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

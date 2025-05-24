@@ -3,11 +3,15 @@ import { StyleSheet, TextInput, TouchableOpacity, ActivityIndicator } from 'reac
 import { router } from 'expo-router';
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
+import { useGoogleAuth } from '@/hooks/useGoogleAuth';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import GoogleAuthErrorInfo from '@/components/GoogleAuthErrorInfo';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login, isLoading, error } = useAuth();
+  const { login: googleLogin, isLoading: googleLoading, error: googleError } = useGoogleAuth();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -16,6 +20,17 @@ export default function LoginScreen() {
     }
     
     await login(email, password);
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      console.log('Iniciando proceso de login con Google...');
+      await googleLogin();
+      console.log('Login con Google completado exitosamente');
+    } catch (error) {
+      console.log('Google login failed:', error instanceof Error ? error.message : error);
+      // Error handling is done in the hook
+    }
   };
 
   return (
@@ -42,16 +57,35 @@ export default function LoginScreen() {
       </View>
       
       {error && <Text style={styles.errorText}>{error}</Text>}
+      {googleError && <Text style={styles.errorText}>{googleError}</Text>}
+      
+      {/* Show detailed info for Google client error */}
+      {googleError && <GoogleAuthErrorInfo error={googleError} />}
       
       <TouchableOpacity 
         style={styles.button}
         onPress={handleLogin}
-        disabled={isLoading}
+        disabled={isLoading || googleLoading}
       >
         {isLoading ? (
           <ActivityIndicator color="#fff" />
         ) : (
           <Text style={styles.buttonText}>Iniciar Sesión</Text>
+        )}
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.button, styles.googleButton]}
+        onPress={handleGoogleLogin}
+        disabled={isLoading || googleLoading}
+      >
+        {googleLoading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <>
+            <FontAwesome name="google" size={18} color="white" style={styles.googleIcon} />
+            <Text style={styles.buttonText}>Iniciar Sesión con Google</Text>
+          </>
         )}
       </TouchableOpacity>
       
@@ -94,11 +128,20 @@ const styles = StyleSheet.create({
     padding: 15,
     width: '100%',
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  googleButton: {
+    backgroundColor: '#4285F4',
+    marginTop: 15,
+  },
+  googleIcon: {
+    marginRight: 10,
   },
   errorText: {
     color: 'red',

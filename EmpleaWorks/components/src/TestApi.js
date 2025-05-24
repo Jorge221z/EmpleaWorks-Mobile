@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, Button } from 'react-native';
+import { View, Text, Button, Platform } from 'react-native';
 import {
   register,
   login,
@@ -22,6 +22,7 @@ import {
   handleGoogleAuthCode,
   getGoogleMobileConfig,
 } from '../../api/axios'; // Ajusta la ruta según tu estructura
+import Constants from 'expo-constants';
 
 const TestApi = () => {
   // Mover la función fuera del useEffect para que sea accesible desde el botón
@@ -357,6 +358,348 @@ const TestApi = () => {
     }
   };
 
+  // Test específico y detallado para Google Auth con información de depuración
+  const testDetailedGoogleAuth = async () => {
+    console.log('=== INICIANDO TEST DETALLADO DE GOOGLE AUTH ===');
+    
+    // 1. Verificar la configuración disponible
+    const androidClientId = Constants.expoConfig?.extra?.googleAndroidClientId;
+    console.log('📱 Android Client ID configurado:', androidClientId);
+    
+    try {
+      // 2. Si estamos en un dispositivo móvil, intentamos usar Google Sign-In nativo
+      if (Platform.OS !== 'web') {
+        console.log('🔍 Plataforma detectada:', Platform.OS);
+        
+        try {
+          // Importamos la librería Google Sign-In de manera más segura
+          console.log('⏳ Importando Google Sign-In...');
+          let GoogleSignin, statusCodes;
+          
+          try {
+            const GoogleSignInModule = await import('@react-native-google-signin/google-signin');
+            GoogleSignin = GoogleSignInModule.GoogleSignin;
+            statusCodes = GoogleSignInModule.statusCodes;
+            
+            // Verificar que la importación funcionó correctamente
+            if (!GoogleSignin || typeof GoogleSignin.configure !== 'function') {
+              throw new Error('La importación de GoogleSignin no proporcionó la API esperada');
+            }
+            
+            console.log('✅ Google Sign-In importado correctamente');
+          } catch (importError) {
+            console.error('❌ Error al importar Google Sign-In:', importError);
+            console.log('💡 Asegúrate de que @react-native-google-signin/google-signin está instalado');
+            console.log('💡 Ejecuta: npm install @react-native-google-signin/google-signin');
+            throw new Error('Fallo al importar la biblioteca de Google Sign-In');
+          }
+          
+          // Configuramos Google Sign-In con más información de depuración
+          console.log('⚙️ Configurando Google Sign-In con Android Client ID:', androidClientId);
+          GoogleSignin.configure({
+            webClientId: androidClientId, // Usamos el mismo ID para web/Android
+            offlineAccess: true, // Si necesitamos acceso offline
+          });
+          console.log('✅ GoogleSignin configurado');
+          
+          // Verificamos Play Services
+          console.log('🔄 Verificando Google Play Services...');
+          await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+          console.log('✅ Google Play Services disponibles');
+          
+          // Verificamos si hay sesión activa de manera segura
+          console.log('🔐 Verificando si hay sesión de Google activa...');
+          let isSignedIn = false;
+          
+          try {
+            // Comprobamos que el método existe antes de llamarlo
+            if (typeof GoogleSignin.isSignedIn === 'function') {
+              isSignedIn = await GoogleSignin.isSignedIn();
+              console.log('- Sesión activa:', isSignedIn);
+            } else {
+              console.warn('⚠️ GoogleSignin.isSignedIn no está disponible en esta versión');
+              // Alternativa: intentar getCurrentUser para ver si hay sesión
+              const currentUser = await GoogleSignin.getCurrentUser();
+              isSignedIn = !!currentUser;
+              console.log('- Sesión activa (verificada por getCurrentUser):', isSignedIn);
+            }
+          } catch (sessionCheckError) {
+            console.warn('⚠️ Error al verificar sesión:', sessionCheckError);
+            console.log('- Asumiendo que no hay sesión activa');
+          }
+          
+          // Si hay sesión, intentamos cerrarla para empezar limpio
+          if (isSignedIn) {
+            console.log('🔄 Cerrando sesión previa de Google...');
+            await GoogleSignin.signOut();
+            console.log('✅ Sesión previa cerrada');
+          }
+          
+          // Iniciamos el flujo de login
+          console.log('🔑 Iniciando flujo de login con Google...');
+          const userInfo = await GoogleSignin.signIn();
+          console.log('✅ Login con Google exitoso!');
+          console.log('📋 Datos obtenidos:', JSON.stringify({
+            idToken: userInfo.idToken ? '✓ Presente' : '✗ Ausente',
+            user: userInfo.user ? {
+              id: userInfo.user.id,
+              name: userInfo.user.name,
+              email: userInfo.user.email
+            } : 'No disponible'
+          }, null, 2));
+          
+          // Verificamos que tenemos un idToken
+          if (!userInfo.idToken) {
+            console.error('❌ No se obtuvo idToken de Google, no podemos continuar');
+            return;
+          }
+          
+          // Enviamos el token a nuestro backend
+          console.log('🔄 Enviando idToken a nuestro backend...');
+          const response = await handleGoogleCallback(userInfo.idToken);
+          console.log('✅ Respuesta del backend recibida:', JSON.stringify({
+            token: response.token ? '✓ Presente' : '✗ Ausente',
+            user: response.user ? {
+              id: response.user.id,
+              name: response.user.name,
+              email: response.user.email,
+              role: response.user.role
+            } : 'No disponible'
+          }, null, 2));
+          
+          // Verificamos si recibimos un token de autenticación
+          if (response.token) {
+            console.log('🎉 AUTENTICACIÓN COMPLETA EXITOSA! El usuario debería estar ahora autenticado en la app.');
+            
+            // Probamos obtener datos del usuario como verificación final
+            console.log('🔄 Verificando datos del usuario autenticado...');
+            const userData = await getUser();
+            console.log('✅ Datos del usuario verificados:', userData.name);
+          }
+          
+        } catch (error) {
+          console.error('❌ ERROR EN GOOGLE SIGN-IN:', error);
+          
+          // Intentar detectar si es un problema de instalación de la biblioteca
+          if (error.message && error.message.includes('importar')) {
+            console.log('💡 SOLUCIÓN PRINCIPAL: Instala la biblioteca Google Sign-In:');
+            console.log('npm install @react-native-google-signin/google-signin');
+            console.log('y luego reinicia la aplicación (cerrar completamente y volver a abrir)');
+          } 
+          // Interpretamos errores específicos de Google Sign-In para mejor diagnóstico
+          else if (error.code && typeof statusCodes !== 'undefined') {
+            switch (error.code) {
+              case statusCodes.SIGN_IN_CANCELLED:
+                console.log('💡 El usuario canceló el inicio de sesión');
+                break;
+              case statusCodes.IN_PROGRESS:
+                console.log('💡 Hay una operación de inicio de sesión en progreso');
+                break;
+              case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+                console.log('💡 Google Play Services no está disponible o desactualizado');
+                break;
+              default:
+                console.log('💡 Error con código:', error.code);
+            }
+          }
+          
+          // Consejos de solución
+          console.log('\n🔧 POSIBLES SOLUCIONES:');
+          console.log('1. Verifica que el androidClientId esté configurado correctamente en app.json');
+          console.log('2. Asegúrate de que la app esté firmada con el certificado SHA-1 registrado en Google Cloud Console');
+          console.log('3. Verifica que @react-native-google-signin/google-signin esté instalado correctamente');
+          console.log('   → npm install @react-native-google-signin/google-signin');
+          console.log('   → Luego reinicia la app completamente');
+          console.log('4. Revisa la configuración en Google Cloud Console (OAuth, APIs habilitadas)');
+          console.log('5. Verifica la versión de la biblioteca y su compatibilidad:');
+          console.log('   → npx react-native --version');
+          console.log('   → npm list @react-native-google-signin/google-signin');
+        }
+      } else {
+        console.log('❌ Este test está diseñado para ejecutarse en dispositivos móviles, no en web');
+      }
+    } catch (error) {
+      console.error('❌ ERROR GENERAL:', error);
+    } finally {
+      console.log('=== TEST DETALLADO DE GOOGLE AUTH FINALIZADO ===');
+    }
+  };
+
+  // Test específico para diagnosticar error DEVELOPER_ERROR de Google Sign-In
+  const testGoogleDeveloperError = async () => {
+    console.log('=== DIAGNÓSTICO DE ERROR DEVELOPER_ERROR EN GOOGLE SIGN-IN ===');
+    
+    // 1. Verificar la configuración
+    const androidClientId = Constants.expoConfig?.extra?.googleAndroidClientId;
+    console.log('📱 Android Client ID configurado:', androidClientId);
+    
+    try {
+      // 2. Importamos Google Sign-In
+      const { GoogleSignin, statusCodes } = await import('@react-native-google-signin/google-signin');
+      
+      // 3. Obtenemos información del dispositivo y compilación
+      console.log('📱 Plataforma:', Platform.OS);
+      console.log('📱 Versión:', Platform.Version);
+      console.log('📱 Es emulador:', await isEmulator());
+      
+      // 4. Verificar SHA-1 en modo de desarrollo (solo informativo)
+      console.log('🔑 Nota: En desarrollo, se usa un certificado de depuración con SHA-1 específico');
+      console.log('🔑 Este SHA-1 debe estar registrado en Google Cloud Console para este Client ID');
+      
+      // 5. Configuramos con opciones específicas para diagnóstico
+      console.log('⚙️ Configurando GoogleSignin para diagnóstico...');
+      GoogleSignin.configure({
+        webClientId: androidClientId,
+        offlineAccess: false, // Simplificamos para diagnóstico
+        forceCodeForRefreshToken: false,
+      });
+      
+      // 6. Verificamos Play Services con más detalle
+      try {
+        console.log('🔄 Verificando Google Play Services...');
+        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+        console.log('✅ Google Play Services disponibles y actualizados');
+      } catch (playError) {
+        console.error('❌ Error con Google Play Services:', playError);
+        if (playError.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+          console.log('💡 Google Play Services no disponible en este dispositivo');
+        }
+      }
+      
+      // 7. Intentamos iniciar sesión con manejo específico para DEVELOPER_ERROR
+      console.log('🔑 Intentando iniciar sesión con Google...');
+      try {
+        const userInfo = await GoogleSignin.signIn();
+        console.log('✅ Login exitoso (inesperado si hay DEVELOPER_ERROR)');
+      } catch (signInError) {
+        console.error('❌ Error específico:', signInError);
+        
+        // Diagnóstico detallado para DEVELOPER_ERROR
+        if (signInError.code === statusCodes.DEVELOPER_ERROR) {
+          console.log('\n🔍 DIAGNÓSTICO DE DEVELOPER_ERROR:');
+          console.log('1. Este error indica que el certificado SHA-1 de tu app no coincide');
+          console.log('   con el SHA-1 registrado en Google Cloud Console para este Client ID');
+          
+          console.log('\n📋 SOLUCIÓN PASO A PASO:');
+          console.log('1. Obtén el SHA-1 de tu entorno de desarrollo:');
+          console.log('   → Para Expo Go: El SHA-1 está gestionado por Expo');
+          console.log('   → Para desarrollo con build local:');
+          console.log('     • Android Studio: Gradle → Tasks → android → signingReport');
+          console.log('     • o ejecuta: cd android && ./gradlew signingReport');
+          console.log('2. Ve a Google Cloud Console: https://console.cloud.google.com');
+          console.log('3. Selecciona tu proyecto');
+          console.log('4. Ve a "Credenciales" → Busca tu ID de cliente de OAuth');
+          console.log('5. Edita el ID de cliente y añade el SHA-1 correcto');
+          console.log('6. Guarda los cambios y espera unos minutos para que se propaguen');
+          console.log('7. Asegúrate de que la API de Google Sign-In está habilitada');
+          
+          console.log('\n🧪 VERIFICACIÓN:');
+          console.log('• Client ID en uso:', androidClientId);
+          console.log('• Verifica que este Client ID coincide con el configurado en Google Cloud Console');
+          console.log('• Comprueba que has añadido el SHA-1 correcto para este Client ID');
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ Error general:', error);
+    }
+    
+    console.log('=== FIN DEL DIAGNÓSTICO DE DEVELOPER_ERROR ===');
+  };
+
+  // Función auxiliar para verificar si es un emulador
+  const isEmulator = async () => {
+    if (Platform.OS === 'android') {
+      return (
+        Platform.constants.Brand.includes('google') ||
+        Platform.constants.Manufacturer.includes('Google') ||
+        Platform.constants.Model.includes('sdk') ||
+        Platform.constants.Model.includes('Emulator') ||
+        Platform.constants.Model.includes('Android SDK')
+      );
+    } else if (Platform.OS === 'ios') {
+      return process.env.NODE_ENV !== 'production';
+    }
+    return false;
+  };
+
+  // Función dedicada para ayudar con el problema de SHA-1 y DEVELOPER_ERROR
+  const helpWithSHA1 = () => {
+    console.log('=== GUÍA PARA RESOLVER DEVELOPER_ERROR EN GOOGLE SIGN-IN ===');
+    
+    // Información sobre el dispositivo
+    console.log('📱 INFORMACIÓN DE ENTORNO:');
+    console.log(`• Plataforma: ${Platform.OS}`);
+    console.log(`• Versión: ${Platform.Version}`);
+    console.log(`• Client ID configurado: ${Constants.expoConfig?.extra?.googleAndroidClientId}`);
+    
+    console.log('\n🔑 PROBLEMA IDENTIFICADO:');
+    console.log('El error DEVELOPER_ERROR ocurre porque la huella SHA-1 de tu aplicación');
+    console.log('no está registrada en Google Cloud Console para el Client ID que estás usando.');
+    
+    console.log('\n📋 SOLUCIÓN PASO A PASO:');
+    
+    if (Constants.appOwnership === 'expo') {
+      // Estamos en Expo Go
+      console.log('ESTÁS USANDO EXPO GO:');
+      console.log('Expo Go usa su propio certificado, que no puedes registrar directamente.');
+      console.log('Para autenticación con Google necesitas:');
+      console.log('1. Crear una build independiente con EAS Build:');
+      console.log('   npx eas build --platform android --profile development');
+      console.log('2. O usar expo-auth-session para autenticación web (más simple con Expo Go)');
+    } else {
+      // Estamos en una build independiente (development o production)
+      console.log('ESTÁS USANDO UNA BUILD INDEPENDIENTE:');
+      console.log('Para obtener el SHA-1 de tu build actual:');
+      
+      if (Platform.OS === 'android') {
+        console.log('1. PARA DEVELOPMENT BUILD:');
+        console.log('   a) Ejecuta en tu terminal:');
+        console.log('      cd android && ./gradlew signingReport');
+        console.log('   b) Busca la sección "Task :app:signingReport"');
+        console.log('   c) Encuentra la línea "SHA-1" bajo "Variant: debug"');
+        
+        console.log('\n2. PARA PRODUCTION BUILD:');
+        console.log('   a) Si usas un keystore personalizado, ejecuta:');
+        console.log('      keytool -list -v -keystore <ruta-a-tu-keystore.keystore>');
+        console.log('   b) Si usas Google Play App Signing:');
+        console.log('      • Ve a Google Play Console → Tu app → Configuración → Integridad de la app');
+        console.log('      • Encuentra los SHA-1 de "Certificado de firma de la app" y "Certificado de subida"');
+        console.log('      • Registra AMBOS en Google Cloud Console');
+      }
+    }
+    
+    console.log('\n3. REGISTRAR EL SHA-1 EN GOOGLE CLOUD CONSOLE:');
+    console.log('   a) Ve a https://console.cloud.google.com');
+    console.log('   b) Selecciona tu proyecto');
+    console.log('   c) Ve a "API y servicios" → "Credenciales"');
+    console.log('   d) Encuentra y edita tu ID de cliente OAuth (Android)');
+    console.log('   e) En la sección "Huellas digitales de certificado", añade tu SHA-1');
+    console.log('   f) Guarda los cambios');
+    console.log('   g) Espera unos minutos para que los cambios se propaguen');
+    
+    console.log('\n4. VERIFICA QUE LAS APIS NECESARIAS ESTÉN HABILITADAS:');
+    console.log('   a) En Google Cloud Console, ve a "API y servicios" → "Biblioteca"');
+    console.log('   b) Asegúrate de que estas APIs estén habilitadas:');
+    console.log('      • Google Sign-In API');
+    console.log('      • Google People API');
+    
+    console.log('\n5. HERRAMIENTA ALTERNATIVA PARA OBTENER SHA-1:');
+    console.log('   Puedes crear una app simple de diagnóstico en la Google Play Console');
+    console.log('   que mostrará las huellas SHA-1 que Google reconoce para tu app:');
+    console.log('   https://play.google.com/store/apps/details?id=com.google.android.apps.verifier');
+    
+    console.log('\n💡 NOTA IMPORTANTE:');
+    console.log('Si modificas el archivo app.json y regeneras tu app,');
+    console.log('o cambias entre builds de desarrollo y producción,');
+    console.log('puede que necesites registrar diferentes huellas SHA-1.');
+    
+    console.log('\n✅ VERIFICACIÓN:');
+    console.log('Después de registrar el SHA-1, vuelve a esta pantalla y usa');
+    console.log('el botón "Test Detallado Google Auth" para verificar si el problema está resuelto.');
+    
+    console.log('=== FIN DE LA GUÍA PARA RESOLVER DEVELOPER_ERROR ===');
+  };
 
   useEffect(() => {
   }, []);
@@ -372,7 +715,19 @@ const TestApi = () => {
       <View style={{ height: 20 }} />
       <Button title="Probar Google Auth" onPress={testGoogleAuth} />
       <View style={{ height: 20 }} />
-      <Button title="Probar Expo Google Auth" onPress={testExpoGoogleAuth} />
+      <Button title="Test Detallado Google Auth" onPress={testDetailedGoogleAuth} color="#4285F4" />
+      <View style={{ height: 20 }} />
+      <Button 
+        title="Diagnosticar DEVELOPER_ERROR" 
+        onPress={testGoogleDeveloperError} 
+        color="#D32F2F" 
+      />
+      <View style={{ height: 20 }} />
+      <Button 
+        title="Ayuda con SHA-1 para Google Sign-In" 
+        onPress={helpWithSHA1} 
+        color="#00C853" 
+      />
     </View>
   );
 };

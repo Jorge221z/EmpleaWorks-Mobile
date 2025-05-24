@@ -1,0 +1,102 @@
+import { useState } from 'react';
+import { router } from 'expo-router';
+import { signInWithGoogle } from '@/utils/authUtils';
+import { useAuth } from '@/context/AuthContext';
+import Constants from 'expo-constants';
+import { Alert } from 'react-native';
+
+export function useGoogleAuth() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { setUser, setIsAuthenticated } = useAuth();
+
+  // Usamos la configuración de app.json correcta
+  const ANDROID_CLIENT_ID = Constants.expoConfig?.extra?.googleAndroidClientId || '';
+  const WEB_CLIENT_ID = Constants.expoConfig?.extra?.googleWebClientId || '';
+
+  const login = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      console.log('Iniciando login con Google...');
+      console.log('Android Client ID:', ANDROID_CLIENT_ID);
+      console.log('Web Client ID:', WEB_CLIENT_ID);
+
+      if (!WEB_CLIENT_ID) {
+        throw new Error('Falta configuración Web Client ID');
+      }
+
+      // Intentar la autenticación con Google
+      const { user, token } = await signInWithGoogle();
+      
+      console.log('Login con Google exitoso!');
+      console.log('Usuario autenticado:', user?.name || 'Desconocido');
+      
+      // Update auth context with the user info
+      if (setUser) {
+        setUser(user);
+      }
+      
+      // Explicitly set authentication state to true
+      if (setIsAuthenticated) {
+        setIsAuthenticated(true);
+      }
+      
+      // Add a slight delay before navigation to ensure state updates are processed
+      setTimeout(() => {
+        console.log('Redirigiendo a pantalla principal...');
+        try {
+          router.replace('/(tabs)');
+          console.log('Redirección ejecutada');
+        } catch (navError) {
+          console.error('Error en navegación:', navError);
+          // Fallback navigation if the first attempt fails
+          try {
+            router.push('/(tabs)');
+            console.log('Navegación alternativa ejecutada');
+          } catch (fallbackError) {
+            console.error('Error en navegación alternativa:', fallbackError);
+          }
+        }
+      }, 300);
+      
+      return { user, token };
+    } catch (err: any) {
+      const errorMessage = typeof err === 'string' 
+        ? err 
+        : err.message || 'Error al iniciar sesión con Google';
+      
+      setError(errorMessage);
+      console.error('Google auth error:', err);
+      
+      // Mostrar mensaje específico basado en el tipo de error
+      if (errorMessage.includes('conexión') || errorMessage.includes('network')) {
+        Alert.alert(
+          'Error de conexión',
+          'No se pudo conectar con el servidor. Verifica tu conexión a internet e intenta nuevamente.'
+        );
+      } else if (errorMessage.includes('configuración') || errorMessage.includes('SHA-1')) {
+        Alert.alert(
+          'Error de configuración',
+          'Hay un problema con la configuración de Google Sign-In. Contacta al soporte técnico.'
+        );
+      } else {
+        Alert.alert(
+          'Error de autenticación',
+          errorMessage
+        );
+      }
+      
+      throw errorMessage;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return {
+    login,
+    isLoading,
+    error
+  };
+}

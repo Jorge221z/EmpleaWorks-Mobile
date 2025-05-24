@@ -1,10 +1,11 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, Slot, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+import { Platform } from 'react-native';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
@@ -45,6 +46,42 @@ function AuthChecker({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Este componente se encarga de la redirección basada en autenticación
+function AuthRedirect() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    console.log('AuthRedirect check - Auth state:', isAuthenticated ? 'Autenticado' : 'No autenticado');
+    console.log('Current path segments:', segments.join('/'));
+    
+    // Skip redirections during loading state
+    if (isLoading) {
+      console.log('Cargando estado de autenticación...');
+      return;
+    }
+
+    const inAuthGroup = segments[0] === '(auth)';
+    const inTabsGroup = segments[0] === '(tabs)';
+    
+    // If the user is authenticated but they're on a non-protected route,
+    // redirect them to the home page
+    if (isAuthenticated && (segments.length === 0 || segments[0] === 'login' || segments[0] === 'register')) {
+      console.log('Usuario autenticado redirigiendo a tabs...');
+      router.replace('/(tabs)');
+    } 
+    // If the user is not authenticated and they're on a protected route,
+    // redirect them to the login page
+    else if (!isAuthenticated && segments.length > 0 && segments[0] === '(tabs)') {
+      console.log('Usuario no autenticado redirigiendo a login...');
+      router.replace('/login');
+    }
+  }, [isAuthenticated, segments, isLoading]);
+
+  return <Slot />;
+}
+
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
@@ -68,28 +105,7 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <AuthRedirect />
     </AuthProvider>
-  );
-}
-
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AuthChecker>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="login" options={{ headerShown: false }} />
-          <Stack.Screen name="register" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="edit-profile"
-            options={{ title: 'Editar perfil' }}
-          />
-        </Stack>
-      </AuthChecker>
-    </ThemeProvider>
   );
 }

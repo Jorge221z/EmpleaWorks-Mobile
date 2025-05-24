@@ -53,50 +53,101 @@ export const login = async (credentials) => {
 
 /* AQUI MANEJAMOS EL LOGIN/REGISTER MEDIANTE GOOGLE */
 
-// Función para obtener la URL de redirección para Google
+// Función para procesar el callback de Google con idToken
+export const handleGoogleCallback = async (idToken) => {
+  try {
+    console.log('Enviando idToken al backend (primeros 20 caracteres):', idToken.substring(0, 20) + '...');
+    console.log('Longitud del idToken:', idToken.length);
+    
+    // Add detailed information about the idToken
+    try {
+      // Decode JWT segments for debugging (without exposing all contents)
+      const tokenParts = idToken.split('.');
+      if (tokenParts.length === 3) {
+        // Look at header only (safe to display)
+        const headerJson = atob(tokenParts[0]);
+        const header = JSON.parse(headerJson);
+        console.log('Token header:', header);
+        
+        // For payload, just show key names to help debugging without exposing sensitive data
+        const payloadJson = atob(tokenParts[1]);
+        const payload = JSON.parse(payloadJson);
+        console.log('Token payload contains these fields:', Object.keys(payload).join(', '));
+        
+        // Show critical values for debugging without exposing all data
+        console.log('Token info - iss:', payload.iss);
+        console.log('Token info - aud:', payload.aud?.substring(0, 10) + '...');
+        console.log('Token info - exp:', new Date(payload.exp * 1000).toISOString());
+        console.log('Token info - iat:', new Date(payload.iat * 1000).toISOString());
+      }
+    } catch (decodeError) {
+      console.log('No se pudo decodificar el token para debugging:', decodeError);
+    }
+    
+    const response = await api.post('/auth/google/callback', { id_token: idToken });
+    
+    console.log('Respuesta del backend recibida:', 
+      response.status === 200 ? '✅ Éxito (status 200)' : `⚠️ Status: ${response.status}`);
+    
+    if (!response.data || !response.data.token) {
+      console.error('Respuesta sin token:', response.data);
+      throw new Error('La respuesta del servidor no incluye un token de autenticación');
+    }
+    
+    const { token: authToken, user } = response.data;
+    console.log('Usuario autenticado:', user?.name || 'Desconocido');
+    
+    await AsyncStorage.setItem('auth_token', authToken);
+    return { user, token: authToken };
+  } catch (error) {
+    console.error('Error detallado en handleGoogleCallback:', 
+      error.response?.status || 'Sin status', 
+      error.response?.data || error.message || error);
+    
+    // Si tenemos un error de respuesta HTTP detallado, lo mostramos
+    if (error.response?.data) {
+      throw error.response.data;
+    }
+    
+    // Si es un error de red o timeout
+    if (error.request) {
+      console.error('No se recibió respuesta del servidor. Verifica la conectividad.');
+      throw { message: 'Error de conexión al servidor. Verifica tu conexión a internet.' };
+    }
+    
+    throw { message: error.message || 'Error en la autenticación con Google' };
+  }
+};
+
+// Función para obtener la URL de redirección de Google
 export const getGoogleRedirectUrl = async () => {
   try {
-    const response = await api.get('/auth/google');
+    const response = await api.get('/auth/google/redirect');
     return response.data.url;
   } catch (error) {
-    throw error.response?.data || { message: 'Error al obtener URL de Google' };
+    throw error.response?.data || { message: 'Error al obtener URL de redirección de Google' };
   }
 };
 
-// Función para procesar el callback de Google
-export const handleGoogleCallback = async (token) => {
-  try {
-    const response = await api.post('/auth/google/callback', { token });
-    const { token: authToken, user } = response.data;
-    await AsyncStorage.setItem('auth_token', authToken);
-    return { user, token: authToken };
-  } catch (error) {
-    throw error.response?.data || { message: 'Error en la autenticación con Google' };
-  }
-};
-
-// Función específica para Expo - maneja el código de autorización de Google
-export const handleGoogleAuthCode = async (authCode) => {
-  try {
-    const response = await api.post('/auth/google/callback', { 
-      code: authCode,
-      platform: 'mobile'
-    });
-    const { token: authToken, user } = response.data;
-    await AsyncStorage.setItem('auth_token', authToken);
-    return { user, token: authToken };
-  } catch (error) {
-    throw error.response?.data || { message: 'Error en la autenticación con Google desde móvil' };
-  }
-};
-
-// Función para obtener configuración OAuth específica para móvil
+// Función para obtener la configuración de Google para móviles
 export const getGoogleMobileConfig = async () => {
   try {
     const response = await api.get('/auth/google/mobile-config');
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Error al obtener configuración móvil de Google' };
+    throw error.response?.data || { message: 'Error al obtener configuración de Google para móviles' };
+  }
+};
+
+// Función para manejar el código de autorización de Google
+export const handleGoogleAuthCode = async (code) => {
+  try {
+    const response = await api.post('/auth/google/code', { code });
+    const { token, user } = response.data;
+    await AsyncStorage.setItem('auth_token', token);
+    return { user, token };
+  } catch (error) {
+    throw error.response?.data || { message: 'Error al procesar código de autorización de Google' };
   }
 };
 
