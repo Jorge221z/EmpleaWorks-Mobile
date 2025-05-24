@@ -394,3 +394,23 @@ export const getDashboard = async () => {
   }
 };
 
+
+// Obtener configuración de contraseña
+export const getPasswordSettings = async () => {
+  try {
+    const response = await api.get('/password');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Error al obtener configuración de contraseña' };
+  }
+};
+
+// Actualizar contraseña
+export const updatePassword = async (passwordData) => {
+  try {
+    const response = await api.post('/password', passwordData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Error al actualizar la contraseña' };
+  }
+};

@@ -445,7 +445,7 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.button} onPress={navigateToEditProfile}>
             <Text style={styles.buttonText}>Editar Perfil</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={() => console.log('Cambiar contraseña')}>
+          <TouchableOpacity style={styles.button} onPress={() => router.push('/change-password')}>
             <Text style={styles.buttonText}>Cambiar Contraseña</Text>
           </TouchableOpacity>
           <TouchableOpacity
