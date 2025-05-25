@@ -332,12 +332,12 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     fontWeight: '600',
     backgroundColor: 'transparent',
   },  actionButtonsContainer: {
-    padding: 20,
+    paddingHorizontal: 12, // Reduced from 20 to 12 to allow more width for buttons
+    paddingVertical: 20,
     backgroundColor: 'transparent',
-  },
-  actionButtonsRow: {
+  },  actionButtonsRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8, // Reduced from 12 to 8 to allow more width for buttons
     backgroundColor: 'transparent',
   },  actionButton: {
     flex: 1,
@@ -349,15 +349,15 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     shadowRadius: 5,
     overflow: 'hidden',
     minHeight: 54,
-    maxWidth: '48%', // Asegurar ancho máximo
-  },  buttonGradient: {
+    // Removed maxWidth to allow buttons to take more space
+  },buttonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: 18, // Increased from 16 to 18 to match save button height
     paddingHorizontal: 8, // Reducir padding horizontal para mejor ajuste
     minHeight: 54,
-    width: '100%',  },  simpleButtonContainer: {
+    width: '100%',  },simpleButtonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -715,7 +715,7 @@ export default function ShowOfferScreen() {
             </View>
           </View>
         )}
-        <View style={[styles.container, { height: 100 }]} />
+        <View style={[styles.container, { height: 50 }]} />
       </ScrollView>
     </View>
   );
