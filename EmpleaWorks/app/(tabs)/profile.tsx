@@ -7,25 +7,361 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUser, getProfile } from '@/api/axios';
 import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useColorScheme } from 'react-native';
+import Colors from '@/constants/Colors';
+import { __DEV__ } from 'react-native';
 
 // Constantes de diseño
-const COLORS = {
-  primary: '#4A2976',
-  primaryLight: '#3d2c52',
-  secondary: '#9b6dff',
-  accent: '#f6c667',
-  background: '#f8f9fa',
-  white: '#ffffff',
-  text: '#333',
-  lightText: '#666',
-  error: '#e74c3c',
-  success: '#2ecc71',
-  border: 'rgba(43, 31, 60, 0.15)',
-  card: '#ffffff',
-  shadowColor: '#000',
-  debug: 'rgba(43, 31, 60, 0.05)',
-  golden: '#fac030'
+const getThemeColors = (colorScheme: string) => {
+  const isDark = colorScheme === 'dark';
+  return {
+    primary: '#4A2976',
+    primaryLight: isDark ? '#5e3a8a' : '#3d2c52',
+    secondary: '#9b6dff',
+    accent: '#f6c667',
+    background: isDark ? '#121212' : '#f8f9fa',
+    white: isDark ? '#1e1e1e' : '#ffffff',
+    text: isDark ? '#f0f0f0' : '#333',
+    lightText: isDark ? '#bbbbbb' : '#666',
+    error: '#e74c3c',
+    success: '#2ecc71',
+    border: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(43, 31, 60, 0.15)',
+    card: isDark ? '#2d2d2d' : '#ffffff',
+    shadowColor: isDark ? '#000' : '#000',
+    debug: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(43, 31, 60, 0.05)',
+    golden: '#fac030',
+    cardBackground: isDark ? '#2d2d2d' : '#ffffff',
+    // Cambiamos fieldBackground para que sea más sutil en modo oscuro
+    fieldBackground: isDark ? '#333333' : '#f8f8f8',
+    sectionHeaderBg: isDark ? '#242424' : '#f4f4f4',
+  };
 };
+
+// Create dynamic styles based on colors
+const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  headerGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 150,
+    zIndex: 0,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 30,
+    paddingTop: 20,
+  },
+  refreshText: {
+    marginLeft: 10,
+    color: colors.secondary,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  debugButton: {
+    backgroundColor: colors.debug,
+    padding: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 15,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  debugButtonText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  debugIcon: {
+    marginRight: 5,
+  },
+  solidContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: colors.cardBackground,
+  },
+  cardSolid: {
+    flex: 1,
+    padding: 20,
+    alignItems: 'center',
+    borderRadius: 15,
+    backgroundColor: colors.cardBackground,
+  },
+  sectionSolid: {
+    flex: 1,
+    padding: 20,
+    borderRadius: 15,
+    backgroundColor: colors.cardBackground,
+  },
+  userNameContainer: {
+    marginBottom: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: 'transparent', // Cambiar de colors.cardBackground a transparent
+    borderRadius: 8,
+  },
+  avatarBorder: {
+    width: 124,
+    height: 124,
+    borderRadius: 62,
+    padding: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInner: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    overflow: 'hidden',
+    backgroundColor: colors.cardBackground,
+  },
+  iconGradient: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  refreshIndicator: {
+    borderRadius: 10,
+    marginBottom: 15,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  profileCard: {
+    borderRadius: 15,
+    marginBottom: 15,
+    elevation: 4,
+    shadowColor: colors.shadowColor,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: colors.cardBackground,
+  },
+  infoSection: {
+    borderRadius: 15,
+    marginBottom: 15,
+    elevation: 3,
+    shadowColor: colors.shadowColor,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    overflow: 'hidden',
+    backgroundColor: colors.cardBackground,
+  },
+  optionsSection: {
+    borderRadius: 15,
+    elevation: 3,
+    shadowColor: colors.shadowColor,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    overflow: 'hidden',
+    backgroundColor: colors.cardBackground,
+  },
+  buttonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 15,
+  },
+  logoutGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 15,
+    borderRadius: 10,
+  },
+  logoutButton: {
+    borderRadius: 10,
+    marginTop: 8,
+    elevation: 2,
+    shadowColor: colors.shadowColor,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    overflow: 'hidden',
+  },
+  descriptionBox: {
+    borderRadius: 10,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.cardBackground, // Agregar esta línea
+    overflow: 'hidden',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 10,
+    backgroundColor: '#ffebee',
+    borderWidth: 1,
+    borderColor: 'rgba(231, 76, 60, 0.2)',
+  },
+  avatarOuterContainer: {
+    marginBottom: 15,
+  },
+  avatarContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatar: {
+    width: '100%',
+    height: '100%',
+  },
+  userName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 5,
+    textAlign: 'center',
+  },
+  emailContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: 'transparent', // Cambiar de colors.cardBackground a transparent
+  },
+  emailIcon: {
+    marginRight: 8,
+  },
+  userEmail: {
+    fontSize: 16,
+    color: colors.lightText,
+    textAlign: 'center',
+  },
+  errorText: {
+    color: colors.error,
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+    backgroundColor: 'transparent', // Cambiado de colors.cardBackground a transparent
+    borderRadius: 8,
+    paddingVertical: 5,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginLeft: 15,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginBottom: 15,
+  },
+  infoContainer: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  infoValueContainer: {
+    flex: 1,
+    backgroundColor: 'transparent', // Cambiado de colors.fieldBackground a transparent
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  infoLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.text,
+    width: 100,
+    backgroundColor: 'transparent', // Cambiado de colors.fieldBackground a transparent
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  cvStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'transparent', // Cambiado de colors.fieldBackground a transparent
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  cvIcon: {
+    marginRight: 8,
+  },
+  cvAvailable: {
+    color: colors.success,
+    fontWeight: '500',
+  },
+  cvMissing: {
+    color: colors.error,
+  },
+  descriptionContainer: {
+    marginTop: 5,
+    backgroundColor: 'transparent', // Agregar esta línea
+  },
+  descriptionLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.text,
+    marginBottom: 10,
+  },
+  descriptionText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.text,
+  },
+  optionButton: {
+    marginBottom: 12,
+    borderRadius: 10,
+    overflow: 'hidden',
+    elevation: 2,
+    shadowColor: colors.shadowColor,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  buttonIcon: {
+    marginRight: 10,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  loadingLogout: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoutButtonText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  infoValue: {
+    fontSize: 15,
+    flex: 1,
+    color: colors.text,
+  },
+});
 
 // Función para obtener los datos completos del usuario (incluyendo candidato)
 const getFullUserData = async () => {
@@ -33,7 +369,7 @@ const getFullUserData = async () => {
     // Obtener datos básicos del usuario
     const timestamp = new Date().getTime();
     const user = await getUser(`?_t=${timestamp}`);
-    
+
     // Si no tenemos acceso a candidate en la respuesta inicial, intentamos recuperar los datos de localStorage para mejor rendimiento
     if (!user.candidate && localStorage) {
       try {
@@ -45,7 +381,7 @@ const getFullUserData = async () => {
         console.warn('Error al recuperar datos del candidato del almacenamiento local:', e);
       }
     }
-    
+
     return user;
   } catch (error) {
     console.error('Error al obtener datos completos del usuario:', error);
@@ -54,6 +390,10 @@ const getFullUserData = async () => {
 };
 
 export default function ProfileScreen() {
+  const colorScheme = useColorScheme();
+  const COLORS = getThemeColors(colorScheme || 'light');
+  const styles = createStyles(COLORS);
+
   const { user: contextUser, logout, isAuthenticated, setUser } = useAuth();
   // Estado local para almacenar los datos del candidato
   const [candidateData, setCandidateData] = useState(contextUser?.candidate);
@@ -64,7 +404,7 @@ export default function ProfileScreen() {
   const [error, setError] = useState<string | null>(null);
   const params = useLocalSearchParams();
   const expoRouter = useRouter();
-  
+
   // Referencia para evitar múltiples cargas
   const lastLoadTime = useRef<number>(0);
   const loadCooldown = 2000; // 2 segundos de cooldown entre cargas
@@ -130,25 +470,25 @@ export default function ProfileScreen() {
       console.log('Carga ignorada por cooldown, espere por favor...');
       return;
     }
-    
+
     lastLoadTime.current = now;
-    
+
     try {
       setRefreshing(true);
       setError(null);
-      
+
       console.log('Obteniendo datos del perfil...');
-      
+
       // Limpiar cualquier dato en caché antes de cargar
       setLocalUser(null);
       setCandidateData(null);
-      
+
       // Añadir un parámetro aleatorio para evitar caché
       const timestamp = Date.now();
       const profileData = await getProfile(`?_nocache=${timestamp}`);
-      console.log('Datos de perfil recibidos, candidate:', 
+      console.log('Datos de perfil recibidos, candidate:',
         profileData?.candidate ? 'presente' : 'ausente');
-      
+
       // Verificar explícitamente si la imagen se ha eliminado
       if (!profileData.image && !profileData?.candidate?.profileImage) {
         console.log('No se encontró imagen de perfil en la respuesta, confirmando eliminación');
@@ -158,16 +498,16 @@ export default function ProfileScreen() {
           profileData.candidate.profileImage = null;
         }
       }
-      
+
       // Actualizar los datos del candidato si existen
       if (profileData?.candidate) {
         setCandidateData(profileData.candidate);
         console.log('Datos del candidato actualizados:', profileData.candidate);
       }
-      
+
       // Actualizar usuario local siempre
       setLocalUser(profileData);
-      
+
       // Intentar actualizar el contexto también (si está disponible)
       if (setUser) {
         setUser(profileData);
@@ -184,7 +524,7 @@ export default function ProfileScreen() {
   useEffect(() => {
     if (params.refresh) {
       console.log('Forzando recarga completa de datos del perfil debido a parámetro refresh');
-      
+
       // Limpiar la caché de imágenes si hay un timestamp (indica actualización con posible eliminación de imagen)
       if (params.timestamp) {
         console.log('Detectada actualización de perfil con timestamp, limpiando caché de datos');
@@ -196,16 +536,16 @@ export default function ProfileScreen() {
         } catch (e) {
           console.warn('Error al limpiar localStorage:', e);
         }
-        
+
         // Forzar limpieza de caché de AsyncStorage relacionada con el perfil
-        AsyncStorage.removeItem('user_profile_cache').catch(err => 
+        AsyncStorage.removeItem('user_profile_cache').catch(err =>
           console.warn('Error al limpiar caché de perfil:', err)
         );
       }
-      
+
       // Forzar una recarga completa
       loadUserData();
-      
+
       // Elimina el parámetro para evitar recargas futuras
       expoRouter.setParams({ refresh: undefined, timestamp: undefined });
     }
@@ -283,12 +623,12 @@ export default function ProfileScreen() {
     if (userData?.candidate?.surname) {
       return userData.candidate.surname;
     }
-    
+
     // Comprobamos también el estado candidateData si userData no tiene la información
     if (candidateData?.surname) {
       return candidateData.surname;
     }
-    
+
     // Si no hay apellido, mostramos un mensaje de depuración
     if (__DEV__) {
       console.log('Apellido no encontrado. Datos actuales:', {
@@ -296,7 +636,7 @@ export default function ProfileScreen() {
         candidateDataState: candidateData
       });
     }
-    
+
     return userData?.surname || '';
   };
 
@@ -305,11 +645,11 @@ export default function ProfileScreen() {
     if (userData?.candidate?.description) {
       return userData.candidate.description;
     }
-    
+
     if (candidateData?.description) {
       return candidateData.description;
     }
-    
+
     return userData?.description || '';
   };
 
@@ -317,9 +657,9 @@ export default function ProfileScreen() {
   const getUserProfileImage = (userData: any) => {
     // Si se está refrescando, no mostrar ninguna imagen para evitar caché
     if (refreshing) return null;
-    
+
     let imagePath = null;
-    
+
     // First check the image field at root level
     if (userData?.image) {
       imagePath = userData.image;
@@ -330,13 +670,13 @@ export default function ProfileScreen() {
     } else {
       imagePath = userData?.profileImage;
     }
-    
+
     // Si no hay ruta de imagen, devolver null explícitamente
     if (!imagePath) {
       console.log('No se encontró ruta de imagen, retornando null');
       return null;
     }
-    
+
     // If we have an image path, ensure it's a complete URL
     if (imagePath.startsWith('http')) {
       return imagePath;
@@ -359,11 +699,11 @@ export default function ProfileScreen() {
     if (userData?.candidate?.cv) {
       return userData.candidate.cv;
     }
-    
+
     if (candidateData?.cv) {
       return candidateData.cv;
     }
-    
+
     return null;
   };
 
@@ -386,7 +726,7 @@ export default function ProfileScreen() {
       ...user,
       userSurname: getSurname(user) // Aseguramos que el apellido esté disponible
     };
-    
+
     // Guardar temporalmente en AsyncStorage para que esté disponible en la pantalla de edición
     try {
       AsyncStorage.setItem('edit_profile_data', JSON.stringify({
@@ -400,7 +740,7 @@ export default function ProfileScreen() {
     } catch (e) {
       console.error('Error guardando datos para edición:', e);
     }
-    
+
     router.push('/edit-profile');
   };
 
@@ -416,7 +756,7 @@ export default function ProfileScreen() {
         style={styles.headerGradient}
       />
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
@@ -425,14 +765,14 @@ export default function ProfileScreen() {
             onRefresh={onRefresh}
             colors={[COLORS.secondary]}
             tintColor={COLORS.secondary}
-            progressBackgroundColor={COLORS.white}
+            progressBackgroundColor={COLORS.cardBackground}
           />
         }
         showsVerticalScrollIndicator={false}
       >
         {/* Indicador de recarga con fondo sólido en lugar de blur */}
         {refreshing && (
-          <Animated.View 
+          <Animated.View
             style={[
               styles.refreshIndicator,
               { opacity: fadeAnim }
@@ -444,10 +784,10 @@ export default function ProfileScreen() {
             </View>
           </Animated.View>
         )}
-        
+
         {/* Botón para forzar recarga y debug (solo en desarrollo) */}
-        <TouchableOpacity 
-          style={styles.debugButton} 
+        <TouchableOpacity
+          style={styles.debugButton}
           onPress={() => {
             forceRefresh();
             debugUserData();
@@ -457,7 +797,7 @@ export default function ProfileScreen() {
           <Text style={styles.debugButtonText}>Debug y Actualizar</Text>
         </TouchableOpacity>
 
-        <Animated.View 
+        <Animated.View
           style={[
             styles.profileCard,
             {
@@ -469,7 +809,7 @@ export default function ProfileScreen() {
           {/* Solid background for profile card */}
           <View style={styles.cardSolid}>
             <View style={styles.avatarOuterContainer}>
-              <Animated.View 
+              <Animated.View
                 style={[
                   styles.avatarContainer,
                   { transform: [{ scale: avatarScale }] }
@@ -484,7 +824,7 @@ export default function ProfileScreen() {
                 >
                   <View style={styles.avatarInner}>
                     {getUserProfileImage(user) ? (
-                      <Image 
+                      <Image
                         source={{ uri: getUserProfileImage(user) }}
                         style={styles.avatar}
                         defaultSource={require('@/assets/images/default-avatar.png')}
@@ -493,7 +833,7 @@ export default function ProfileScreen() {
                         }}
                       />
                     ) : (
-                      <Image 
+                      <Image
                         source={require('@/assets/images/default-avatar.png')}
                         style={styles.avatar}
                       />
@@ -502,7 +842,7 @@ export default function ProfileScreen() {
                 </LinearGradient>
               </Animated.View>
             </View>
-            
+
             <View style={styles.userNameContainer}>
               <Text style={styles.userName}>
                 {user?.name || 'Usuario'} {getSurname(user)}
@@ -512,7 +852,7 @@ export default function ProfileScreen() {
               <FontAwesome name="envelope" size={14} color={COLORS.golden} style={styles.emailIcon} />
               <Text style={styles.userEmail}>{user?.email || 'correo@ejemplo.com'}</Text>
             </View>
-            
+
             {error && (
               <View style={styles.errorContainer}>
                 <FontAwesome name="exclamation-circle" size={16} color={COLORS.error} />
@@ -522,7 +862,7 @@ export default function ProfileScreen() {
           </View>
         </Animated.View>
 
-        <Animated.View 
+        <Animated.View
           style={[
             styles.infoSection,
             {
@@ -537,13 +877,13 @@ export default function ProfileScreen() {
                 colors={[COLORS.primary, COLORS.secondary]}
                 style={styles.iconGradient}
               >
-                <FontAwesome name="user" size={18} color={COLORS.white} />
+                <FontAwesome name="user" size={18} color="#ffffff" />
               </LinearGradient>
               <Text style={styles.sectionTitle}>Información Personal</Text>
             </View>
-            
+
             <View style={styles.divider} />
-            
+
             <View style={styles.infoContainer}>
               <Text style={styles.infoLabel}>Nombre:</Text>
               <View style={styles.infoValueContainer}>
@@ -578,9 +918,9 @@ export default function ProfileScreen() {
                 )}
               </View>
             </View>
-            
+
             <View style={styles.divider} />
-            
+
             <View style={styles.descriptionContainer}>
               <Text style={styles.descriptionLabel}>Descripción:</Text>
               <View style={styles.descriptionBox}>
@@ -592,7 +932,7 @@ export default function ProfileScreen() {
           </View>
         </Animated.View>
 
-        <Animated.View 
+        <Animated.View
           style={[
             styles.optionsSection,
             {
@@ -607,15 +947,15 @@ export default function ProfileScreen() {
                 colors={[COLORS.primary, COLORS.secondary]}
                 style={styles.iconGradient}
               >
-                <FontAwesome name="cog" size={18} color={COLORS.white} />
+                <FontAwesome name="cog" size={18} color="#ffffff" />
               </LinearGradient>
               <Text style={styles.sectionTitle}>Opciones</Text>
             </View>
-            
+
             <View style={styles.divider} />
-            
-            <TouchableOpacity 
-              style={styles.optionButton} 
+
+            <TouchableOpacity
+              style={styles.optionButton}
               onPress={navigateToEditProfile}
               activeOpacity={0.8}
             >
@@ -625,13 +965,13 @@ export default function ProfileScreen() {
                 end={{ x: 1, y: 0 }}
                 style={styles.buttonGradient}
               >
-                <FontAwesome name="edit" size={18} color={COLORS.white} style={styles.buttonIcon} />
+                <FontAwesome name="edit" size={18} color={COLORS.white === '#ffffff' ? '#ffffff' : '#f0f0f0'} style={styles.buttonIcon} />
                 <Text style={styles.buttonText}>Editar Perfil</Text>
               </LinearGradient>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.optionButton} 
+
+            <TouchableOpacity
+              style={styles.optionButton}
               onPress={() => router.push('/change-password')}
               activeOpacity={0.8}
             >
@@ -641,11 +981,11 @@ export default function ProfileScreen() {
                 end={{ x: 1, y: 0 }}
                 style={styles.buttonGradient}
               >
-                <FontAwesome name="key" size={18} color={COLORS.white} style={styles.buttonIcon} />
+                <FontAwesome name="key" size={18} color={COLORS.white === '#ffffff' ? '#ffffff' : '#f0f0f0'} style={styles.buttonIcon} />
                 <Text style={styles.buttonText}>Cambiar Contraseña</Text>
               </LinearGradient>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={styles.logoutButton}
               onPress={confirmLogout}
@@ -660,12 +1000,12 @@ export default function ProfileScreen() {
               >
                 {loading ? (
                   <View style={styles.loadingLogout}>
-                    <ActivityIndicator size="small" color={COLORS.white} />
+                    <ActivityIndicator size="small" color="#ffffff" />
                     <Text style={styles.logoutButtonText}>Cerrando sesión...</Text>
                   </View>
                 ) : (
                   <>
-                    <FontAwesome name="sign-out" size={18} color={COLORS.white} style={styles.buttonIcon} />
+                    <FontAwesome name="sign-out" size={18} color="#ffffff" style={styles.buttonIcon} />
                     <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
                   </>
                 )}
@@ -677,363 +1017,3 @@ export default function ProfileScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  headerGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 150,
-    zIndex: 0,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 30,
-    paddingTop: 20,
-  },
-  refreshText: {
-    marginLeft: 10,
-    color: COLORS.secondary,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  debugButton: {
-    backgroundColor: COLORS.debug,
-    padding: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 15,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(43, 31, 60, 0.1)',
-  },
-  debugButtonText: {
-    color: COLORS.primary,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  debugIcon: {
-    marginRight: 5,
-  },
-  solidContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: COLORS.white,
-  },
-  cardSolid: {
-    flex: 1,
-    padding: 20,
-    alignItems: 'center',
-    borderRadius: 15,
-    backgroundColor: COLORS.white,
-  },
-  sectionSolid: {
-    flex: 1,
-    padding: 20,
-    borderRadius: 15,
-    backgroundColor: COLORS.white,
-  },
-  userNameContainer: {
-    marginBottom: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    backgroundColor: COLORS.white,
-    borderRadius: 8,
-  },
-  avatarBorder: {
-    width: 124,
-    height: 124,
-    borderRadius: 62,
-    padding: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarInner: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    overflow: 'hidden',
-    backgroundColor: COLORS.white,
-  },
-  iconGradient: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  refreshIndicator: {
-    borderRadius: 10,
-    marginBottom: 15,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(155, 109, 255, 0.2)',
-  },
-  profileCard: {
-    borderRadius: 15,
-    marginBottom: 15,
-    elevation: 4,
-    shadowColor: COLORS.shadowColor,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: COLORS.white,
-  },
-  infoSection: {
-    borderRadius: 15,
-    marginBottom: 15,
-    elevation: 3,
-    shadowColor: COLORS.shadowColor,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    overflow: 'hidden',
-    backgroundColor: COLORS.white,
-  },
-  optionsSection: {
-    borderRadius: 15,
-    elevation: 3,
-    shadowColor: COLORS.shadowColor,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    overflow: 'hidden',
-    backgroundColor: COLORS.white,
-  },
-  buttonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 15,
-  },
-  logoutGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 15,
-    borderRadius: 10,
-  },
-  logoutButton: {
-    borderRadius: 10,
-    marginTop: 8,
-    elevation: 2,
-    shadowColor: COLORS.shadowColor,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    overflow: 'hidden',
-  },
-  descriptionBox: {
-    borderRadius: 10,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    overflow: 'hidden',
-  },
-  errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 10,
-    backgroundColor: '#ffebee',
-    borderWidth: 1,
-    borderColor: 'rgba(231, 76, 60, 0.2)',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  headerGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 150,
-    zIndex: 0,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 30,
-    paddingTop: 20,
-  },
-  refreshText: {
-    marginLeft: 10,
-    color: COLORS.secondary,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  debugButton: {
-    backgroundColor: COLORS.debug,
-    padding: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 15,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(43, 31, 60, 0.1)',
-  },
-  debugButtonText: {
-    color: COLORS.primary,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  debugIcon: {
-    marginRight: 5,
-  },
-  avatarOuterContainer: {
-    marginBottom: 15,
-  },
-  avatarContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatar: {
-    width: '100%',
-    height: '100%',
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    marginBottom: 5,
-    textAlign: 'center',
-  },
-  emailContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: COLORS.white,
-  },
-  emailIcon: {
-    marginRight: 8,
-  },
-  userEmail: {
-    fontSize: 16,
-    color: COLORS.lightText,
-    textAlign: 'center',
-  },
-  errorText: {
-    color: COLORS.error,
-    marginLeft: 8,
-    fontSize: 14,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    marginLeft: 15,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginBottom: 15,
-  },
-  infoContainer: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  infoValueContainer: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  infoLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: COLORS.primary,
-    width: 100,
-    backgroundColor: COLORS.white,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  cvStatusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  cvIcon: {
-    marginRight: 8,
-  },
-  cvAvailable: {
-    color: COLORS.success,
-    fontWeight: '500',
-  },
-  cvMissing: {
-    color: COLORS.error,
-  },
-  descriptionContainer: {
-    marginTop: 5,
-  },
-  descriptionLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: COLORS.primary,
-    marginBottom: 10,
-  },
-  descriptionText: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: COLORS.text,
-  },
-  optionButton: {
-    marginBottom: 12,
-    borderRadius: 10,
-    overflow: 'hidden',
-    elevation: 2,
-    shadowColor: COLORS.shadowColor,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-  },
-  buttonIcon: {
-    marginRight: 10,
-  },
-  buttonText: {
-    color: COLORS.white,
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  loadingLogout: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoutButtonText: {
-    color: COLORS.white,
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-});
