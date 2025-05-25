@@ -625,8 +625,7 @@ export default function TabOneScreen() {
                   style={styles.offerCard}
                   activeOpacity={0.9}
                   onPress={() => {
-                    // TODO: Navigate to offer details
-                    console.log('Navigating to offer:', offer.id);
+                    router.push(`/showOffer?id=${offer.id}`);
                   }}
                 >
                   {/* Priority Badge - Solo para ofertas nuevas */}
@@ -704,7 +703,12 @@ export default function TabOneScreen() {
                         </Text>
                       )}
                     </View>
-                    <TouchableOpacity style={styles.offerActionButton}>
+                    <TouchableOpacity 
+                      style={styles.offerActionButton}
+                      onPress={() => {
+                        router.push(`/showOffer?id=${offer.id}`);
+                      }}
+                    >
                       <FontAwesome name="eye" size={12} color="#ffffff" />
                       <Text style={styles.offerActionText}>Ver más</Text>
                     </TouchableOpacity>

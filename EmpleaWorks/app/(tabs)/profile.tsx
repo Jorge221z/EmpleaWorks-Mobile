@@ -502,7 +502,7 @@ export default function ProfileScreen() {
 
       // Verificar explícitamente si la imagen se ha eliminado
       if (!profileData.image && !profileData?.candidate?.profileImage) {
-        console.log('No se encontró imagen de perfil en la respuesta, confirmando eliminación');
+        console.log('No profile image found in response, confirming deletion');
         // Asegurar que no haya referencias a imágenes anteriores
         profileData.image = null;
         if (profileData.candidate) {
@@ -534,11 +534,11 @@ export default function ProfileScreen() {
   // Recargar datos cuando se navega a esta pantalla con el parámetro refresh
   useEffect(() => {
     if (params.refresh) {
-      console.log('Forzando recarga completa de datos del perfil debido a parámetro refresh');
+      console.log('Forcing complete reload of profile data due to refresh parameter');
 
       // Limpiar la caché de imágenes si hay un timestamp (indica actualización con posible eliminación de imagen)
       if (params.timestamp) {
-        console.log('Detectada actualización de perfil con timestamp, limpiando caché de datos');
+        console.log('Profile update detected with timestamp, clearing data cache');
         // Limpiar cualquier caché de usuario o imagen
         try {
           if (localStorage) {
@@ -684,7 +684,7 @@ export default function ProfileScreen() {
 
     // Si no hay ruta de imagen, devolver null explícitamente
     if (!imagePath) {
-      console.log('No se encontró ruta de imagen, retornando null');
+      console.log('No image path found, returning null');
       return null;
     }
 
@@ -725,7 +725,7 @@ export default function ProfileScreen() {
     console.log('Datos de candidato:', candidateData);
     console.log('Usuario combinado:', user);
     console.log('Apellido calculado:', getSurname(user));
-    console.log('Descripción:', getUserDescription(user));
+    console.log('Description:', getUserDescription(user));
     console.log('Imagen de perfil:', getUserProfileImage(user));
     console.log('CV:', getUserCV(user));
     console.log('==========================================');
