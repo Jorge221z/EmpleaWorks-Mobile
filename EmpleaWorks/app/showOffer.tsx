@@ -67,7 +67,10 @@ const getThemeColors = (colorScheme: string) => {
     golden: '#fac030',
     cardBackground: isDark ? '#2d2d2d' : '#ffffff',
     fieldBackground: isDark ? '#333333' : '#f8f8f8',
-    sectionHeaderBg: isDark ? '#242424' : '#f4f4f4',
+    sectionHeaderBg: isDark ? '#242424' : '#f4f4f4',    saveButtonBackground: isDark ? '#ffffff' : '#4a4a4a',
+    saveButtonText: isDark ? '#000000' : '#ffffff',
+    saveButtonBorder: isDark ? '#ffffff' : '#4a4a4a',
+    saveButtonIcon: '#9b6dff',
   };
 };
 
@@ -336,8 +339,7 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     flexDirection: 'row',
     gap: 12,
     backgroundColor: 'transparent',
-  },
-  actionButton: {
+  },  actionButton: {
     flex: 1,
     borderRadius: 15,
     elevation: 3,
@@ -347,22 +349,40 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     shadowRadius: 5,
     overflow: 'hidden',
     minHeight: 54,
-  },
-  buttonGradient: {
+    maxWidth: '48%', // Asegurar ancho máximo
+  },  buttonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8, // Reducir padding horizontal para mejor ajuste
     minHeight: 54,
+    width: '100%',  },  simpleButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    minHeight: 54,
+    width: '100%',
+    backgroundColor: colors.saveButtonBackground,
+    borderWidth: 2,
+    borderColor: colors.saveButtonBorder,
+    borderRadius: 15,
   },
   buttonIcon: {
-    marginRight: 8,
-  },
-  buttonText: {
+    marginRight: 6, // Reducir margen para mejor ajuste
+    width: 16, // Ancho fijo del icono
+  },  buttonText: {
     color: '#ffffff',
     fontWeight: 'bold',
-    fontSize: 15,
+    fontSize: 17, // Increased from 14 to 17
+    textAlign: 'center',
+    flex: 1,
+  },  simpleButtonText: {
+    color: colors.saveButtonText,
+    fontWeight: 'bold',
+    fontSize: 17, // Increased from 14 to 17
     textAlign: 'center',
     flex: 1,
   },
@@ -657,18 +677,17 @@ export default function ShowOfferScreen() {
                 style={[styles.actionButton, styles.saveButton]}
                 onPress={handleSaveOffer}
               >
-                <LinearGradient
-                  colors={[COLORS.secondary, COLORS.accent]}
-                  style={styles.buttonGradient}
-                >
+                <View style={styles.simpleButtonContainer}>
                   <Icon 
                     name="bookmark" 
                     size={16} 
-                    color="#ffffff" 
+                    color={COLORS.saveButtonIcon} 
                     style={styles.buttonIcon}
                   />
-                  <Text style={styles.buttonText}>Guardar oferta</Text>
-                </LinearGradient>
+                  <Text style={styles.simpleButtonText} numberOfLines={1} ellipsizeMode="tail">
+                    Guardar
+                  </Text>
+                </View>
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -677,7 +696,9 @@ export default function ShowOfferScreen() {
                 disabled={applying}
               >
                 <LinearGradient
-                  colors={[COLORS.primary, COLORS.primaryLight]}
+                  colors={[COLORS.primary, COLORS.secondary]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
                   style={styles.buttonGradient}
                 >
                   <Icon 
@@ -686,14 +707,15 @@ export default function ShowOfferScreen() {
                     color="#ffffff" 
                     style={styles.buttonIcon}
                   />
-                  <Text style={styles.buttonText}>
-                    {applying ? "Aplicando..." : "Aplicar a la oferta"}
+                  <Text style={styles.buttonText} numberOfLines={1} ellipsizeMode="tail">
+                    {applying ? "Aplicando..." : "Inscribirse"}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
         )}
+        <View style={[styles.container, { height: 100 }]} />
       </ScrollView>
     </View>
   );
