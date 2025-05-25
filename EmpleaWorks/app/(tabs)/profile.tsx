@@ -119,13 +119,12 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     padding: 2,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  avatarInner: {
+  },  avatarInner: {
     width: 120,
     height: 120,
     borderRadius: 60,
     overflow: 'hidden',
-    backgroundColor: colors.cardBackground,
+    backgroundColor: 'transparent', // Cambiar a transparente para que no interfiera
   },
   iconGradient: {
     width: 36,
@@ -213,13 +212,17 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     backgroundColor: '#ffebee',
     borderWidth: 1,
     borderColor: 'rgba(231, 76, 60, 0.2)',
-  },
-  avatarOuterContainer: {
+  },  avatarOuterContainer: {
     marginBottom: 15,
-  },
-  avatarContainer: {
+    backgroundColor: 'transparent', // Cambiar a transparente
+    borderRadius: 62, // Mismo border radius
     alignItems: 'center',
     justifyContent: 'center',
+  },avatarContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent', // Cambiar a transparente
+    borderRadius: 62, // Mismo border radius que el avatarBorder
   },
   avatar: {
     width: '100%',
@@ -275,9 +278,9 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
   },
   infoContainer: {
     flexDirection: 'row',
-    marginBottom: 12,
-    alignItems: 'stretch', // Cambiar de 'center' a 'stretch' para que todos los elementos tengan la misma altura
-    height: 24, // Fijar altura específica
+    marginBottom: 24, // Aumentado de 12 a 24 para más espacio entre campos
+    alignItems: 'stretch',
+    height: 24,
   },
   infoValueContainer: {
     flex: 1,
