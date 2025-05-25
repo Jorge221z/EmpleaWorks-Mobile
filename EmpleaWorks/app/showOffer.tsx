@@ -36,6 +36,15 @@ interface OfferDetails {
   user_id: number;
 }
 
+// Custom Icon Component to ensure proper text rendering
+const Icon = ({ name, size, color, style }: { name: any; size: number; color: string; style?: any }) => {
+  return (
+    <View style={[{ alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' }, style]}>
+      <FontAwesome name={name} size={size} color={color} />
+    </View>
+  );
+}
+
 // Constantes de diseño para temas (copiadas de index.tsx)
 const getThemeColors = (colorScheme: string) => {
   const isDark = colorScheme === 'dark';
@@ -502,7 +511,7 @@ export default function ShowOfferScreen() {
             style={styles.backButton}
             onPress={() => router.back()}
           >
-            <FontAwesome name="arrow-left" size={20} color="#ffffff" />
+            <Icon name="arrow-left" size={20} color="#ffffff" />
           </TouchableOpacity>
           
           <Text style={styles.title}>Detalles de la oferta</Text>
@@ -515,10 +524,12 @@ export default function ShowOfferScreen() {
             <ActivityIndicator size="large" color={COLORS.primary} />
             <Text style={styles.loadingText}>Cargando detalles...</Text>
           </View>
-        )}        {/* Error State */}
+        )}        
+        
+        {/* Error State */}
         {error && (
           <View style={styles.errorContainer}>
-            <FontAwesome name="exclamation-triangle" size={20} color={COLORS.error} />
+            <Icon name="exclamation-triangle" size={20} color={COLORS.error} />
             <Text style={styles.errorText}>Error: {error}</Text>
           </View>
         )}
@@ -532,20 +543,22 @@ export default function ShowOfferScreen() {
               
               {/* Información de la empresa */}
               <View style={styles.companySection}>
-                <FontAwesome name="building" size={16} color={COLORS.secondary} />
+                <Icon name="building" size={16} color={COLORS.secondary} />
                 <Text style={styles.companyName}>{offer.company?.name || 'Empresa no especificada'}</Text>
               </View>
               
               {/* Información de fechas en el header */}
               <View style={styles.datesHeaderContainer}>
                 <View style={styles.dateItem}>
-                  <FontAwesome name="calendar" size={14} color={COLORS.secondary} />
+                  <Icon name="calendar" size={14} color={COLORS.secondary} />
                   <Text style={styles.dateHeaderText}>
                     {new Date(offer.created_at).toLocaleDateString('es-ES')}
                   </Text>
-                </View>                {offer.closing_date && (
+                </View>
+                
+                {offer.closing_date && (
                   <View style={styles.dateItem}>
-                    <FontAwesome name="clock-o" size={14} color={COLORS.error} />
+                    <Icon name="clock-o" size={14} color={COLORS.error} />
                     <Text style={[styles.dateHeaderText, { color: COLORS.error }]}>
                       {new Date(offer.closing_date).toLocaleDateString('es-ES')}
                     </Text>
@@ -557,18 +570,18 @@ export default function ShowOfferScreen() {
               {offer.company && (
                 <View style={styles.companyContactSection}>
                   <View style={styles.contactItem}>
-                    <FontAwesome name="envelope" size={14} color={COLORS.secondary} />
+                    <Icon name="envelope" size={14} color={COLORS.secondary} />
                     <Text style={styles.contactText}>{offer.email}</Text>
                   </View>
                   {offer.company.address && (
                     <View style={styles.contactItem}>
-                      <FontAwesome name="map-marker" size={14} color={COLORS.secondary} />
+                      <Icon name="map-marker" size={14} color={COLORS.secondary} />
                       <Text style={styles.contactText}>{offer.company.address}</Text>
                     </View>
                   )}
                   {offer.company.web_link && (
                     <View style={[styles.contactItem, { marginBottom: 0 }]}>
-                      <FontAwesome name="globe" size={14} color={COLORS.secondary} />
+                      <Icon name="globe" size={14} color={COLORS.secondary} />
                       <Text style={styles.contactText}>{offer.company.web_link}</Text>
                     </View>
                   )}
@@ -579,7 +592,7 @@ export default function ShowOfferScreen() {
             {/* Descripción */}
             <View style={styles.descriptionSection}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, backgroundColor: 'transparent' }}>
-                <FontAwesome name="file-text-o" size={18} color={COLORS.secondary} style={{ marginRight: 8 }} />
+                <Icon name="file-text-o" size={18} color={COLORS.secondary} style={{ marginRight: 8 }} />
                 <Text style={styles.sectionTitle}>Descripción del puesto</Text>
               </View>
               <Text style={styles.description}>{offer.description}</Text>
@@ -588,13 +601,13 @@ export default function ShowOfferScreen() {
             {/* Detalles técnicos */}
             <View style={styles.detailsSection}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, backgroundColor: 'transparent' }}>
-                <FontAwesome name="list-ul" size={18} color={COLORS.secondary} style={{ marginRight: 8 }} />
+                <Icon name="list-ul" size={18} color={COLORS.secondary} style={{ marginRight: 8 }} />
                 <Text style={styles.sectionTitle}>Detalles de la posición</Text>
               </View>
               <View style={styles.detailsGrid}>
                 <View style={styles.detailItem}>
                   <View style={styles.detailIcon}>
-                    <FontAwesome name="tag" size={16} color={COLORS.secondary} />
+                    <Icon name="tag" size={16} color={COLORS.secondary} />
                   </View>
                   <View style={styles.detailContent}>
                     <Text style={styles.detailLabel}>Categoría</Text>
@@ -604,7 +617,7 @@ export default function ShowOfferScreen() {
 
                 <View style={styles.detailItem}>
                   <View style={styles.detailIcon}>
-                    <FontAwesome name="map-marker" size={16} color={COLORS.secondary} />
+                    <Icon name="map-marker" size={16} color={COLORS.secondary} />
                   </View>
                   <View style={styles.detailContent}>
                     <Text style={styles.detailLabel}>Ubicación</Text>
@@ -614,7 +627,7 @@ export default function ShowOfferScreen() {
 
                 <View style={styles.detailItem}>
                   <View style={styles.detailIcon}>
-                    <FontAwesome name="file-text" size={16} color={COLORS.secondary} />
+                    <Icon name="file-text" size={16} color={COLORS.secondary} />
                   </View>
                   <View style={styles.detailContent}>
                     <Text style={styles.detailLabel}>Tipo de contrato</Text>
@@ -624,7 +637,7 @@ export default function ShowOfferScreen() {
 
                 <View style={styles.detailItem}>
                   <View style={styles.detailIcon}>
-                    <FontAwesome name="graduation-cap" size={16} color={COLORS.secondary} />
+                    <Icon name="graduation-cap" size={16} color={COLORS.secondary} />
                   </View>
                   <View style={styles.detailContent}>
                     <Text style={styles.detailLabel}>Titulación requerida</Text>
@@ -648,7 +661,7 @@ export default function ShowOfferScreen() {
                   colors={[COLORS.secondary, COLORS.accent]}
                   style={styles.buttonGradient}
                 >
-                  <FontAwesome 
+                  <Icon 
                     name="bookmark" 
                     size={16} 
                     color="#ffffff" 
@@ -667,7 +680,7 @@ export default function ShowOfferScreen() {
                   colors={[COLORS.primary, COLORS.primaryLight]}
                   style={styles.buttonGradient}
                 >
-                  <FontAwesome 
+                  <Icon 
                     name={applying ? "spinner" : "paper-plane"} 
                     size={16} 
                     color="#ffffff" 
