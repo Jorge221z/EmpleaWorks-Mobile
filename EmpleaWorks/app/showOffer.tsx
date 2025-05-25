@@ -67,10 +67,12 @@ const getThemeColors = (colorScheme: string) => {
     golden: '#fac030',
     cardBackground: isDark ? '#2d2d2d' : '#ffffff',
     fieldBackground: isDark ? '#333333' : '#f8f8f8',
-    sectionHeaderBg: isDark ? '#242424' : '#f4f4f4',    saveButtonBackground: isDark ? '#ffffff' : '#4a4a4a',
+    sectionHeaderBg: isDark ? '#242424' : '#f4f4f4',
+    saveButtonBackground: isDark ? '#ffffff' : '#4a4a4a',
     saveButtonText: isDark ? '#000000' : '#ffffff',
     saveButtonBorder: isDark ? '#ffffff' : '#4a4a4a',
     saveButtonIcon: '#9b6dff',
+    sectionIcon: isDark ? '#ffffff' : '#000000',
   };
 };
 
@@ -180,74 +182,94 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     borderWidth: 0.5,
     borderColor: colors.border,
     overflow: 'hidden',
-  },
-  offerHeader: {
+  },  offerHeader: {
     padding: 20,
     paddingBottom: 15,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     backgroundColor: colors.cardBackground,
-  },
-  offerTitle: {
+  },  offerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: colors.text,
-    marginBottom: 12,
+    marginBottom: 24,
     backgroundColor: 'transparent',
     lineHeight: 28,
-  },  companySection: {
+  },companySection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
     backgroundColor: 'transparent',
   },
   companyName: {
     fontSize: 18,
-    color: colors.secondary,
+    color: colors.sectionIcon,
     fontWeight: '700',
     marginLeft: 10,
     backgroundColor: 'transparent',
     flex: 1,
   },
-  companyDetails: {
-    marginTop: 8,
+  emailSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
     backgroundColor: 'transparent',
-  },  companyInfo: {
+  },
+  emailText: {
     fontSize: 14,
     color: colors.lightText,
-    marginBottom: 4,
+    marginLeft: 10,
     backgroundColor: 'transparent',
+    fontWeight: '500',
+    flex: 1,
   },  datesHeaderContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 16,
+    marginTop: 12,
     marginBottom: 16,
     backgroundColor: 'transparent',
-    gap: 8,
+    gap: 12,
   },
   dateItem: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     backgroundColor: colors.fieldBackground,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 16,
     flex: 1,
-    elevation: 1,
+    elevation: 2,
     shadowColor: colors.shadowColor,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  dateHeaderText: {
-    fontSize: 12,
-    color: colors.lightText,
-    marginLeft: 8,
+  dateLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
     backgroundColor: 'transparent',
-    fontWeight: '600',
-    flex: 1,
-  },  companyContactSection: {
-    marginTop: 16,
+  },
+  dateLabel: {
+    fontSize: 11,
+    color: colors.lightText,
+    backgroundColor: 'transparent',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginLeft: 4,
+  },  dateValue: {
+    fontSize: 14,
+    color: colors.text,
+    backgroundColor: 'transparent',
+    fontWeight: 'normal',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  companyContactSection: {
+    marginTop: 8,
     backgroundColor: colors.fieldBackground,
     borderRadius: 12,
     padding: 12,
@@ -563,36 +585,50 @@ export default function ShowOfferScreen() {
               
               {/* Información de la empresa */}
               <View style={styles.companySection}>
-                <Icon name="building" size={16} color={COLORS.secondary} />
+                <Icon name="building" size={16} color={COLORS.sectionIcon} />
                 <Text style={styles.companyName}>{offer.company?.name || 'Empresa no especificada'}</Text>
               </View>
               
-              {/* Información de fechas en el header */}
+              {/* Email de contacto */}
+              <View style={styles.emailSection}>
+                <Icon name="envelope" size={14} color={COLORS.sectionIcon} />
+                <Text style={styles.emailText}>{offer.email}</Text>
+              </View>
+                {/* Información de fechas organizadas */}
               <View style={styles.datesHeaderContainer}>
                 <View style={styles.dateItem}>
-                  <Icon name="calendar" size={14} color={COLORS.secondary} />
-                  <Text style={styles.dateHeaderText}>
-                    {new Date(offer.created_at).toLocaleDateString('es-ES')}
+                  <View style={styles.dateLabelContainer}>
+                    <Icon name="calendar-plus-o" size={12} color="#2196F3" />
+                    <Text style={styles.dateLabel}>Publicada</Text>
+                  </View>
+                  <Text style={styles.dateValue}>
+                    {new Date(offer.created_at).toLocaleDateString('es-ES', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    })}
                   </Text>
                 </View>
-                
-                {offer.closing_date && (
+                  {offer.closing_date && (
                   <View style={styles.dateItem}>
-                    <Icon name="clock-o" size={14} color={COLORS.error} />
-                    <Text style={[styles.dateHeaderText, { color: COLORS.error }]}>
-                      {new Date(offer.closing_date).toLocaleDateString('es-ES')}
+                    <View style={styles.dateLabelContainer}>
+                      <Icon name="clock-o" size={12} color={COLORS.error} />
+                      <Text style={styles.dateLabel}>Cierra</Text>
+                    </View>
+                    <Text style={styles.dateValue}>
+                      {new Date(offer.closing_date).toLocaleDateString('es-ES', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                      })}
                     </Text>
                   </View>
                 )}
               </View>
               
-              {/* Información adicional de la empresa */}
-              {offer.company && (
+              {/* Información adicional de la empresa (solo si hay datos adicionales) */}
+              {offer.company && (offer.company.address || offer.company.web_link) && (
                 <View style={styles.companyContactSection}>
-                  <View style={styles.contactItem}>
-                    <Icon name="envelope" size={14} color={COLORS.secondary} />
-                    <Text style={styles.contactText}>{offer.email}</Text>
-                  </View>
                   {offer.company.address && (
                     <View style={styles.contactItem}>
                       <Icon name="map-marker" size={14} color={COLORS.secondary} />
@@ -612,7 +648,7 @@ export default function ShowOfferScreen() {
             {/* Descripción */}
             <View style={styles.descriptionSection}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, backgroundColor: 'transparent' }}>
-                <Icon name="file-text-o" size={18} color={COLORS.secondary} style={{ marginRight: 8 }} />
+                <Icon name="file-text-o" size={18} color={COLORS.sectionIcon} style={{ marginRight: 8 }} />
                 <Text style={styles.sectionTitle}>Descripción del puesto</Text>
               </View>
               <Text style={styles.description}>{offer.description}</Text>
@@ -621,7 +657,7 @@ export default function ShowOfferScreen() {
             {/* Detalles técnicos */}
             <View style={styles.detailsSection}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, backgroundColor: 'transparent' }}>
-                <Icon name="list-ul" size={18} color={COLORS.secondary} style={{ marginRight: 8 }} />
+                <Icon name="list-ul" size={18} color={COLORS.sectionIcon} style={{ marginRight: 8 }} />
                 <Text style={styles.sectionTitle}>Detalles de la posición</Text>
               </View>
               <View style={styles.detailsGrid}>
