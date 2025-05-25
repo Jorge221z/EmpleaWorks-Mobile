@@ -7,7 +7,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUser, getProfile } from '@/api/axios';
 import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 
 // Constantes de diseño
 const COLORS = {
@@ -431,7 +430,7 @@ export default function ProfileScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Indicador de recarga con blur */}
+        {/* Indicador de recarga con fondo sólido en lugar de blur */}
         {refreshing && (
           <Animated.View 
             style={[
@@ -439,10 +438,10 @@ export default function ProfileScreen() {
               { opacity: fadeAnim }
             ]}
           >
-            <BlurView intensity={20} style={styles.blurContainer}>
+            <View style={styles.solidContainer}>
               <ActivityIndicator size="small" color={COLORS.secondary} />
               <Text style={styles.refreshText}>Actualizando perfil...</Text>
-            </BlurView>
+            </View>
           </Animated.View>
         )}
         
@@ -467,8 +466,8 @@ export default function ProfileScreen() {
             }
           ]}
         >
-          {/* Blur background for profile card */}
-          <BlurView intensity={15} tint="light" style={styles.cardBlur}>
+          {/* Solid background for profile card */}
+          <View style={styles.cardSolid}>
             <View style={styles.avatarOuterContainer}>
               <Animated.View 
                 style={[
@@ -504,21 +503,23 @@ export default function ProfileScreen() {
               </Animated.View>
             </View>
             
-            <Text style={styles.userName}>
-              {user?.name || 'Usuario'} {getSurname(user)}
-            </Text>
+            <View style={styles.userNameContainer}>
+              <Text style={styles.userName}>
+                {user?.name || 'Usuario'} {getSurname(user)}
+              </Text>
+            </View>
             <View style={styles.emailContainer}>
               <FontAwesome name="envelope" size={14} color={COLORS.golden} style={styles.emailIcon} />
               <Text style={styles.userEmail}>{user?.email || 'correo@ejemplo.com'}</Text>
             </View>
             
             {error && (
-              <BlurView intensity={10} tint="light" style={styles.errorContainer}>
+              <View style={styles.errorContainer}>
                 <FontAwesome name="exclamation-circle" size={16} color={COLORS.error} />
                 <Text style={styles.errorText}>{error}</Text>
-              </BlurView>
+              </View>
             )}
-          </BlurView>
+          </View>
         </Animated.View>
 
         <Animated.View 
@@ -530,7 +531,7 @@ export default function ProfileScreen() {
             }
           ]}
         >
-          <BlurView intensity={10} tint="light" style={styles.sectionBlur}>
+          <View style={styles.sectionSolid}>
             <View style={styles.sectionHeader}>
               <LinearGradient
                 colors={[COLORS.primary, COLORS.secondary]}
@@ -545,15 +546,21 @@ export default function ProfileScreen() {
             
             <View style={styles.infoContainer}>
               <Text style={styles.infoLabel}>Nombre:</Text>
-              <Text style={styles.infoValue}>{user?.name || 'No disponible'}</Text>
+              <View style={styles.infoValueContainer}>
+                <Text style={styles.infoValue}>{user?.name || 'No disponible'}</Text>
+              </View>
             </View>
             <View style={styles.infoContainer}>
               <Text style={styles.infoLabel}>Apellidos:</Text>
-              <Text style={styles.infoValue}>{getSurname(user) || 'No disponible'}</Text>
+              <View style={styles.infoValueContainer}>
+                <Text style={styles.infoValue}>{getSurname(user) || 'No disponible'}</Text>
+              </View>
             </View>
             <View style={styles.infoContainer}>
               <Text style={styles.infoLabel}>Email:</Text>
-              <Text style={styles.infoValue}>{user?.email || 'No disponible'}</Text>
+              <View style={styles.infoValueContainer}>
+                <Text style={styles.infoValue}>{user?.email || 'No disponible'}</Text>
+              </View>
             </View>
             <View style={styles.infoContainer}>
               <Text style={styles.infoLabel}>CV:</Text>
@@ -576,13 +583,13 @@ export default function ProfileScreen() {
             
             <View style={styles.descriptionContainer}>
               <Text style={styles.descriptionLabel}>Descripción:</Text>
-              <BlurView intensity={5} tint="light" style={styles.descriptionBox}>
+              <View style={styles.descriptionBox}>
                 <Text style={styles.descriptionText}>
                   {getUserDescription(user) || 'No has añadido una descripción todavía'}
                 </Text>
-              </BlurView>
+              </View>
             </View>
-          </BlurView>
+          </View>
         </Animated.View>
 
         <Animated.View 
@@ -594,7 +601,7 @@ export default function ProfileScreen() {
             }
           ]}
         >
-          <BlurView intensity={10} tint="light" style={styles.sectionBlur}>
+          <View style={styles.sectionSolid}>
             <View style={styles.sectionHeader}>
               <LinearGradient
                 colors={[COLORS.primary, COLORS.secondary]}
@@ -664,7 +671,7 @@ export default function ProfileScreen() {
                 )}
               </LinearGradient>
             </TouchableOpacity>
-          </BlurView>
+          </View>
         </Animated.View>
       </ScrollView>
     </View>
@@ -717,25 +724,33 @@ const styles = StyleSheet.create({
   debugIcon: {
     marginRight: 5,
   },
-  blurContainer: {
+  solidContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 10,
     borderRadius: 10,
+    backgroundColor: COLORS.white,
   },
-  cardBlur: {
+  cardSolid: {
     flex: 1,
     padding: 20,
     alignItems: 'center',
     borderRadius: 15,
-    overflow: 'hidden',
+    backgroundColor: COLORS.white,
   },
-  sectionBlur: {
+  sectionSolid: {
     flex: 1,
     padding: 20,
     borderRadius: 15,
-    overflow: 'hidden',
+    backgroundColor: COLORS.white,
+  },
+  userNameContainer: {
+    marginBottom: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: COLORS.white,
+    borderRadius: 8,
   },
   avatarBorder: {
     width: 124,
@@ -775,7 +790,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: COLORS.white,
   },
   infoSection: {
     borderRadius: 15,
@@ -786,7 +801,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: COLORS.white,
   },
   optionsSection: {
     borderRadius: 15,
@@ -796,7 +811,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: COLORS.white,
   },
   buttonGradient: {
     flexDirection: 'row',
@@ -834,7 +849,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
     marginTop: 10,
-    overflow: 'hidden',
+    backgroundColor: '#ffebee',
     borderWidth: 1,
     borderColor: 'rgba(231, 76, 60, 0.2)',
   },
@@ -905,6 +920,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: COLORS.white,
   },
   emailIcon: {
     marginRight: 8,
@@ -940,20 +959,30 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     alignItems: 'center',
   },
+  infoValueContainer: {
+    flex: 1,
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
   infoLabel: {
     fontSize: 16,
     fontWeight: '500',
     color: COLORS.primary,
     width: 100,
-  },
-  infoValue: {
-    fontSize: 16,
-    color: COLORS.text,
-    flex: 1,
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   cvStatusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   cvIcon: {
     marginRight: 8,
