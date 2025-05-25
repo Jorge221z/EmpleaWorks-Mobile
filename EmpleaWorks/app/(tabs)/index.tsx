@@ -210,64 +210,186 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
   },
   offersContainer: {
     paddingBottom: 20,
-    backgroundColor: 'transparent', // Quitar el fondo para que las tarjetas floten
+    backgroundColor: 'transparent',
   },
   offerCard: {
     backgroundColor: colors.cardBackground,
-    padding: 20,
-    borderRadius: 15,
-    marginBottom: 15,
-    elevation: 6, // Aumentar elevación para más sensación de flotación
+    borderRadius: 20,
+    marginBottom: 20,
+    elevation: 8,
     shadowColor: colors.shadowColor,
-    shadowOffset: { width: 0, height: 4 }, // Aumentar offset para más profundidad
-    shadowOpacity: 0.15, // Aumentar opacidad para mejor efecto flotante
-    shadowRadius: 12, // Aumentar radio para sombra más suave
-    borderWidth: 1,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 15,
+    borderWidth: 0.5,
     borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  offerCardHeader: {
+    padding: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.cardBackground,
+  },
+  offerCardBody: {
+    padding: 20,
+    paddingTop: 15,
+    backgroundColor: colors.cardBackground,
   },
   offerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: colors.text,
-    marginBottom: 12,
-    backgroundColor: colors.cardBackground, // Asegurar fondo consistente
+    marginBottom: 8,
+    backgroundColor: 'transparent',
+    lineHeight: 24,
   },
-  offerDetail: {
-    fontSize: 14,
-    marginBottom: 6,
+  offerCompanyContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.cardBackground, // Asegurar fondo consistente
+    marginBottom: 4,
+    backgroundColor: 'transparent',
+  },
+  offerCompany: {
+    fontSize: 14,
+    color: colors.secondary,
+    fontWeight: '600',
+    marginLeft: 6,
+    backgroundColor: 'transparent',
+  },
+  offerDetailsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    backgroundColor: 'transparent',
+  },
+  offerDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.fieldBackground,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    minWidth: '47%',
+    flex: 1,
+  },
+  offerDetailIcon: {
+    marginRight: 8,
+    width: 16,
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  offerDetailContent: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
   offerDetailLabel: {
-    fontWeight: '600',
-    color: colors.text,
-    marginRight: 4,
-    backgroundColor: colors.cardBackground, // Asegurar fondo consistente
+    fontSize: 11,
+    fontWeight: '500',
+    color: colors.lightText,
+    marginBottom: 2,
+    backgroundColor: 'transparent',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   offerDetailValue: {
+    fontSize: 13,
+    color: colors.text,
+    fontWeight: '600',
+    backgroundColor: 'transparent',
+  },
+  offerFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: colors.sectionHeaderBg,
+    marginTop: 15,
+  },
+  offerDate: {
+    fontSize: 12,
     color: colors.lightText,
-    backgroundColor: colors.cardBackground, // Asegurar fondo consistente
-    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  offerActionButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  offerActionText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  offerBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: colors.secondary,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 0,
+    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 15,
+    zIndex: 1,
+    elevation: 3,
+    shadowColor: colors.shadowColor,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  offerBadgeText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: 'bold',
+    backgroundColor: 'transparent',
+    letterSpacing: 0.5,
+    textAlign: 'left',
+    marginLeft: -5,
+    marginTop: 3,
   },
   noOffersContainer: {
     alignItems: 'center',
     padding: 40,
     backgroundColor: colors.cardBackground,
-    borderRadius: 15,
+    borderRadius: 20,
     marginTop: 20,
-    elevation: 2,
+    elevation: 4,
     shadowColor: colors.shadowColor,
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  noOffersIcon: {
+    backgroundColor: colors.fieldBackground,
+    padding: 20,
+    borderRadius: 50,
+    marginBottom: 15,
   },
   noOffersText: {
     fontSize: 16,
     color: colors.lightText,
     textAlign: 'center',
-    marginTop: 10,
-    backgroundColor: colors.cardBackground, // Fondo consistente con la tarjeta
+    backgroundColor: 'transparent',
+    fontWeight: '500',
+  },
+  noOffersSubText: {
+    fontSize: 14,
+    color: colors.lightText,
+    textAlign: 'center',
+    marginTop: 8,
+    backgroundColor: 'transparent',
+    opacity: 0.7,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -318,6 +440,14 @@ export default function TabOneScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Función para determinar si una oferta es nueva (4 días o menos)
+  const isOfferNew = (createdAt: string): boolean => {
+    const offerDate = new Date(createdAt);
+    const currentDate = new Date();
+    const daysDifference = Math.floor((currentDate.getTime() - offerDate.getTime()) / (1000 * 60 * 60 * 24));
+    return daysDifference <= 4;
+  };
 
   // Función para manejar el proceso de logout (similar a la de AuthContext)
   const handleLogout = async () => {
@@ -490,35 +620,107 @@ export default function TabOneScreen() {
           {dashboardData && dashboardData.offers && dashboardData.offers.length > 0 ? (
             <View style={styles.offersContainer}>
               {dashboardData.offers.map((offer) => (
-                <View key={offer.id} style={styles.offerCard}>
-                  <Text style={styles.offerTitle}>{offer.name}</Text>
-                  
-                  <View style={styles.offerDetail}>
-                    <Text style={styles.offerDetailLabel}>Categoría:</Text>
-                    <Text style={styles.offerDetailValue}>{offer.category}</Text>
+                <TouchableOpacity 
+                  key={offer.id} 
+                  style={styles.offerCard}
+                  activeOpacity={0.9}
+                  onPress={() => {
+                    // TODO: Navigate to offer details
+                    console.log('Navigating to offer:', offer.id);
+                  }}
+                >
+                  {/* Priority Badge - Solo para ofertas nuevas */}
+                  {isOfferNew(offer.created_at) && (
+                    <View style={styles.offerBadge}>
+                      <Text style={styles.offerBadgeText}>NUEVO</Text>
+                    </View>
+                  )}
+
+                  {/* Card Header */}
+                  <View style={styles.offerCardHeader}>
+                    <Text style={styles.offerTitle}>{offer.name}</Text>
+                    <View style={styles.offerCompanyContainer}>
+                      <FontAwesome name="building" size={12} color={COLORS.secondary} />
+                      <Text style={styles.offerCompany}>
+                        {offer.company?.name || 'Empresa no especificada'}
+                      </Text>
+                    </View>
                   </View>
-                  
-                  <View style={styles.offerDetail}>
-                    <Text style={styles.offerDetailLabel}>Ubicación:</Text>
-                    <Text style={styles.offerDetailValue}>{offer.job_location}</Text>
+
+                  {/* Card Body */}
+                  <View style={styles.offerCardBody}>
+                    <View style={styles.offerDetailsGrid}>
+                      <View style={styles.offerDetailItem}>
+                        <View style={styles.offerDetailIcon}>
+                          <FontAwesome name="tag" size={14} color={COLORS.secondary} />
+                        </View>
+                        <View style={styles.offerDetailContent}>
+                          <Text style={styles.offerDetailLabel}>Categoría</Text>
+                          <Text style={styles.offerDetailValue}>{offer.category}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.offerDetailItem}>
+                        <View style={styles.offerDetailIcon}>
+                          <FontAwesome name="map-marker" size={14} color={COLORS.secondary} />
+                        </View>
+                        <View style={styles.offerDetailContent}>
+                          <Text style={styles.offerDetailLabel}>Ubicación</Text>
+                          <Text style={styles.offerDetailValue}>{offer.job_location}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.offerDetailItem}>
+                        <View style={styles.offerDetailIcon}>
+                          <FontAwesome name="file-text" size={14} color={COLORS.secondary} />
+                        </View>
+                        <View style={styles.offerDetailContent}>
+                          <Text style={styles.offerDetailLabel}>Contrato</Text>
+                          <Text style={styles.offerDetailValue}>{offer.contract_type}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.offerDetailItem}>
+                        <View style={styles.offerDetailIcon}>
+                          <FontAwesome name="graduation-cap" size={14} color={COLORS.secondary} />
+                        </View>
+                        <View style={styles.offerDetailContent}>
+                          <Text style={styles.offerDetailLabel}>Titulación</Text>
+                          <Text style={styles.offerDetailValue}>{offer.degree}</Text>
+                        </View>
+                      </View>
+                    </View>
                   </View>
-                  
-                  <View style={styles.offerDetail}>
-                    <Text style={styles.offerDetailLabel}>Tipo de contrato:</Text>
-                    <Text style={styles.offerDetailValue}>{offer.contract_type}</Text>
+
+                  {/* Card Footer */}
+                  <View style={styles.offerFooter}>
+                    <View style={{ backgroundColor: 'transparent' }}>
+                      <Text style={styles.offerDate}>
+                        📅 Publicado: {new Date(offer.created_at).toLocaleDateString('es-ES')}
+                      </Text>
+                      {offer.closing_date && (
+                        <Text style={[styles.offerDate, { color: COLORS.error, marginTop: 4 }]}>
+                          ⏰ Cierra: {new Date(offer.closing_date).toLocaleDateString('es-ES')}
+                        </Text>
+                      )}
+                    </View>
+                    <TouchableOpacity style={styles.offerActionButton}>
+                      <FontAwesome name="eye" size={12} color="#ffffff" />
+                      <Text style={styles.offerActionText}>Ver más</Text>
+                    </TouchableOpacity>
                   </View>
-                  
-                  <View style={styles.offerDetail}>
-                    <Text style={styles.offerDetailLabel}>Titulación:</Text>
-                    <Text style={styles.offerDetailValue}>{offer.degree}</Text>
-                  </View>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
           ) : !loading && dashboardData && (
             <View style={styles.noOffersContainer}>
-              <FontAwesome name="briefcase" size={40} color={COLORS.lightText} />
+              <View style={styles.noOffersIcon}>
+                <FontAwesome name="briefcase" size={40} color={COLORS.secondary} />
+              </View>
               <Text style={styles.noOffersText}>No hay ofertas disponibles</Text>
+              <Text style={styles.noOffersSubText}>
+                Revisa más tarde para ver nuevas oportunidades
+              </Text>
             </View>
           )}
         </View>
