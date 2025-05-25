@@ -1,5 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView, Image } from 'react-native';
+import { 
+  View, 
+  StyleSheet, 
+  TextInput, 
+  TouchableOpacity, 
+  ActivityIndicator, 
+  Alert, 
+  ScrollView, 
+  Image, 
+  Animated,
+  Dimensions,
+  Platform,
+  View as RNView
+} from 'react-native';
 import { Text } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
 import { updateProfile, getProfile } from '@/api/axios';
@@ -8,6 +21,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { FontAwesome } from '@expo/vector-icons';
+
+// Constantes de diseño
+const COLORS = {
+  primary: '#4A2976',
+  primaryLight: '#3d2c52',
+  secondary: '#9b6dff',
+  accent: '#f6c667',
+  background: '#f8f9fa',
+  text: '#333',
+  lightText: '#888',
+  error: '#e74c3c',
+  success: '#2ecc71',
+  white: '#ffffff',
+  border: 'rgba(43, 31, 60, 0.2)',
+  buttonText: '#ffffff',
+  disabledButton: '#a0a0a0',
+  inputBackground: 'rgba(255, 255, 255, 0.9)'
+};
 
 // Helper function to format image URLs
 const formatImageUrl = (imagePath: string | null): string | null => {
@@ -21,6 +52,16 @@ const formatImageUrl = (imagePath: string | null): string | null => {
     const imageUrl = `https://emplea.works/storage/${imagePath}`;
     console.log('Edit profile - formatted image URL:', imageUrl);
     return imageUrl;
+  }
+};
+
+// Componente LinearGradient con fallback para evitar errores
+const LinearGradient = (props) => {
+  try {
+    return <ExpoLinearGradient {...props} />;
+  } catch (error) {
+    console.warn('LinearGradient error, using fallback View:', error);
+    return <RNView style={[props.style, { backgroundColor: COLORS.primary }]}>{props.children}</RNView>;
   }
 };
 
@@ -42,6 +83,42 @@ export default function EditProfileScreen() {
   // Añadir estados para rastrear si un campo se ha modificado
   const [newCvSelected, setNewCvSelected] = useState(false);
   const [newImageSelected, setNewImageSelected] = useState(false);
+
+  // Animaciones
+  const fadeAnim = useState(new Animated.Value(0))[0];
+  const formOpacity = useState(new Animated.Value(0))[0];
+  const formTranslateY = useState(new Animated.Value(30))[0];
+  
+  // Animación para la imagen de perfil
+  const imageScale = useState(new Animated.Value(0.8))[0];
+
+  useEffect(() => {
+    // Animación de entrada
+    Animated.sequence([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true
+      }),
+      Animated.parallel([
+        Animated.timing(formOpacity, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true
+        }),
+        Animated.timing(formTranslateY, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true
+        }),
+        Animated.spring(imageScale, {
+          toValue: 1,
+          friction: 5,
+          useNativeDriver: true
+        })
+      ])
+    ]).start();
+  }, []);
 
   // Cargar datos iniciales incluyendo el perfil completo
   useEffect(() => {
@@ -377,51 +454,78 @@ export default function EditProfileScreen() {
   };
 
   return (
-    <ScrollView style={styles.scrollView}>
-      <View style={styles.container}>
-        
+    <View style={styles.container}>
+      <View style={styles.headerGradient} />
+      
+      <Animated.View style={[styles.headerContainer, { opacity: fadeAnim }]}>
+        <Text style={styles.headerTitle}>Editar Perfil</Text>
+      </Animated.View>
+      
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {initialLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007bff" />
-            <Text style={styles.loadingText}>Cargando información...</Text>
+            <View style={styles.loaderCard}>
+              <ActivityIndicator size="large" color={COLORS.secondary} />
+              <Text style={styles.loadingText}>Cargando información...</Text>
+            </View>
           </View>
         ) : (
-          <>
+          <Animated.View 
+            style={[
+              styles.formContainer, 
+              { 
+                opacity: formOpacity,
+                transform: [{ translateY: formTranslateY }]
+              }
+            ]}
+          >
             {/* Selector de imagen de perfil */}
             <View style={styles.imageSection}>
               <View style={styles.profileImageWrapper}>
-                <TouchableOpacity 
-                  style={styles.profileImageContainer} 
-                  onPress={pickImage}
-                  disabled={uploadingImage}
+                <Animated.View 
+                  style={[
+                    styles.profileImageContainer,
+                    { transform: [{ scale: imageScale }] }
+                  ]}
                 >
-                  {profileImage ? (
-                    <Image 
-                      source={{ uri: profileImage }} 
-                      style={styles.profileImage} 
-                      defaultSource={require('@/assets/images/default-avatar.png')}
-                      onError={(e) => {
-                        console.log('Error loading profile image:', e.nativeEvent.error);
-                        setProfileImage(null);
-                      }}
-                    />
-                  ) : (
-                    <Image 
-                      source={require('@/assets/images/default-avatar.png')} 
-                      style={styles.profileImage} 
-                    />
-                  )}
-                  {uploadingImage ? (
-                    <View style={styles.imageOverlay}>
-                      <ActivityIndicator color="#fff" />
-                    </View>
-                  ) : (
-                    <View style={styles.imageOverlay}>
-                      <FontAwesome name="camera" size={24} color="#fff" />
-                      <Text style={styles.changeImageText}>Cambiar</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.profileImageTouchable} 
+                    onPress={pickImage}
+                    disabled={uploadingImage}
+                    activeOpacity={0.8}
+                  >
+                    {profileImage ? (
+                      <Image 
+                        source={{ uri: profileImage }} 
+                        style={styles.profileImage} 
+                        defaultSource={require('@/assets/images/default-avatar.png')}
+                        onError={(e) => {
+                          console.log('Error loading profile image:', e.nativeEvent.error);
+                          setProfileImage(null);
+                        }}
+                      />
+                    ) : (
+                      <Image 
+                        source={require('@/assets/images/default-avatar.png')} 
+                        style={styles.profileImage} 
+                      />
+                    )}
+                    {uploadingImage ? (
+                      <View style={styles.imageOverlay}>
+                        <ActivityIndicator color="#fff" size="small" />
+                      </View>
+                    ) : (
+                      <View style={styles.imageOverlay}>
+                        <FontAwesome name="camera" size={24} color="#fff" />
+                        <Text style={styles.changeImageText}>Cambiar</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                </Animated.View>
 
                 {/* Botón para eliminar la imagen de perfil */}
                 {profileImage && !uploadingImage && (
@@ -436,111 +540,216 @@ export default function EditProfileScreen() {
               </View>
             </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Nombre"
-              value={name}
-              onChangeText={setName}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Apellidos"
-              value={surname}
-              onChangeText={setSurname}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Correo electrónico"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Nombre</Text>
+              <View style={styles.inputWrapper}>
+                <FontAwesome name="user" size={18} color={COLORS.primary} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Tu nombre"
+                  value={name}
+                  onChangeText={setName}
+                  placeholderTextColor={COLORS.lightText}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Apellidos</Text>
+              <View style={styles.inputWrapper}>
+                <FontAwesome name="user" size={18} color={COLORS.primary} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Tus apellidos"
+                  value={surname}
+                  onChangeText={setSurname}
+                  placeholderTextColor={COLORS.lightText}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Correo electrónico</Text>
+              <View style={styles.inputWrapper}>
+                <FontAwesome name="envelope" size={18} color={COLORS.primary} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="tu@email.com"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholderTextColor={COLORS.lightText}
+                />
+              </View>
+            </View>
             
             {/* Selector de CV */}
-            <Text style={styles.inputLabel}>Curriculum Vitae</Text>
-            <View style={styles.cvContainer}>
-              <TouchableOpacity 
-                style={styles.cvButton}
-                onPress={pickCV}
-                disabled={uploadingCV}
-              >
-                {uploadingCV ? (
-                  <ActivityIndicator color="#007bff" />
-                ) : (
-                  <>
-                    <FontAwesome name="file-pdf-o" size={24} color="#007bff" style={styles.cvIcon} />
-                    <Text 
-                      style={styles.cvButtonText}
-                      numberOfLines={1}
-                      ellipsizeMode="middle"
-                    >
-                      {cvName ? cvName : "Seleccionar CV"}
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              {/* Botón para quitar el CV si existe uno seleccionado */}
-              {cvName ? (
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Curriculum Vitae</Text>
+              <View style={styles.cvContainer}>
                 <TouchableOpacity 
-                  style={styles.removeCvButton}
-                  onPress={removeCV}
+                  style={styles.cvButton}
+                  onPress={pickCV}
                   disabled={uploadingCV}
                 >
-                  <FontAwesome name="times" size={20} color="#dc3545" />
+                  {uploadingCV ? (
+                    <ActivityIndicator color={COLORS.secondary} />
+                  ) : (
+                    <>
+                      <FontAwesome name="file-pdf-o" size={24} color={COLORS.primary} style={styles.cvIcon} />
+                      <Text 
+                        style={styles.cvButtonText}
+                        numberOfLines={1}
+                        ellipsizeMode="middle"
+                      >
+                        {cvName ? cvName : "Seleccionar CV"}
+                      </Text>
+                    </>
+                  )}
                 </TouchableOpacity>
-              ) : null}
+
+                {/* Botón para quitar el CV si existe uno seleccionado */}
+                {cvName ? (
+                  <TouchableOpacity 
+                    style={styles.removeCvButton}
+                    onPress={removeCV}
+                    disabled={uploadingCV}
+                  >
+                    <FontAwesome name="times" size={20} color={COLORS.error} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             </View>
             
             {/* Nota explicativa */}
-            <Text style={styles.noteText}>
-              Nota: Solo los campos que modifiques serán actualizados. Los demás se mantendrán con sus valores actuales.
-            </Text>
+            <View style={styles.noteContainer}>
+              <FontAwesome name="info-circle" size={18} color={COLORS.secondary} />
+              <Text style={styles.noteText}>
+                Solo los campos que modifiques serán actualizados. Los demás se mantendrán con sus valores actuales.
+              </Text>
+            </View>
 
-            <Text style={styles.inputLabel}>Descripción</Text>
-            <TextInput
-              style={styles.textArea}
-              placeholder="Cuéntanos sobre ti..."
-              value={description}
-              onChangeText={setDescription}
-              multiline={true}
-              numberOfLines={6}
-              textAlignVertical="top"
-            />
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Descripción</Text>
+              <View style={styles.textAreaWrapper}>
+                <TextInput
+                  style={styles.textArea}
+                  placeholder="Cuéntanos sobre ti..."
+                  value={description}
+                  onChangeText={setDescription}
+                  multiline={true}
+                  numberOfLines={6}
+                  textAlignVertical="top"
+                  placeholderTextColor={COLORS.lightText}
+                />
+              </View>
+            </View>
             
-            <TouchableOpacity style={styles.button} onPress={handleSave} disabled={loading}>
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Guardar Cambios</Text>}
+            <TouchableOpacity 
+              style={[styles.saveButton, loading && styles.buttonDisabled]} 
+              onPress={handleSave} 
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <FontAwesome name="check" size={18} color="#fff" style={styles.buttonIcon} />
+                  <Text style={styles.saveButtonText}>Guardar Cambios</Text>
+                </>
+              )}
             </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()} disabled={loading}>
+            
+            <TouchableOpacity 
+              style={styles.cancelButton} 
+              onPress={() => router.push('/profile')} 
+              disabled={loading}
+              activeOpacity={0.8}
+            >
               <Text style={styles.cancelButtonText}>Cancelar</Text>
             </TouchableOpacity>
-          </>
+          </Animated.View>
         )}
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
+const { width } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
   container: { 
     flex: 1, 
-    padding: 24, 
-    backgroundColor: '#fff' 
+    backgroundColor: COLORS.white,
   },
-  title: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
-    marginBottom: 24, 
-    textAlign: 'center' 
+  headerGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 150,
+    zIndex: 0,
+    backgroundColor: COLORS.primary,
+  },
+  headerContainer: {
+    paddingTop: 50,
+    paddingBottom: 20,
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: COLORS.white,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+  },
+  loadingContainer: {
+    paddingTop: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loaderCard: {
+    backgroundColor: COLORS.white,
+    padding: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    width: width - 40,
+  },
+  loadingText: {
+    marginTop: 15,
+    fontSize: 16,
+    color: COLORS.primary,
+  },
+  formContainer: {
+    backgroundColor: COLORS.white,
+    borderRadius: 15,
+    padding: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    marginTop: 20,
   },
   imageSection: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   profileImageWrapper: {
     alignItems: 'center',
@@ -549,9 +758,18 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+    backgroundColor: COLORS.white,
+  },
+  profileImageTouchable: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     overflow: 'hidden',
-    backgroundColor: '#E1E1E1',
-    position: 'relative',
   },
   profileImage: {
     width: '100%',
@@ -569,119 +787,157 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   changeImageText: {
-    color: '#fff',
+    color: COLORS.white,
     marginLeft: 8,
     fontSize: 14,
     fontWeight: 'bold',
   },
-  input: {
-    borderWidth: 1, 
-    borderColor: '#ccc', 
-    borderRadius: 8, 
-    padding: 12, 
-    marginBottom: 16, 
-    fontSize: 16,
+  removeImageButton: {
+    backgroundColor: COLORS.error,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    marginTop: 15,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  removeImageText: {
+    color: COLORS.white,
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginLeft: 5,
+  },
+  inputGroup: {
+    marginBottom: 18,
   },
   inputLabel: {
     fontSize: 16,
     fontWeight: '500',
     marginBottom: 8,
-    color: '#333',
+    color: COLORS.primary,
   },
-  textArea: {
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    backgroundColor: COLORS.inputBackground,
+  },
+  inputIcon: {
+    marginLeft: 12,
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
     padding: 12,
     fontSize: 16,
-    marginBottom: 20,
-    height: 120,
+    color: COLORS.text,
+  },
+  textAreaWrapper: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    backgroundColor: COLORS.inputBackground,
+  },
+  textArea: {
+    padding: 12,
+    fontSize: 16,
+    color: COLORS.text,
+    minHeight: 120,
   },
   cvContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
   },
   cvButton: {
     borderWidth: 1,
-    borderColor: '#007bff',
-    borderRadius: 8,
+    borderColor: COLORS.primary,
+    borderRadius: 10,
     padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    backgroundColor: 'rgba(155, 109, 255, 0.05)',
   },
   cvButtonText: {
-    color: '#007bff',
+    color: COLORS.primary,
     fontSize: 16,
-    flex: 1,        // Añadido para que el texto tome el espacio disponible
-    flexShrink: 1,  // Permite que el texto se encoja si es necesario
-    marginLeft: 5,  // Espacio entre el icono y el texto
+    flex: 1,
+    flexShrink: 1,
+    marginLeft: 5,
   },
   cvIcon: {
     marginRight: 10,
-    flexShrink: 0,  // Evita que el icono se encoja
+    flexShrink: 0,
   },
   removeCvButton: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'rgba(231, 76, 60, 0.1)',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     marginLeft: 10,
     borderWidth: 1,
-    borderColor: '#dc3545',
-  },
-  noteText: {
-    color: '#666',
-    fontStyle: 'italic',
-    fontSize: 13,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  button: {
-    backgroundColor: '#007bff', 
-    padding: 16, 
-    borderRadius: 8, 
-    alignItems: 'center', 
-    marginBottom: 12,
-  },
-  buttonText: { 
-    color: '#fff', 
-    fontWeight: 'bold', 
-    fontSize: 16 
-  },
-  cancelButton: { 
-    alignItems: 'center', 
-    padding: 12 
-  },
-  cancelButtonText: { 
-    color: '#007bff', 
-    fontSize: 16 
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center', 
-    paddingVertical: 50
-  },
-  loadingText: {
-    marginTop: 15,
-    fontSize: 16,
-    color: '#555'
-  },
-  removeImageButton: {
-    backgroundColor: '#dc3545',
-    flexDirection: 'row',
+    borderColor: 'rgba(231, 76, 60, 0.3)',
+    height: 48,
+    width: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    marginTop: 10,
   },
-  removeImageText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  noteContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(155, 109, 255, 0.1)',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(155, 109, 255, 0.2)',
+    alignItems: 'flex-start',
+  },
+  noteText: {
+    flex: 1,
+    marginLeft: 10,
+    color: COLORS.text,
     fontSize: 14,
-    marginLeft: 5,
+    lineHeight: 20,
+  },
+  saveButton: {
+    backgroundColor: COLORS.primary,
+    padding: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+  },
+  buttonDisabled: {
+    backgroundColor: COLORS.disabledButton,
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  saveButtonText: {
+    color: COLORS.white,
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  cancelButton: {
+    alignItems: 'center',
+    padding: 12,
+  },
+  cancelButtonText: {
+    color: COLORS.primary,
+    fontSize: 16,
+    fontWeight: '500',
   },
 });

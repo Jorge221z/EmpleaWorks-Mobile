@@ -1,10 +1,32 @@
-import { StyleSheet, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicator, RefreshControl } from 'react-native';
+import { StyleSheet, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicator, RefreshControl, Dimensions, Animated, View as RNView } from 'react-native';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
 import { router, useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUser, getProfile } from '@/api/axios';
+import { FontAwesome } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+
+// Constantes de diseño
+const COLORS = {
+  primary: '#4A2976',
+  primaryLight: '#3d2c52',
+  secondary: '#9b6dff',
+  accent: '#f6c667',
+  background: '#f8f9fa',
+  white: '#ffffff',
+  text: '#333',
+  lightText: '#666',
+  error: '#e74c3c',
+  success: '#2ecc71',
+  border: 'rgba(43, 31, 60, 0.15)',
+  card: '#ffffff',
+  shadowColor: '#000',
+  debug: 'rgba(43, 31, 60, 0.05)',
+  golden: '#fac030'
+};
 
 // Función para obtener los datos completos del usuario (incluyendo candidato)
 const getFullUserData = async () => {
@@ -50,11 +72,38 @@ export default function ProfileScreen() {
   // Referencia para rastrear si es la primera carga
   const isInitialLoad = useRef<boolean>(true);
 
+  // Animaciones
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(30)).current;
+  const headerHeight = useRef(new Animated.Value(180)).current;
+  const avatarScale = useRef(new Animated.Value(0.8)).current;
+
   // Combinar usuario local y datos del candidato
   const user = {
     ...localUser,
     candidate: candidateData || localUser?.candidate
   };
+
+  // Animaciones cuando la pantalla se carga
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true
+      }),
+      Animated.spring(avatarScale, {
+        toValue: 1,
+        friction: 5,
+        useNativeDriver: true
+      })
+    ]).start();
+  }, []);
 
   // Actualizar el usuario local cuando cambie el del contexto
   useEffect(() => {
@@ -356,25 +405,45 @@ export default function ProfileScreen() {
     router.push('/edit-profile');
   };
 
+  const { width } = Dimensions.get('window');
+
   return (
-    <ScrollView 
-      style={styles.scrollContainer}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          colors={['#007bff']}
-          tintColor={'#007bff'}
-        />
-      }
-    >
-      <View style={styles.container}>
-        {/* Indicador de recarga */}
+    <View style={styles.container}>
+      {/* Enhanced header with gradient */}
+      <LinearGradient
+        colors={[COLORS.primary, COLORS.primaryLight, COLORS.secondary]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      />
+
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[COLORS.secondary]}
+            tintColor={COLORS.secondary}
+            progressBackgroundColor={COLORS.white}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Indicador de recarga con blur */}
         {refreshing && (
-          <View style={styles.refreshIndicator}>
-            <ActivityIndicator size="small" color="#007bff" />
-            <Text style={styles.refreshText}>Actualizando perfil...</Text>
-          </View>
+          <Animated.View 
+            style={[
+              styles.refreshIndicator,
+              { opacity: fadeAnim }
+            ]}
+          >
+            <BlurView intensity={20} style={styles.blurContainer}>
+              <ActivityIndicator size="small" color={COLORS.secondary} />
+              <Text style={styles.refreshText}>Actualizando perfil...</Text>
+            </BlurView>
+          </Animated.View>
         )}
         
         {/* Botón para forzar recarga y debug (solo en desarrollo) */}
@@ -385,216 +454,557 @@ export default function ProfileScreen() {
             debugUserData();
           }}
         >
+          <FontAwesome name="refresh" size={12} color={COLORS.primary} style={styles.debugIcon} />
           <Text style={styles.debugButtonText}>Debug y Actualizar</Text>
         </TouchableOpacity>
 
-        <View style={styles.header}>
-          <View style={styles.avatarContainer}>
-            {getUserProfileImage(user) ? (
-              <Image 
-                source={{ uri: getUserProfileImage(user) }}
-                style={styles.avatar}
-                defaultSource={require('@/assets/images/default-avatar.png')}
-                onError={(error) => {
-                  console.log('Error cargando imagen de perfil:', error.nativeEvent.error);
-                }}
-              />
-            ) : (
-              <Image 
-                source={require('@/assets/images/default-avatar.png')}
-                style={styles.avatar}
-              />
+        <Animated.View 
+          style={[
+            styles.profileCard,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY }]
+            }
+          ]}
+        >
+          {/* Blur background for profile card */}
+          <BlurView intensity={15} tint="light" style={styles.cardBlur}>
+            <View style={styles.avatarOuterContainer}>
+              <Animated.View 
+                style={[
+                  styles.avatarContainer,
+                  { transform: [{ scale: avatarScale }] }
+                ]}
+              >
+                {/* Avatar with gradient border */}
+                <LinearGradient
+                  colors={[COLORS.secondary, COLORS.accent, COLORS.primary]}
+                  style={styles.avatarBorder}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <View style={styles.avatarInner}>
+                    {getUserProfileImage(user) ? (
+                      <Image 
+                        source={{ uri: getUserProfileImage(user) }}
+                        style={styles.avatar}
+                        defaultSource={require('@/assets/images/default-avatar.png')}
+                        onError={(error) => {
+                          console.log('Error cargando imagen de perfil:', error.nativeEvent.error);
+                        }}
+                      />
+                    ) : (
+                      <Image 
+                        source={require('@/assets/images/default-avatar.png')}
+                        style={styles.avatar}
+                      />
+                    )}
+                  </View>
+                </LinearGradient>
+              </Animated.View>
+            </View>
+            
+            <Text style={styles.userName}>
+              {user?.name || 'Usuario'} {getSurname(user)}
+            </Text>
+            <View style={styles.emailContainer}>
+              <FontAwesome name="envelope" size={14} color={COLORS.golden} style={styles.emailIcon} />
+              <Text style={styles.userEmail}>{user?.email || 'correo@ejemplo.com'}</Text>
+            </View>
+            
+            {error && (
+              <BlurView intensity={10} tint="light" style={styles.errorContainer}>
+                <FontAwesome name="exclamation-circle" size={16} color={COLORS.error} />
+                <Text style={styles.errorText}>{error}</Text>
+              </BlurView>
             )}
-          </View>
-          <Text style={styles.subtitle}>
-            {user?.name || 'Usuario'} {getSurname(user)}
-          </Text>
-          <Text style={styles.email}>{user?.email || 'correo@ejemplo.com'}</Text>
-        </View>
+          </BlurView>
+        </Animated.View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Información Personal</Text>
-          <View style={styles.infoContainer}>
-            <Text style={styles.infoLabel}>Nombre:</Text>
-            <Text style={styles.infoValue}>{user?.name || 'No disponible'}</Text>
-          </View>
-          <View style={styles.infoContainer}>
-            <Text style={styles.infoLabel}>Apellidos:</Text>
-            <Text style={styles.infoValue}>{getSurname(user) || 'No disponible'}</Text>
-          </View>
-          <View style={styles.infoContainer}>
-            <Text style={styles.infoLabel}>Email:</Text>
-            <Text style={styles.infoValue}>{user?.email || 'No disponible'}</Text>
-          </View>
-          <View style={styles.infoContainer}>
-            <Text style={styles.infoLabel}>CV:</Text>
-            <Text style={styles.infoValue}>
-              {hasUserCV(user) ? 'CV subido ✓' : 'No has subido CV'}
-            </Text>
-          </View>
-          <View style={styles.descriptionContainer}>
-            <Text style={styles.infoLabel}>Descripción:</Text>
-            <Text style={styles.descriptionText}>
-              {getUserDescription(user) || 'No has añadido una descripción todavía'}
-            </Text>
-          </View>
-        </View>
+        <Animated.View 
+          style={[
+            styles.infoSection,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY }]
+            }
+          ]}
+        >
+          <BlurView intensity={10} tint="light" style={styles.sectionBlur}>
+            <View style={styles.sectionHeader}>
+              <LinearGradient
+                colors={[COLORS.primary, COLORS.secondary]}
+                style={styles.iconGradient}
+              >
+                <FontAwesome name="user" size={18} color={COLORS.white} />
+              </LinearGradient>
+              <Text style={styles.sectionTitle}>Información Personal</Text>
+            </View>
+            
+            <View style={styles.divider} />
+            
+            <View style={styles.infoContainer}>
+              <Text style={styles.infoLabel}>Nombre:</Text>
+              <Text style={styles.infoValue}>{user?.name || 'No disponible'}</Text>
+            </View>
+            <View style={styles.infoContainer}>
+              <Text style={styles.infoLabel}>Apellidos:</Text>
+              <Text style={styles.infoValue}>{getSurname(user) || 'No disponible'}</Text>
+            </View>
+            <View style={styles.infoContainer}>
+              <Text style={styles.infoLabel}>Email:</Text>
+              <Text style={styles.infoValue}>{user?.email || 'No disponible'}</Text>
+            </View>
+            <View style={styles.infoContainer}>
+              <Text style={styles.infoLabel}>CV:</Text>
+              <View style={styles.cvStatusContainer}>
+                {hasUserCV(user) ? (
+                  <>
+                    <FontAwesome name="check-circle" size={16} color={COLORS.success} style={styles.cvIcon} />
+                    <Text style={[styles.infoValue, styles.cvAvailable]}>CV subido</Text>
+                  </>
+                ) : (
+                  <>
+                    <FontAwesome name="times-circle" size={16} color={COLORS.error} style={styles.cvIcon} />
+                    <Text style={[styles.infoValue, styles.cvMissing]}>No has subido CV</Text>
+                  </>
+                )}
+              </View>
+            </View>
+            
+            <View style={styles.divider} />
+            
+            <View style={styles.descriptionContainer}>
+              <Text style={styles.descriptionLabel}>Descripción:</Text>
+              <BlurView intensity={5} tint="light" style={styles.descriptionBox}>
+                <Text style={styles.descriptionText}>
+                  {getUserDescription(user) || 'No has añadido una descripción todavía'}
+                </Text>
+              </BlurView>
+            </View>
+          </BlurView>
+        </Animated.View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Opciones</Text>
-          <TouchableOpacity style={styles.button} onPress={navigateToEditProfile}>
-            <Text style={styles.buttonText}>Editar Perfil</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={() => router.push('/change-password')}>
-            <Text style={styles.buttonText}>Cambiar Contraseña</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, styles.logoutButton]}
-            onPress={confirmLogout}
-            disabled={loading}
-          >
-            <Text style={styles.logoutButtonText}>{loading ? "Cerrando sesión..." : "Cerrar Sesión"}</Text>
-          </TouchableOpacity>
-        </View>
-        
-        {error && <Text style={styles.errorText}>{error}</Text>}
-      </View>
-    </ScrollView>
+        <Animated.View 
+          style={[
+            styles.optionsSection,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY }]
+            }
+          ]}
+        >
+          <BlurView intensity={10} tint="light" style={styles.sectionBlur}>
+            <View style={styles.sectionHeader}>
+              <LinearGradient
+                colors={[COLORS.primary, COLORS.secondary]}
+                style={styles.iconGradient}
+              >
+                <FontAwesome name="cog" size={18} color={COLORS.white} />
+              </LinearGradient>
+              <Text style={styles.sectionTitle}>Opciones</Text>
+            </View>
+            
+            <View style={styles.divider} />
+            
+            <TouchableOpacity 
+              style={styles.optionButton} 
+              onPress={navigateToEditProfile}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={[COLORS.primary, COLORS.secondary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.buttonGradient}
+              >
+                <FontAwesome name="edit" size={18} color={COLORS.white} style={styles.buttonIcon} />
+                <Text style={styles.buttonText}>Editar Perfil</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.optionButton} 
+              onPress={() => router.push('/change-password')}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={[COLORS.primary, COLORS.secondary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.buttonGradient}
+              >
+                <FontAwesome name="key" size={18} color={COLORS.white} style={styles.buttonIcon} />
+                <Text style={styles.buttonText}>Cambiar Contraseña</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={confirmLogout}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={[COLORS.error, '#c0392b']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.logoutGradient}
+              >
+                {loading ? (
+                  <View style={styles.loadingLogout}>
+                    <ActivityIndicator size="small" color={COLORS.white} />
+                    <Text style={styles.logoutButtonText}>Cerrando sesión...</Text>
+                  </View>
+                ) : (
+                  <>
+                    <FontAwesome name="sign-out" size={18} color={COLORS.white} style={styles.buttonIcon} />
+                    <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+                  </>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </BlurView>
+        </Animated.View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollContainer: {
+  container: {
     flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  headerGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 150,
+    zIndex: 0,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 30,
+    paddingTop: 20,
+  },
+  refreshText: {
+    marginLeft: 10,
+    color: COLORS.secondary,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  debugButton: {
+    backgroundColor: COLORS.debug,
+    padding: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 15,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(43, 31, 60, 0.1)',
+  },
+  debugButtonText: {
+    color: COLORS.primary,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  debugIcon: {
+    marginRight: 5,
+  },
+  blurContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+    borderRadius: 10,
+  },
+  cardBlur: {
+    flex: 1,
+    padding: 20,
+    alignItems: 'center',
+    borderRadius: 15,
+    overflow: 'hidden',
+  },
+  sectionBlur: {
+    flex: 1,
+    padding: 20,
+    borderRadius: 15,
+    overflow: 'hidden',
+  },
+  avatarBorder: {
+    width: 124,
+    height: 124,
+    borderRadius: 62,
+    padding: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInner: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    overflow: 'hidden',
+    backgroundColor: COLORS.white,
+  },
+  iconGradient: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  refreshIndicator: {
+    borderRadius: 10,
+    marginBottom: 15,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(155, 109, 255, 0.2)',
+  },
+  profileCard: {
+    borderRadius: 15,
+    marginBottom: 15,
+    elevation: 4,
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  },
+  infoSection: {
+    borderRadius: 15,
+    marginBottom: 15,
+    elevation: 3,
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  },
+  optionsSection: {
+    borderRadius: 15,
+    elevation: 3,
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  },
+  buttonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 15,
+  },
+  logoutGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 15,
+    borderRadius: 10,
+  },
+  logoutButton: {
+    borderRadius: 10,
+    marginTop: 8,
+    elevation: 2,
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    overflow: 'hidden',
+  },
+  descriptionBox: {
+    borderRadius: 10,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    overflow: 'hidden',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 10,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(231, 76, 60, 0.2)',
   },
   container: {
     flex: 1,
-    padding: 20,
+    backgroundColor: COLORS.background,
   },
-  header: {
-    alignItems: 'center',
-    marginVertical: 20,
+  headerGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 150,
+    zIndex: 0,
   },
-  avatarContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#E1E1E1',
-    justifyContent: 'center',
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 30,
+    paddingTop: 20,
+  },
+  refreshText: {
+    marginLeft: 10,
+    color: COLORS.secondary,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  debugButton: {
+    backgroundColor: COLORS.debug,
+    padding: 8,
+    borderRadius: 8,
     alignItems: 'center',
     marginBottom: 15,
-    overflow: 'hidden',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(43, 31, 60, 0.1)',
+  },
+  debugButtonText: {
+    color: COLORS.primary,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  debugIcon: {
+    marginRight: 5,
+  },
+  avatarOuterContainer: {
+    marginBottom: 15,
+  },
+  avatarContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: '100%',
+    height: '100%',
   },
-  title: {
+  userName: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: COLORS.primary,
     marginBottom: 5,
+    textAlign: 'center',
   },
-  subtitle: {
-    fontSize: 18,
-    fontWeight: '500',
-    marginBottom: 5,
+  emailContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
   },
-  email: {
+  emailIcon: {
+    marginRight: 8,
+  },
+  userEmail: {
     fontSize: 16,
-    color: '#666',
-    marginBottom: 20,
+    color: COLORS.lightText,
+    textAlign: 'center',
   },
-  section: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 20,
+  errorText: {
+    color: COLORS.error,
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: COLORS.primary,
+    marginLeft: 15,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.border,
     marginBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eaeaea',
-    paddingBottom: 10,
   },
   infoContainer: {
     flexDirection: 'row',
-    marginBottom: 10,
-    paddingVertical: 5,
+    marginBottom: 12,
+    alignItems: 'center',
   },
   infoLabel: {
     fontSize: 16,
     fontWeight: '500',
+    color: COLORS.primary,
     width: 100,
   },
   infoValue: {
     fontSize: 16,
+    color: COLORS.text,
     flex: 1,
   },
-  button: {
-    backgroundColor: '#007bff',
-    padding: 15,
-    borderRadius: 8,
-    marginVertical: 8,
+  cvStatusContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
+  cvIcon: {
+    marginRight: 8,
+  },
+  cvAvailable: {
+    color: COLORS.success,
+    fontWeight: '500',
+  },
+  cvMissing: {
+    color: COLORS.error,
+  },
+  descriptionContainer: {
+    marginTop: 5,
+  },
+  descriptionLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: COLORS.primary,
+    marginBottom: 10,
+  },
+  descriptionText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: COLORS.text,
+  },
+  optionButton: {
+    marginBottom: 12,
+    borderRadius: 10,
+    overflow: 'hidden',
+    elevation: 2,
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  buttonIcon: {
+    marginRight: 10,
+  },
   buttonText: {
-    color: '#fff',
+    color: COLORS.white,
     fontWeight: 'bold',
     fontSize: 16,
   },
-  logoutButton: {
-    backgroundColor: '#dc3545',
-    marginTop: 20,
-  },
-  logoutButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  errorText: {
-    color: '#dc3545',
-    textAlign: 'center',
-    marginTop: 10,
-  },
-  refreshIndicator: {
+  loadingLogout: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    backgroundColor: '#f0f9ff',
-    borderRadius: 5,
-    marginBottom: 10,
   },
-  refreshText: {
-    marginLeft: 10,
-    color: '#007bff',
-    fontSize: 14,
-  },
-  debugButton: {
-    backgroundColor: '#f0f0f0',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  debugButtonText: {
-    color: '#333',
-    fontSize: 12,
-  },
-  descriptionContainer: {
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#eaeaea',
-  },
-  descriptionText: {
+  logoutButtonText: {
+    color: COLORS.white,
+    fontWeight: 'bold',
     fontSize: 16,
-    lineHeight: 22,
-    marginTop: 5,
-    color: '#333',
-    fontStyle: 'italic',
   },
 });
