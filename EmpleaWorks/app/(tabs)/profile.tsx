@@ -37,7 +37,7 @@ const getThemeColors = (colorScheme: string) => {
   };
 };
 
-// Create dynamic styles based on colors
+// Create estilos dinamicos en funcion del tema
 const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.create({
   container: {
     flex: 1,
@@ -276,32 +276,40 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
   infoContainer: {
     flexDirection: 'row',
     marginBottom: 12,
-    alignItems: 'center',
+    alignItems: 'stretch', // Cambiar de 'center' a 'stretch' para que todos los elementos tengan la misma altura
+    height: 24, // Fijar altura específica
   },
   infoValueContainer: {
     flex: 1,
-    backgroundColor: 'transparent', // Cambiado de colors.fieldBackground a transparent
+    backgroundColor: colors.cardBackground,
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingVertical: 0,
+    borderRadius: 0,
+    height: 24, // Fijar altura específica
+    justifyContent: 'center',
   },
   infoLabel: {
     fontSize: 16,
     fontWeight: '500',
     color: colors.text,
-    width: 100,
-    backgroundColor: 'transparent', // Cambiado de colors.fieldBackground a transparent
+    backgroundColor: colors.cardBackground,
     paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingVertical: 0,
+    borderRadius: 0,
+    height: 24,
+    lineHeight: 24,
+    flex: 0, // Cambiar de width fijo a flex
+    minWidth: 95, // Usar minWidth en lugar de width fijo
   },
   cvStatusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'transparent', // Cambiado de colors.fieldBackground a transparent
+    backgroundColor: colors.cardBackground,
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingVertical: 0,
+    borderRadius: 0,
+    flex: 1,
+    height: 24, // Fijar altura específica
   },
   cvIcon: {
     marginRight: 8,
@@ -315,7 +323,7 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
   },
   descriptionContainer: {
     marginTop: 5,
-    backgroundColor: 'transparent', // Agregar esta línea
+    backgroundColor: colors.cardBackground, // Cambiado de transparent a colors.cardBackground
   },
   descriptionLabel: {
     fontSize: 16,
@@ -802,7 +810,7 @@ export default function ProfileScreen() {
             styles.profileCard,
             {
               opacity: fadeAnim,
-              transform: [{ translateY }]
+              transform: [{ translateY: translateY }]
             }
           ]}
         >
