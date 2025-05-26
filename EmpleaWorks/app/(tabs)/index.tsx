@@ -312,6 +312,12 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     fontSize: 12,
     color: colors.lightText,
     backgroundColor: 'transparent',
+    marginLeft: 8,
+  },
+  offerDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   offerActionButton: {
     backgroundColor: colors.primary,
@@ -694,13 +700,19 @@ export default function TabOneScreen() {
                   {/* Card Footer */}
                   <View style={styles.offerFooter}>
                     <View style={{ backgroundColor: 'transparent' }}>
-                      <Text style={styles.offerDate}>
-                        📅 Publicado: {new Date(offer.created_at).toLocaleDateString('es-ES')}
-                      </Text>
-                      {offer.closing_date && (
-                        <Text style={[styles.offerDate, { color: COLORS.error, marginTop: 4 }]}>
-                          ⏰ Cierra: {new Date(offer.closing_date).toLocaleDateString('es-ES')}
+                      <View style={styles.offerDateRow}>
+                        <FontAwesome name="calendar-plus-o" size={12} color="#2196F3" />
+                        <Text style={styles.offerDate}>
+                          Publicado: {new Date(offer.created_at).toLocaleDateString('es-ES')}
                         </Text>
+                      </View>
+                      {offer.closing_date && (
+                        <View style={[styles.offerDateRow, { marginTop: 4 }]}>
+                          <FontAwesome name="clock-o" size={12} color={COLORS.error} />
+                          <Text style={[styles.offerDate, { color: COLORS.error }]}>
+                            Cierra: {new Date(offer.closing_date).toLocaleDateString('es-ES')}
+                          </Text>
+                        </View>
                       )}
                     </View>
                     <TouchableOpacity 

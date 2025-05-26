@@ -33,14 +33,17 @@ const getThemeColors = (colorScheme: string) => {
     text: isDark ? '#f0f0f0' : '#333',
     textLight: isDark ? '#bbbbbb' : '#666',
     error: '#e74c3c',
-    success: '#2ecc71',
-    white: isDark ? '#1e1e1e' : '#ffffff',
+    success: '#2ecc71',    white: isDark ? '#1e1e1e' : '#ffffff',
     border: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(43, 31, 60, 0.2)',
     buttonText: '#ffffff',
     disabledButton: '#a0a0a0',
     shadow: 'rgba(0, 0, 0, 0.15)',
-    inputBackground: isDark ? '#333333' : 'rgba(255, 255, 255, 0.9)',
+    inputBackground: isDark ? '#1e1e1e' : '#ffffff',
     placeholderText: isDark ? '#888888' : '#999999',
+    labelText: isDark ? '#ffffff' : '#000000',
+    titleText: isDark ? '#ffffff' : '#ffffff',
+    buttonPrimaryText: isDark ? '#ffffff' : '#ffffff',
+    iconPrimary: isDark ? '#ffffff' : '#ffffff',
   };
 };
 
@@ -244,7 +247,7 @@ export default function ApplyFormScreen() {
           style={styles.backButton} 
           onPress={() => router.back()}
         >
-          <FontAwesome name="arrow-left" size={20} color={COLORS.white} />
+          <FontAwesome name="arrow-left" size={20} color={COLORS.iconPrimary} />
         </TouchableOpacity>
         <Text style={styles.title}>Aplicar a Oferta</Text>
         <Text style={styles.subtitle}>Completa tu información para aplicar</Text>
@@ -363,10 +366,9 @@ export default function ApplyFormScreen() {
             >
               <RNView style={styles.buttonContent}>
                 {loading ? (
-                  <ActivityIndicator size="small" color={COLORS.white} />
-                ) : (
+                  <ActivityIndicator size="small" color={COLORS.iconPrimary} />                ) : (
                   <>
-                    <FontAwesome name="paper-plane" size={18} color={COLORS.white} style={styles.buttonIconLeft} />
+                    <FontAwesome name="paper-plane" size={18} color={COLORS.iconPrimary} style={styles.buttonIconLeft} />
                     <RNText style={styles.buttonPrimaryText}>Enviar Aplicación</RNText>
                   </>
                 )}
@@ -429,7 +431,7 @@ const createStyles = (COLORS: ReturnType<typeof getThemeColors>) => StyleSheet.c
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: COLORS.white,
+    color: COLORS.titleText,
     marginBottom: 5,
     textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
@@ -473,19 +475,18 @@ const createStyles = (COLORS: ReturnType<typeof getThemeColors>) => StyleSheet.c
     color: COLORS.text,
     marginLeft: 10,
     flex: 1,
-  },
-  inputContainer: {
+  },  inputContainer: {
     width: '100%',
     marginBottom: 20,
-  },
-  label: {
+    backgroundColor: COLORS.white,
+  },  label: {
     fontSize: 16,
     marginBottom: 8,
     fontWeight: '600',
-    color: COLORS.primary,
+    color: COLORS.labelText,
     letterSpacing: 0.3,
-  },
-  inputWrapper: {
+    backgroundColor: COLORS.white,
+  },inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
@@ -500,20 +501,17 @@ const createStyles = (COLORS: ReturnType<typeof getThemeColors>) => StyleSheet.c
   inputIcon: {
     marginLeft: 12,
     marginRight: 10,
-  },
-  input: {
+  },  input: {
     flex: 1,
     padding: 12,
     fontSize: 16,
     color: COLORS.text,
-  },
-  textAreaWrapper: {
+  },textAreaWrapper: {
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 10,
     backgroundColor: COLORS.inputBackground,
-  },
-  textArea: {
+  },  textArea: {
     padding: 12,
     fontSize: 16,
     color: COLORS.text,
@@ -562,10 +560,10 @@ const createStyles = (COLORS: ReturnType<typeof getThemeColors>) => StyleSheet.c
     color: COLORS.text,
     fontSize: 14,
     lineHeight: 20,
-  },
-  buttonContainer: {
+  },  buttonContainer: {
     width: '100%',
     gap: 12,
+    backgroundColor: COLORS.white,
   },
   buttonPrimary: {
     backgroundColor: COLORS.primary,
@@ -603,9 +601,8 @@ const createStyles = (COLORS: ReturnType<typeof getThemeColors>) => StyleSheet.c
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
-  },
-  buttonPrimaryText: {
-    color: COLORS.white,
+  },  buttonPrimaryText: {
+    color: COLORS.buttonPrimaryText,
     fontSize: 16,
     fontWeight: 'bold',
     letterSpacing: 0.5,
