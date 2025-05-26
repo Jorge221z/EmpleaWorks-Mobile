@@ -694,7 +694,7 @@ const SaveButton = ({ isSaved, isLoading, onPress }: { isSaved: boolean; isLoadi
   const buttonContainerStyle = {
     flex: 1,
     borderRadius: 15,
-    overflow: 'hidden',
+    overflow: 'hidden' as 'hidden',
     minHeight: 54,
     elevation: 3,
     shadowColor: COLORS.shadowColor,
@@ -710,7 +710,7 @@ const SaveButton = ({ isSaved, isLoading, onPress }: { isSaved: boolean; isLoadi
     paddingVertical: 16,
     paddingHorizontal: 8,
     minHeight: 54,
-    width: '100%',
+    width: '100%' as unknown as number, // Fix: cast to number to satisfy ViewStyle, or remove this line if not strictly needed
     backgroundColor: COLORS.saveButtonBackground,
     borderWidth: 2,
     borderColor: COLORS.saveButtonBorder,  // Same border color for both states
