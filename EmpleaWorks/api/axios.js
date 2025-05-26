@@ -414,3 +414,22 @@ export const updatePassword = async (passwordData) => {
     throw error.response?.data || { message: 'Error al actualizar la contraseña' };
   }
 };
+
+// Función para verificar si el usuario ya aplicó a una oferta específica
+export const checkIfUserAppliedToOffer = async (offerId) => {
+  try {
+    const dashboardData = await getCandidateDashboard();
+    
+    // Verificar si la respuesta es un array
+    const applications = Array.isArray(dashboardData) ? dashboardData : (dashboardData.applications || []);
+    
+    // Buscar si existe una aplicación para el offerId especificado
+    const hasApplied = applications.some(offer => offer.id === parseInt(offerId));
+    
+    return hasApplied;
+  } catch (error) {
+    console.error('Error al verificar si el usuario aplicó a la oferta:', error);
+    // En caso de error, asumir que no aplicó para no bloquear la funcionalidad
+    return false;
+  }
+};

@@ -9,7 +9,6 @@ import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'react-native';
 import Colors from '@/constants/Colors';
-import { __DEV__ } from 'react-native';
 
 // Constantes de diseño
 const getThemeColors = (colorScheme: string) => {

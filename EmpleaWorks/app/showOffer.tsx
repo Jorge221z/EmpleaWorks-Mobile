@@ -1,9 +1,9 @@
 import { StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { Text, View } from '@/components/Themed';
-import { useEffect, useState } from 'react';
-import { getOfferDetails, applyToOffer } from '@/api/axios';
+import { useEffect, useState, useCallback } from 'react';
+import { getOfferDetails, applyToOffer, checkIfUserAppliedToOffer } from '@/api/axios';
 import { useAuth } from '@/context/AuthContext';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -408,6 +408,26 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     textAlign: 'center',
     flex: 1,
   },
+  appliedButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    minHeight: 54,
+    width: '100%',
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.success,
+    borderRadius: 15,
+  },
+  appliedButtonText: {
+    color: colors.success,
+    fontWeight: 'bold',
+    fontSize: 17,
+    textAlign: 'center',
+    flex: 1,
+  },
   applyButton: {
     // Estilo específico para el botón de aplicar si es necesario
   },
@@ -452,7 +472,8 @@ export default function ShowOfferScreen() {
   const [offer, setOffer] = useState<OfferDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [applying, setApplying] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
+  const [checkingApplication, setCheckingApplication] = useState(false);
 
   // Función para determinar si una oferta es nueva (4 días o menos)
   const isOfferNew = (createdAt: string): boolean => {
@@ -460,6 +481,22 @@ export default function ShowOfferScreen() {
     const currentDate = new Date();
     const daysDifference = Math.floor((currentDate.getTime() - offerDate.getTime()) / (1000 * 60 * 60 * 24));
     return daysDifference <= 4;
+  };
+  // Función para verificar si el usuario ya aplicó a esta oferta
+  const checkApplicationStatus = async () => {
+    if (!offerId) return;
+    
+    try {
+      setCheckingApplication(true);
+      const applied = await checkIfUserAppliedToOffer(offerId);
+      setHasApplied(applied);
+    } catch (error) {
+      console.error("Error al verificar estado de aplicación:", error);
+      // En caso de error, asumir que no aplicó
+      setHasApplied(false);
+    } finally {
+      setCheckingApplication(false);
+    }
   };
 
   // Función para obtener los detalles de la oferta
@@ -474,6 +511,9 @@ export default function ShowOfferScreen() {
       setError(null);
       const response = await getOfferDetails(offerId);
       setOffer(response);
+      
+      // Verificar si el usuario ya aplicó después de obtener los detalles
+      await checkApplicationStatus();
     } catch (error) {
       console.error("Error al obtener detalles de la oferta:", error);
       setError(error instanceof Error ? error.message : String(error));
@@ -485,35 +525,25 @@ export default function ShowOfferScreen() {
   // Función para aplicar a la oferta
   const handleApplyToOffer = async () => {
     if (!offer) return;
-
-    try {
-      setApplying(true);
-      
-      // Datos básicos de la aplicación (puedes expandir esto según tu API)
-      const applicationData = {
-        phone: '', // Podrías obtener esto del perfil del usuario
-        email: '', // También del perfil del usuario
-        cl: 'Interesado en esta posición', // Carta de presentación básica
-        offer_id: offer.id,
-      };
-
-      await applyToOffer(applicationData);
-      
+    
+    // Si el usuario ya aplicó, mostrar mensaje informativo
+    if (hasApplied) {
       Alert.alert(
-        'Aplicación enviada',
-        'Tu aplicación ha sido enviada exitosamente',
-        [{ text: 'OK', onPress: () => router.back() }]
-      );
-    } catch (error) {
-      console.error('Error al aplicar a la oferta:', error);
-      Alert.alert(
-        'Error',
-        'Hubo un problema al enviar tu aplicación. Por favor, intenta de nuevo.',
+        'Ya aplicaste',
+        'Ya has enviado tu aplicación a esta oferta. Puedes revisar el estado en la sección "Mis Solicitudes".',
         [{ text: 'OK' }]
       );
-    } finally {
-      setApplying(false);
+      return;
     }
+
+    // Navegar al formulario de aplicación con los datos de la oferta
+    router.push({
+      pathname: '/ApplyForm' as any,
+      params: {
+        offerId: offer.id.toString(),
+        offerTitle: offer.name,
+      }
+    });
   };
 
   // Función para guardar la oferta (placeholder - implementar según tu lógica)
@@ -533,6 +563,16 @@ export default function ShowOfferScreen() {
       router.replace('/login');
     }
   }, [isAuthenticated, offerId]);
+
+  // Recargar el estado de aplicación cuando el usuario regrese a esta pantalla
+  useFocusEffect(
+    useCallback(() => {
+      // Solo verificar si ya tenemos los datos de la oferta
+      if (offer && offerId) {
+        checkApplicationStatus();
+      }
+    }, [offer, offerId])
+  );
 
   return (
     <View style={styles.container}>
@@ -565,6 +605,14 @@ export default function ShowOfferScreen() {
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={COLORS.primary} />
             <Text style={styles.loadingText}>Cargando detalles...</Text>
+          </View>
+        )}
+        
+        {/* Checking Application Status */}
+        {!loading && offer && checkingApplication && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={COLORS.secondary} />
+            <Text style={styles.loadingText}>Verificando estado...</Text>
           </View>
         )}        
         
@@ -729,24 +777,40 @@ export default function ShowOfferScreen() {
               <TouchableOpacity 
                 style={[styles.actionButton, styles.applyButton]}
                 onPress={handleApplyToOffer}
-                disabled={applying}
+                disabled={checkingApplication}
               >
-                <LinearGradient
-                  colors={[COLORS.primary, COLORS.secondary]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.buttonGradient}
-                >
-                  <Icon 
-                    name={applying ? "spinner" : "paper-plane"} 
-                    size={16} 
-                    color="#ffffff" 
-                    style={styles.buttonIcon}
-                  />
-                  <Text style={styles.buttonText} numberOfLines={1} ellipsizeMode="tail">
-                    {applying ? "Aplicando..." : "Inscribirse"}
-                  </Text>
-                </LinearGradient>
+                {hasApplied ? (
+                  // Botón para usuarios que ya aplicaron
+                  <View style={styles.appliedButtonContainer}>
+                    <Icon 
+                      name="check-circle" 
+                      size={16} 
+                      color={COLORS.success} 
+                      style={styles.buttonIcon}
+                    />
+                    <Text style={styles.appliedButtonText} numberOfLines={1} ellipsizeMode="tail">
+                      Inscrito
+                    </Text>
+                  </View>
+                ) : (
+                  // Botón normal para aplicar
+                  <LinearGradient
+                    colors={[COLORS.primary, COLORS.secondary]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.buttonGradient}
+                  >
+                    <Icon 
+                      name="paper-plane" 
+                      size={16} 
+                      color="#ffffff" 
+                      style={styles.buttonIcon}
+                    />
+                    <Text style={styles.buttonText} numberOfLines={1} ellipsizeMode="tail">
+                      Inscribirse
+                    </Text>
+                  </LinearGradient>
+                )}
               </TouchableOpacity>
             </View>
           </View>
