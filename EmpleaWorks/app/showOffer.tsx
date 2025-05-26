@@ -1046,7 +1046,9 @@ const SaveButton = ({ isSaved, isLoading, onPress }: { isSaved: boolean; isLoadi
             </View>
           </View>        )}
         <View style={[styles.container, { height: 50 }]} />
-      </ScrollView>      {/* Email Verification Modal */}
+      </ScrollView>
+      
+      {/* Email Verification Modal */}
       <Modal
         visible={showEmailVerification}
         animationType="slide"
