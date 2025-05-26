@@ -21,23 +21,317 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { FontAwesome } from '@expo/vector-icons';
+import { useColorScheme } from '@/components/useColorScheme';
+import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
 
 // Constantes de diseño
-const COLORS = {
-  primary: '#4A2976',
-  primaryLight: '#3d2c52',
-  secondary: '#9b6dff',
-  accent: '#f6c667',
-  background: '#f8f9fa',
-  text: '#333',
-  lightText: '#888',
-  error: '#e74c3c',
-  success: '#2ecc71',
-  white: '#ffffff',
-  border: 'rgba(43, 31, 60, 0.2)',
-  buttonText: '#ffffff',
-  disabledButton: '#a0a0a0',
-  inputBackground: 'rgba(255, 255, 255, 0.9)'
+const getThemeColors = (colorScheme: string) => {
+  const isDark = colorScheme === 'dark';
+  return {
+    primary: '#4A2976',
+    primaryLight: isDark ? '#5e3a8a' : '#3d2c52',
+    secondary: '#9b6dff',
+    accent: '#f6c667',
+    background: isDark ? '#121212' : '#f8f9fa',
+    white: isDark ? '#1e1e1e' : '#ffffff',    text: isDark ? '#f0f0f0' : '#333',
+    lightText: isDark ? '#bbbbbb' : '#666',
+    error: '#e74c3c',
+    success: '#2ecc71',
+    border: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(43, 31, 60, 0.15)',
+    card: isDark ? '#2d2d2d' : '#ffffff',
+    shadowColor: isDark ? '#000' : '#000',
+    debug: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(43, 31, 60, 0.05)',
+    golden: '#fac030',
+    cardBackground: isDark ? '#2d2d2d' : '#ffffff',
+    fieldBackground: isDark ? '#333333' : '#f8f8f8',
+    sectionHeaderBg: isDark ? '#242424' : '#f4f4f4',
+    buttonText: '#ffffff',
+    disabledButton: '#a0a0a0',
+    inputBackground: isDark ? '#333333' : 'rgba(255, 255, 255, 0.9)',
+    // Nuevos colores para los iconos y texto del CV
+    iconColor: isDark ? '#b794f6' : '#4A2976', // Más claro en dark theme
+    cvText: isDark ? '#ffffff' : '#4A2976', // Blanco en dark, purple en light
+    saveButtonText: isDark ? '#ffffff' : '#ffffff', // Siempre blanco
+    headerTitleColor: isDark ? '#ffffff' : '#ffffff', // Título siempre blanco
+    cancelButtonBg: isDark ? '#4a1e1e' : '#fef2f2', // Fondo rojizo sutil
+    cancelButtonText: isDark ? '#fca5a5' : '#dc2626', // Texto rojizo
+    cancelButtonBorder: isDark ? '#7f1d1d' : '#f87171', // Borde rojizo
+    changeImageText: isDark ? '#ffffff' : '#ffffff', // Siempre blanco en dark y light
+  };
+};
+
+// Create estilos dinamicos en funcion del tema
+const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
+  const { width } = Dimensions.get('window');
+  
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    headerGradient: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 120,
+    },
+    headerContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingTop: 60,
+      paddingBottom: 20,
+      zIndex: 1,
+    },    headerTitle: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: colors.headerTitleColor,
+      textShadowColor: 'rgba(0, 0, 0, 0.3)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 2,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingHorizontal: 20,
+      paddingBottom: 30,
+    },
+    loadingContainer: {
+      paddingTop: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    loaderCard: {
+      backgroundColor: colors.cardBackground,
+      padding: 30,
+      borderRadius: 15,
+      alignItems: 'center',
+      elevation: 5,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
+      width: width - 40,
+    },
+    loadingText: {
+      marginTop: 15,
+      fontSize: 16,
+      color: colors.primary,
+    },
+    formContainer: {
+      backgroundColor: colors.cardBackground,
+      borderRadius: 15,
+      padding: 20,
+      elevation: 3,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 5,
+      marginTop: 20,
+    },
+    imageSection: {
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    profileImageWrapper: {
+      alignItems: 'center',
+    },
+    profileImageContainer: {
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 5,
+      backgroundColor: colors.cardBackground,
+    },
+    profileImageTouchable: {
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      overflow: 'hidden',
+    },
+    profileImage: {
+      width: '100%',
+      height: '100%',
+    },
+    imageOverlay: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      height: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+      flexDirection: 'row',
+    },
+    changeImageText: {
+      color: colors.changeImageText, // Usar el color definido arriba
+      marginLeft: 8,
+      fontSize: 14,
+      fontWeight: 'bold',
+    },
+    removeImageButton: {
+      backgroundColor: colors.error,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 8,
+      paddingHorizontal: 15,
+      borderRadius: 20,
+      marginTop: 15,
+      elevation: 2,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+    },
+    removeImageText: {
+      color: colors.white,
+      fontWeight: 'bold',
+      fontSize: 14,
+      marginLeft: 5,
+    },
+    inputGroup: {
+      marginBottom: 18,
+    },    inputLabel: {
+      fontSize: 16,
+      fontWeight: '500',
+      marginBottom: 8,
+      color: colors.text,
+    },
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      backgroundColor: colors.inputBackground,
+    },
+    inputIcon: {
+      marginLeft: 12,
+      marginRight: 10,
+    },
+    input: {
+      flex: 1,
+      padding: 12,
+      fontSize: 16,
+      color: colors.text,
+    },
+    textAreaWrapper: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      backgroundColor: colors.inputBackground,
+    },
+    textArea: {
+      padding: 12,
+      fontSize: 16,
+      color: colors.text,
+      minHeight: 120,
+    },
+    cvContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    cvButton: {
+      borderWidth: 1,
+      borderColor: colors.primary,
+      borderRadius: 10,
+      padding: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+      backgroundColor: 'rgba(155, 109, 255, 0.05)',
+    },    cvButtonText: {
+      color: colors.cvText,
+      fontSize: 16,
+      flex: 1,
+      flexShrink: 1,
+      marginLeft: 5,
+    },
+    cvIcon: {
+      marginRight: 10,
+      flexShrink: 0,
+    },
+    removeCvButton: {
+      backgroundColor: 'rgba(231, 76, 60, 0.1)',
+      padding: 12,
+      borderRadius: 10,
+      marginLeft: 10,
+      borderWidth: 1,
+      borderColor: 'rgba(231, 76, 60, 0.3)',
+      height: 48,
+      width: 48,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    noteContainer: {
+      flexDirection: 'row',
+      backgroundColor: 'rgba(155, 109, 255, 0.1)',
+      borderRadius: 10,
+      padding: 15,
+      marginBottom: 18,
+      borderWidth: 1,
+      borderColor: 'rgba(155, 109, 255, 0.2)',
+      alignItems: 'flex-start',
+    },
+    noteText: {
+      flex: 1,
+      marginLeft: 10,
+      color: colors.text,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    saveButton: {
+      backgroundColor: colors.primary,
+      padding: 16,
+      borderRadius: 10,
+      alignItems: 'center',
+      marginBottom: 12,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      elevation: 3,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 3,
+    },
+    buttonDisabled: {
+      backgroundColor: colors.disabledButton,
+    },
+    buttonIcon: {
+      marginRight: 8,
+    },    saveButtonText: {
+      color: colors.saveButtonText,
+      fontWeight: 'bold',
+      fontSize: 16,
+    },    cancelButton: {
+      backgroundColor: colors.cancelButtonBg,
+      padding: 16,
+      borderRadius: 10,
+      alignItems: 'center',
+      marginTop: 8,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      elevation: 2,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      borderWidth: 1,
+      borderColor: colors.cancelButtonBorder,
+    },
+    cancelButtonText: {
+      color: colors.cancelButtonText,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  });
 };
 
 // Helper function to format image URLs
@@ -56,16 +350,21 @@ const formatImageUrl = (imagePath: string | null): string | null => {
 };
 
 // Componente LinearGradient con fallback para evitar errores
-const LinearGradient = (props) => {
+const LinearGradient = (props: any) => {
   try {
     return <ExpoLinearGradient {...props} />;
   } catch (error) {
     console.warn('LinearGradient error, using fallback View:', error);
-    return <RNView style={[props.style, { backgroundColor: COLORS.primary }]}>{props.children}</RNView>;
+    const { style, children } = props;
+    return <RNView style={[style, { backgroundColor: '#4A2976' }]}>{children}</RNView>;
   }
 };
 
 export default function EditProfileScreen() {
+  const colorScheme = useColorScheme();
+  const COLORS = getThemeColors(colorScheme || 'light');
+  const styles = createStyles(COLORS);
+
   const { user, setUser } = useAuth();
   const [name, setName] = useState('');
   const [surname, setSurname] = useState('');
@@ -455,7 +754,10 @@ export default function EditProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerGradient} />
+      <LinearGradient
+        colors={[COLORS.primary, COLORS.primaryLight]}
+        style={styles.headerGradient}
+      />
       
       <Animated.View style={[styles.headerContainer, { opacity: fadeAnim }]}>
         <Text style={styles.headerTitle}>Editar Perfil</Text>
@@ -538,12 +840,12 @@ export default function EditProfileScreen() {
                   </TouchableOpacity>
                 )}
               </View>
-            </View>
-
+              </View>
+              
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Nombre</Text>
               <View style={styles.inputWrapper}>
-                <FontAwesome name="user" size={18} color={COLORS.primary} style={styles.inputIcon} />
+                <FontAwesome name="user" size={18} color={COLORS.iconColor} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Tu nombre"
@@ -557,7 +859,7 @@ export default function EditProfileScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Apellidos</Text>
               <View style={styles.inputWrapper}>
-                <FontAwesome name="user" size={18} color={COLORS.primary} style={styles.inputIcon} />
+                <FontAwesome name="user" size={18} color={COLORS.iconColor} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Tus apellidos"
@@ -571,7 +873,7 @@ export default function EditProfileScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Correo electrónico</Text>
               <View style={styles.inputWrapper}>
-                <FontAwesome name="envelope" size={18} color={COLORS.primary} style={styles.inputIcon} />
+                <FontAwesome name="envelope" size={18} color={COLORS.iconColor} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="tu@email.com"
@@ -594,10 +896,9 @@ export default function EditProfileScreen() {
                   disabled={uploadingCV}
                 >
                   {uploadingCV ? (
-                    <ActivityIndicator color={COLORS.secondary} />
-                  ) : (
+                    <ActivityIndicator color={COLORS.secondary} />                  ) : (
                     <>
-                      <FontAwesome name="file-pdf-o" size={24} color={COLORS.primary} style={styles.cvIcon} />
+                      <FontAwesome name="file-pdf-o" size={24} color={COLORS.iconColor} style={styles.cvIcon} />
                       <Text 
                         style={styles.cvButtonText}
                         numberOfLines={1}
@@ -661,13 +962,13 @@ export default function EditProfileScreen() {
                 </>
               )}
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+              <TouchableOpacity 
               style={styles.cancelButton} 
               onPress={() => router.push('/profile')} 
               disabled={loading}
               activeOpacity={0.8}
             >
+              <FontAwesome name="times" size={18} color={COLORS.cancelButtonText} style={styles.buttonIcon} />
               <Text style={styles.cancelButtonText}>Cancelar</Text>
             </TouchableOpacity>
           </Animated.View>
@@ -677,267 +978,9 @@ export default function EditProfileScreen() {
   );
 }
 
-const { width } = Dimensions.get('window');
-
-const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: COLORS.white,
-  },
-  headerGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 150,
-    zIndex: 0,
-    backgroundColor: COLORS.primary,
-  },
-  headerContainer: {
-    paddingTop: 50,
-    paddingBottom: 20,
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.white,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 30,
-  },
-  loadingContainer: {
-    paddingTop: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loaderCard: {
-    backgroundColor: COLORS.white,
-    padding: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    width: width - 40,
-  },
-  loadingText: {
-    marginTop: 15,
-    fontSize: 16,
-    color: COLORS.primary,
-  },
-  formContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 15,
-    padding: 20,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    marginTop: 20,
-  },
-  imageSection: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  profileImageWrapper: {
-    alignItems: 'center',
-  },
-  profileImageContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
-    backgroundColor: COLORS.white,
-  },
-  profileImageTouchable: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    overflow: 'hidden',
-  },
-  profileImage: {
-    width: '100%',
-    height: '100%',
-  },
-  imageOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  changeImageText: {
-    color: COLORS.white,
-    marginLeft: 8,
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  removeImageButton: {
-    backgroundColor: COLORS.error,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    marginTop: 15,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  removeImageText: {
-    color: COLORS.white,
-    fontWeight: 'bold',
-    fontSize: 14,
-    marginLeft: 5,
-  },
-  inputGroup: {
-    marginBottom: 18,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 8,
-    color: COLORS.primary,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
-    backgroundColor: COLORS.inputBackground,
-  },
-  inputIcon: {
-    marginLeft: 12,
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    padding: 12,
-    fontSize: 16,
-    color: COLORS.text,
-  },
-  textAreaWrapper: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
-    backgroundColor: COLORS.inputBackground,
-  },
-  textArea: {
-    padding: 12,
-    fontSize: 16,
-    color: COLORS.text,
-    minHeight: 120,
-  },
-  cvContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  cvButton: {
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    borderRadius: 10,
-    padding: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    backgroundColor: 'rgba(155, 109, 255, 0.05)',
-  },
-  cvButtonText: {
-    color: COLORS.primary,
-    fontSize: 16,
-    flex: 1,
-    flexShrink: 1,
-    marginLeft: 5,
-  },
-  cvIcon: {
-    marginRight: 10,
-    flexShrink: 0,
-  },
-  removeCvButton: {
-    backgroundColor: 'rgba(231, 76, 60, 0.1)',
-    padding: 12,
-    borderRadius: 10,
-    marginLeft: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(231, 76, 60, 0.3)',
-    height: 48,
-    width: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  noteContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(155, 109, 255, 0.1)',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(155, 109, 255, 0.2)',
-    alignItems: 'flex-start',
-  },
-  noteText: {
-    flex: 1,
-    marginLeft: 10,
-    color: COLORS.text,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  saveButton: {
-    backgroundColor: COLORS.primary,
-    padding: 16,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-  },
-  buttonDisabled: {
-    backgroundColor: COLORS.disabledButton,
-  },
-  buttonIcon: {
-    marginRight: 8,
-  },
-  saveButtonText: {
-    color: COLORS.white,
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  cancelButton: {
-    alignItems: 'center',
-    padding: 12,
-  },
-  cancelButtonText: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontWeight: '500',
-  },
-});
+// Helper function to extract filename from URI
+const extractFileName = (uri: string): string | null => {
+  if (!uri) return null;
+  const parts = uri.split('/');
+  return parts[parts.length - 1] || null;
+};
