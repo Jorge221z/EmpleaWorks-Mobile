@@ -391,9 +391,23 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     borderColor: colors.saveButtonBorder,
     borderRadius: 15,
   },
+  disabledButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    minHeight: 54,
+    width: '100%',
+    backgroundColor: colors.fieldBackground,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: 15,
+  },
   buttonIcon: {
     marginRight: 6, // Reducir margen para mejor ajuste
     width: 16, // Ancho fijo del icono
+    backgroundColor: 'transparent',
   },  buttonText: {
     color: '#ffffff',
     fontWeight: 'bold',
@@ -406,6 +420,14 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     fontSize: 17, // Increased from 14 to 17
     textAlign: 'center',
     flex: 1,
+  },
+  disabledButtonText: {
+    color: colors.lightText,
+    fontWeight: 'bold',
+    fontSize: 17,
+    textAlign: 'center',
+    flex: 1,
+    backgroundColor: 'transparent',
   },
   appliedButtonContainer: {
     flexDirection: 'row',
@@ -813,31 +835,41 @@ export default function ShowOfferScreen() {
                 style={[styles.actionButton, styles.saveButton]}
                 onPress={handleSaveOffer}
                 disabled={savingOffer || hasApplied}
-              >                <View style={[
-                  styles.simpleButtonContainer,
-                  hasApplied && { 
-                    backgroundColor: COLORS.fieldBackground, 
-                    borderColor: COLORS.border, 
-                    opacity: 0.6 
-                  }
-                ]}>
-                  {savingOffer ? (
-                    <ActivityIndicator size="small" color={hasApplied ? COLORS.lightText : COLORS.saveButtonIcon} style={styles.buttonIcon} />
-                  ) : (
-                    <Icon 
-                      name={isSaved ? "bookmark" : "bookmark-o"} 
-                      size={16} 
-                      color={hasApplied ? COLORS.lightText : (isSaved ? COLORS.golden : COLORS.saveButtonIcon)} 
-                      style={styles.buttonIcon}
-                    />
-                  )}
-                  <Text style={[
-                    styles.simpleButtonText,
-                    hasApplied && { color: COLORS.lightText }
-                  ]} numberOfLines={1} ellipsizeMode="tail">
-                    {hasApplied ? 'No disponible' : (isSaved ? 'Guardada' : 'Guardar')}
-                  </Text>
-                </View>
+              >
+                {hasApplied ? (
+                  // Usando un contenedor específico para el estado deshabilitado
+                  <View style={styles.disabledButtonContainer}>
+                    {savingOffer ? (
+                      <ActivityIndicator size="small" color={COLORS.lightText} style={styles.buttonIcon} />
+                    ) : (
+                      <Icon 
+                        name="bookmark-o" 
+                        size={16} 
+                        color={COLORS.lightText}
+                        style={styles.buttonIcon}
+                      />
+                    )}
+                    <Text style={styles.disabledButtonText} numberOfLines={1} ellipsizeMode="tail">
+                      No disponible
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.simpleButtonContainer}>
+                    {savingOffer ? (
+                      <ActivityIndicator size="small" color={COLORS.saveButtonIcon} style={styles.buttonIcon} />
+                    ) : (
+                      <Icon 
+                        name={isSaved ? "bookmark" : "bookmark-o"} 
+                        size={16} 
+                        color={isSaved ? COLORS.golden : COLORS.saveButtonIcon} 
+                        style={styles.buttonIcon}
+                      />
+                    )}
+                    <Text style={styles.simpleButtonText} numberOfLines={1} ellipsizeMode="tail">
+                      {isSaved ? 'Guardada' : 'Guardar'}
+                    </Text>
+                  </View>
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity 
