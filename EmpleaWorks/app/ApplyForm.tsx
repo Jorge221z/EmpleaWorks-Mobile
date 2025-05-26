@@ -50,6 +50,10 @@ const getThemeColors = (colorScheme: string) => {
     iconPrimary: isDark ? '#ffffff' : '#ffffff',
     cardBackground: isDark ? '#2d2d2d' : '#ffffff',
     fieldBackground: isDark ? '#333333' : '#f8f8f8',
+    buttonSecondaryBackground: isDark ? '#404040' : '#f5f5f5',
+    buttonSecondaryBorder: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(43, 31, 60, 0.3)',
+    buttonSecondaryText: isDark ? '#ffffff' : '#000000',
+    buttonSecondaryIcon: isDark ? '#ffffff' : '#000000',
   };
 };
 
@@ -395,19 +399,19 @@ export default function ApplyFormScreen() {
                     <RNText style={styles.buttonPrimaryText}>Enviar Aplicación</RNText>
                   </LinearGradient>
                 )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.buttonSecondary}
-                onPress={() => router.back()}
-                disabled={loading}
-                activeOpacity={0.8}
-              >
-                <RNView style={styles.buttonContent}>
-                  <FontAwesome name="times" size={18} color={COLORS.primary} style={styles.buttonIconLeft} />
-                  <RNText style={styles.buttonSecondaryText}>Cancelar</RNText>
-                </RNView>
-              </TouchableOpacity>
+                </TouchableOpacity>
+                          
+                <TouchableOpacity
+                  style={styles.buttonSecondary}
+                  onPress={() => router.back()}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  <RNView style={styles.buttonContent}>
+                    <FontAwesome name="times" size={18} color={COLORS.buttonSecondaryIcon} style={styles.buttonIconLeft} />
+                    <RNText style={styles.buttonSecondaryText}>Cancelar</RNText>
+                  </RNView>
+                </TouchableOpacity>
             </View>
           </Animated.View>
         </ScrollView>
@@ -622,11 +626,10 @@ const createStyles = (COLORS: ReturnType<typeof getThemeColors>) => StyleSheet.c
     shadowOpacity: 0.3,
     shadowRadius: 6,
     overflow: 'hidden',
-  },
-  buttonSecondary: {
-    backgroundColor: COLORS.cardBackground,
+  },  buttonSecondary: {
+    backgroundColor: COLORS.buttonSecondaryBackground,
     borderWidth: 2,
-    borderColor: COLORS.primary,
+    borderColor: COLORS.buttonSecondaryBorder,
     paddingVertical: 18,
     paddingHorizontal: 24,
     borderRadius: 14,
@@ -653,13 +656,12 @@ const createStyles = (COLORS: ReturnType<typeof getThemeColors>) => StyleSheet.c
     fontSize: 16,
     fontWeight: 'bold',
     letterSpacing: 0.5,
-  },
-  buttonSecondaryText: {
-    color: COLORS.primary,
+  },  buttonSecondaryText: {
+    color: COLORS.buttonSecondaryText,
     fontSize: 16,
     fontWeight: 'bold',
     letterSpacing: 0.5,
-  },  buttonIconLeft: {
+  },buttonIconLeft: {
     marginRight: 8,
   },
   buttonGradient: {
