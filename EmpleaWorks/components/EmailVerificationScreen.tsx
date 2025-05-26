@@ -48,7 +48,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       console.error('Error al reenviar email:', error);
       Alert.alert(
         '❌ Error',
-        error?.message || 'No se pudo enviar el email de verificación. Inténtalo de nuevo.',
+        (error instanceof Error && error.message) ? error.message : 'No se pudo enviar el email de verificación. Inténtalo de nuevo.',
         [{ text: 'OK' }]
       );
     } finally {
