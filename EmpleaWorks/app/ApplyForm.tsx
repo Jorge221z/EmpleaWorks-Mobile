@@ -438,7 +438,8 @@ export default function ApplyFormScreen() {
                     <RNText style={styles.buttonSecondaryText}>Cancelar</RNText>
                   </RNView>
                 </TouchableOpacity>
-            </View>          </Animated.View>
+            </View>
+          </Animated.View>
         </ScrollView>
 
         {/* Modal de Verificación de Email */}
