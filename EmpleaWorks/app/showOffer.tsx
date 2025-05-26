@@ -1,7 +1,7 @@
 import { StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { useEffect, useState, useCallback } from 'react';
-import { getOfferDetails, applyToOffer, checkIfUserAppliedToOffer } from '@/api/axios';
+import { getOfferDetails, applyToOffer, checkIfUserAppliedToOffer, toggleSavedOffer, checkIfOfferIsSaved } from '@/api/axios';
 import { useAuth } from '@/context/AuthContext';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useColorScheme } from 'react-native';
@@ -67,10 +67,9 @@ const getThemeColors = (colorScheme: string) => {
     golden: '#fac030',
     cardBackground: isDark ? '#2d2d2d' : '#ffffff',
     fieldBackground: isDark ? '#333333' : '#f8f8f8',
-    sectionHeaderBg: isDark ? '#242424' : '#f4f4f4',
-    saveButtonBackground: isDark ? '#ffffff' : '#4a4a4a',
-    saveButtonText: isDark ? '#000000' : '#ffffff',
-    saveButtonBorder: isDark ? '#ffffff' : '#4a4a4a',
+    sectionHeaderBg: isDark ? '#242424' : '#f4f4f4',    saveButtonBackground: '#ffffff',
+    saveButtonText: '#000000',
+    saveButtonBorder: '#e0e0e0',
     saveButtonIcon: '#9b6dff',
     sectionIcon: isDark ? '#ffffff' : '#000000',
   };
@@ -468,12 +467,13 @@ export default function ShowOfferScreen() {
   const { isAuthenticated } = useAuth();
   const params = useLocalSearchParams();
   const offerId = params.id as string;
-  
-  const [offer, setOffer] = useState<OfferDetails | null>(null);
+    const [offer, setOffer] = useState<OfferDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasApplied, setHasApplied] = useState(false);
   const [checkingApplication, setCheckingApplication] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [savingOffer, setSavingOffer] = useState(false);
 
   // Función para determinar si una oferta es nueva (4 días o menos)
   const isOfferNew = (createdAt: string): boolean => {
@@ -481,7 +481,19 @@ export default function ShowOfferScreen() {
     const currentDate = new Date();
     const daysDifference = Math.floor((currentDate.getTime() - offerDate.getTime()) / (1000 * 60 * 60 * 24));
     return daysDifference <= 4;
+  };  // Función para verificar si la oferta está guardada
+  const checkSavedStatus = async () => {
+    if (!offerId) return;
+    
+    try {
+      const result = await checkIfOfferIsSaved(offerId);
+      setIsSaved(result.isSaved || false);
+    } catch (error) {
+      console.error("Error al verificar estado de oferta guardada:", error);
+      setIsSaved(false);
+    }
   };
+
   // Función para verificar si el usuario ya aplicó a esta oferta
   const checkApplicationStatus = async () => {
     if (!offerId) return;
@@ -504,9 +516,7 @@ export default function ShowOfferScreen() {
     if (!offerId) {
       setError('ID de oferta no válido');
       return;
-    }
-
-    try {
+    }    try {
       setLoading(true);
       setError(null);
       const response = await getOfferDetails(offerId);
@@ -514,6 +524,9 @@ export default function ShowOfferScreen() {
       
       // Verificar si el usuario ya aplicó después de obtener los detalles
       await checkApplicationStatus();
+      
+      // Verificar si la oferta está guardada
+      await checkSavedStatus();
     } catch (error) {
       console.error("Error al obtener detalles de la oferta:", error);
       setError(error instanceof Error ? error.message : String(error));
@@ -544,15 +557,53 @@ export default function ShowOfferScreen() {
         offerTitle: offer.name,
       }
     });
-  };
-
-  // Función para guardar la oferta (placeholder - implementar según tu lógica)
+  };  // Función para guardar/eliminar la oferta
   const handleSaveOffer = async () => {
-    Alert.alert(
-      'Funcionalidad pendiente',
-      'La función de guardar ofertas será implementada próximamente.',
-      [{ text: 'OK' }]
-    );
+    if (!offer || !offerId) return;
+    
+    // Si el usuario ya aplicó a esta oferta, no puede guardarla
+    if (hasApplied) {
+      Alert.alert(
+        'No disponible',
+        'No puedes guardar ofertas a las que ya has aplicado.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    
+    try {
+      setSavingOffer(true);
+      const response = await toggleSavedOffer(offerId);
+      
+      // Después del toggle, verificar el estado real desde el servidor
+      await checkSavedStatus();
+      
+      // Mostrar mensaje de confirmación
+      Alert.alert(
+        'Éxito',
+        response.message || 'Operación completada exitosamente',
+        [{ text: 'OK' }]
+      );
+      
+    } catch (error: any) {
+      console.error("Error al guardar/eliminar oferta:", error);
+      
+      let errorMessage = 'Error al procesar la solicitud';
+      
+      if (error.error) {
+        errorMessage = error.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert(
+        'Error',
+        errorMessage,
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setSavingOffer(false);
+    }
   };
 
   useEffect(() => {
@@ -563,13 +614,13 @@ export default function ShowOfferScreen() {
       router.replace('/login');
     }
   }, [isAuthenticated, offerId]);
-
-  // Recargar el estado de aplicación cuando el usuario regrese a esta pantalla
+  // Recargar el estado de aplicación y guardado cuando el usuario regrese a esta pantalla
   useFocusEffect(
     useCallback(() => {
       // Solo verificar si ya tenemos los datos de la oferta
       if (offer && offerId) {
         checkApplicationStatus();
+        checkSavedStatus();
       }
     }, [offer, offerId])
   );
@@ -607,14 +658,15 @@ export default function ShowOfferScreen() {
             <Text style={styles.loadingText}>Cargando detalles...</Text>
           </View>
         )}
-        
-        {/* Checking Application Status */}
-        {!loading && offer && checkingApplication && (
+          {/* Checking Application Status */}
+        {!loading && offer && (checkingApplication || savingOffer) && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="small" color={COLORS.secondary} />
-            <Text style={styles.loadingText}>Verificando estado...</Text>
+            <Text style={styles.loadingText}>
+              {checkingApplication ? 'Verificando estado...' : 'Procesando...'}
+            </Text>
           </View>
-        )}        
+        )}
         
         {/* Error State */}
         {error && (
@@ -760,16 +812,30 @@ export default function ShowOfferScreen() {
               <TouchableOpacity 
                 style={[styles.actionButton, styles.saveButton]}
                 onPress={handleSaveOffer}
-              >
-                <View style={styles.simpleButtonContainer}>
-                  <Icon 
-                    name="bookmark" 
-                    size={16} 
-                    color={COLORS.saveButtonIcon} 
-                    style={styles.buttonIcon}
-                  />
-                  <Text style={styles.simpleButtonText} numberOfLines={1} ellipsizeMode="tail">
-                    Guardar
+                disabled={savingOffer || hasApplied}
+              >                <View style={[
+                  styles.simpleButtonContainer,
+                  hasApplied && { 
+                    backgroundColor: COLORS.fieldBackground, 
+                    borderColor: COLORS.border, 
+                    opacity: 0.6 
+                  }
+                ]}>
+                  {savingOffer ? (
+                    <ActivityIndicator size="small" color={hasApplied ? COLORS.lightText : COLORS.saveButtonIcon} style={styles.buttonIcon} />
+                  ) : (
+                    <Icon 
+                      name={isSaved ? "bookmark" : "bookmark-o"} 
+                      size={16} 
+                      color={hasApplied ? COLORS.lightText : (isSaved ? COLORS.golden : COLORS.saveButtonIcon)} 
+                      style={styles.buttonIcon}
+                    />
+                  )}
+                  <Text style={[
+                    styles.simpleButtonText,
+                    hasApplied && { color: COLORS.lightText }
+                  ]} numberOfLines={1} ellipsizeMode="tail">
+                    {hasApplied ? 'No disponible' : (isSaved ? 'Guardada' : 'Guardar')}
                   </Text>
                 </View>
               </TouchableOpacity>

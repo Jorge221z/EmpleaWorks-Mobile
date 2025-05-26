@@ -449,85 +449,36 @@ export const checkIfUserAppliedToOffer = async (offerId) => {
 };
 
 
-// Alternar estado de guardado de una oferta
+// Funciones para manejar ofertas guardadas
 export const toggleSavedOffer = async (offerId) => {
   try {
-    console.log('🔍 toggleSavedOffer - Enviando offerId:', offerId, 'tipo:', typeof offerId);
     const response = await api.post(`/saved-offers/${offerId}`);
-    console.log('🔍 toggleSavedOffer - Respuesta del servidor:', response.data);
-    console.log('🔍 toggleSavedOffer - Status:', response.status);
     return response.data;
   } catch (error) {
-    console.error('❌ toggleSavedOffer - Error:', error?.response?.data || error);
-    
-    // Verificar si es un error de verificación de email
-    const verificationError = handleEmailVerificationError(error?.response?.data || error);
-    if (verificationError.isEmailVerificationError) {
-      console.log('🚨 toggleSavedOffer - Error de verificación de email detectado');
-      throw {
-        ...error?.response?.data,
-        isEmailVerificationError: true,
-        needsEmailVerification: true,
-        ...verificationError
-      };
-    }
-    
-    throw error.response?.data || { message: 'Error al alternar estado de oferta guardada' };
+    console.error('Toggle saved offer error:', error?.response?.data || error);
+    throw error.response?.data || { message: 'Error al guardar/eliminar oferta' };
   }
 };
 
-// Obtener ofertas guardadas
 export const getSavedOffers = async () => {
   try {
     const response = await api.get('/saved-offers');
-    console.log('🔍 getSavedOffers - Respuesta completa del servidor:', response.data);
-    console.log('🔍 getSavedOffers - Status:', response.status);
-    
-    // Manejar diferentes estructuras de respuesta que el backend podría devolver
-    let savedOffers = null;
-    
-    if (response.data.savedOffers) {
-      // Estructura esperada: { savedOffers: [...] }
-      savedOffers = response.data.savedOffers;
-      console.log('🔍 getSavedOffers - Usando response.data.savedOffers');
-    } else if (response.data.data) {
-      // Posible estructura alternativa: { data: [...] }
-      savedOffers = response.data.data;
-      console.log('🔍 getSavedOffers - Usando response.data.data');
-    } else if (Array.isArray(response.data)) {
-      // Estructura directa: [...]
-      savedOffers = response.data;
-      console.log('🔍 getSavedOffers - Usando response.data directamente (es array)');
-    } else if (response.data.offers) {
-      // Otra posible estructura: { offers: [...] }
-      savedOffers = response.data.offers;
-      console.log('🔍 getSavedOffers - Usando response.data.offers');
-    } else {
-      // Si no encontramos ninguna estructura conocida, loggear todo para debug
-      console.log('🔍 getSavedOffers - Estructura no reconocida, claves disponibles:', Object.keys(response.data));
-      savedOffers = [];
-    }
-    
-    console.log('🔍 getSavedOffers - Ofertas finales a devolver:', savedOffers);
-    console.log('🔍 getSavedOffers - Cantidad:', savedOffers?.length || 0);
-    
-    return savedOffers || [];
+    return response.data;
   } catch (error) {
-    console.error('❌ getSavedOffers - Error:', error?.response?.data || error);
-    
-    // Verificar si es un error de verificación de email
-    const verificationError = handleEmailVerificationError(error?.response?.data || error);
-    if (verificationError.isEmailVerificationError) {
-      console.log('🚨 getSavedOffers - Error de verificación de email detectado');
-      throw {
-        ...error?.response?.data,
-        isEmailVerificationError: true,
-        needsEmailVerification: true,
-        ...verificationError
-      };
-    }
-    
+    console.error('Get saved offers error:', error?.response?.data || error);
     throw error.response?.data || { message: 'Error al obtener ofertas guardadas' };
+  }
+};
+
+export const checkIfOfferIsSaved = async (offerId) => {
+  try {
+    const response = await getSavedOffers();
+    const savedOffers = response.savedOffers || [];
+    const isSaved = savedOffers.some(offer => offer.id.toString() === offerId.toString());
+    return { isSaved };
+  } catch (error) {
+    console.error('Check if offer is saved error:', error?.response?.data || error);
+    return { isSaved: false }; // Return false by default if error
   }
 };
 
