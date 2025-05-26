@@ -11,15 +11,18 @@ import {
   Animated,
   Dimensions,
   View as RNView,
-  Text as RNText
+  Text as RNText,
+  Modal
 } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { router, useLocalSearchParams } from 'expo-router';
-import { applyToOffer } from '@/api/axios';
+import { applyToOffer, handleEmailVerificationError } from '@/api/axios';
 import { useAuth } from '@/context/AuthContext';
 import { FontAwesome } from '@expo/vector-icons';
 import { useColorScheme } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useEmailVerificationGuard } from '@/hooks/useEmailVerification';
+import EmailVerificationScreen from '@/components/EmailVerificationScreen';
 
 // Theme colors (similar to showOffer.tsx)
 const getThemeColors = (colorScheme: string) => {
@@ -78,13 +81,16 @@ export default function ApplyFormScreen() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [coverLetter, setCoverLetter] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<FormErrors>({
+  const [loading, setLoading] = useState(false);  const [errors, setErrors] = useState<FormErrors>({
     phone: '',
     email: '',
     cl: '',
     general: ''
   });
+  
+  // Email verification
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const { verificationState, checkBeforeAction, handleApiError } = useEmailVerificationGuard();
   
   // Animation states
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -162,11 +168,23 @@ export default function ApplyFormScreen() {
     setErrors(newErrors);
     return isValid;
   };
-
   const handleSubmit = async () => {
     if (!validateForm()) {
       return;
     }
+
+    // 🔒 VERIFICACIÓN DE EMAIL REQUERIDA
+    console.log('🔒 Verificando email antes de aplicar a oferta...');
+    
+    const verificationResult = await checkBeforeAction('aplicar a esta oferta');
+    
+    if (verificationResult.needsVerification) {
+      console.log('🚫 Email no verificado, mostrando pantalla de verificación');
+      setShowEmailVerification(true);
+      return;
+    }
+    
+    console.log('✅ Email verificado, procediendo con aplicación a oferta');
 
     try {
       setLoading(true);
@@ -194,7 +212,15 @@ export default function ApplyFormScreen() {
         ]
       );    } catch (error: any) {
       console.error('Error al aplicar a la oferta:', error);
-        // Check if the error is about missing CV
+        // 🚨 VERIFICAR SI ES ERROR DE VERIFICACIÓN DE EMAIL
+      const emailVerificationError = handleEmailVerificationError(error);
+      if (emailVerificationError.isEmailVerificationError) {
+        console.log('🚨 Error de verificación de email detectado durante aplicación');
+        setShowEmailVerification(true);
+        return;
+      }
+      
+      // Check if the error is about missing CV
       if (error && typeof error === 'object' && error.error === "Debes subir un CV antes de aplicar.") {
         Alert.alert(
           'CV Requerido',
@@ -412,9 +438,26 @@ export default function ApplyFormScreen() {
                     <RNText style={styles.buttonSecondaryText}>Cancelar</RNText>
                   </RNView>
                 </TouchableOpacity>
-            </View>
-          </Animated.View>
+            </View>          </Animated.View>
         </ScrollView>
+
+        {/* Modal de Verificación de Email */}
+        <Modal
+          visible={showEmailVerification}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowEmailVerification(false)}
+        >
+          <EmailVerificationScreen
+            email={verificationState?.email}
+            onGoBack={() => setShowEmailVerification(false)}
+            onVerificationSent={() => {
+              // Opcionalmente puedes cerrar el modal después de enviar
+              // setShowEmailVerification(false);
+            }}
+            showAsModal={true}
+          />
+        </Modal>
       </KeyboardAvoidingView>
     </View>
   );

@@ -361,6 +361,20 @@ export const applyToOffer = async (applicationData) => {
     const response = await api.post(`/offers/${applicationData.offer_id}/apply`, applicationData);
     return response.data;
   } catch (error) {
+    console.error('❌ applyToOffer - Error:', error?.response?.data || error);
+    
+    // Verificar si es un error de verificación de email usando la función helper
+    const verificationError = handleEmailVerificationError(error?.response?.data || error);
+    if (verificationError.isEmailVerificationError) {
+      console.log('🚨 applyToOffer - Error de verificación de email detectado');
+      throw {
+        ...error?.response?.data,
+        isEmailVerificationError: true,
+        needsEmailVerification: true,
+        ...verificationError
+      };
+    }
+    
     throw error.response?.data || { message: 'Error al aplicar a la oferta' };
   }
 };
@@ -432,4 +446,186 @@ export const checkIfUserAppliedToOffer = async (offerId) => {
     // En caso de error, asumir que no aplicó para no bloquear la funcionalidad
     return false;
   }
+};
+
+
+// Alternar estado de guardado de una oferta
+export const toggleSavedOffer = async (offerId) => {
+  try {
+    console.log('🔍 toggleSavedOffer - Enviando offerId:', offerId, 'tipo:', typeof offerId);
+    const response = await api.post(`/saved-offers/${offerId}`);
+    console.log('🔍 toggleSavedOffer - Respuesta del servidor:', response.data);
+    console.log('🔍 toggleSavedOffer - Status:', response.status);
+    return response.data;
+  } catch (error) {
+    console.error('❌ toggleSavedOffer - Error:', error?.response?.data || error);
+    
+    // Verificar si es un error de verificación de email
+    const verificationError = handleEmailVerificationError(error?.response?.data || error);
+    if (verificationError.isEmailVerificationError) {
+      console.log('🚨 toggleSavedOffer - Error de verificación de email detectado');
+      throw {
+        ...error?.response?.data,
+        isEmailVerificationError: true,
+        needsEmailVerification: true,
+        ...verificationError
+      };
+    }
+    
+    throw error.response?.data || { message: 'Error al alternar estado de oferta guardada' };
+  }
+};
+
+// Obtener ofertas guardadas
+export const getSavedOffers = async () => {
+  try {
+    const response = await api.get('/saved-offers');
+    console.log('🔍 getSavedOffers - Respuesta completa del servidor:', response.data);
+    console.log('🔍 getSavedOffers - Status:', response.status);
+    
+    // Manejar diferentes estructuras de respuesta que el backend podría devolver
+    let savedOffers = null;
+    
+    if (response.data.savedOffers) {
+      // Estructura esperada: { savedOffers: [...] }
+      savedOffers = response.data.savedOffers;
+      console.log('🔍 getSavedOffers - Usando response.data.savedOffers');
+    } else if (response.data.data) {
+      // Posible estructura alternativa: { data: [...] }
+      savedOffers = response.data.data;
+      console.log('🔍 getSavedOffers - Usando response.data.data');
+    } else if (Array.isArray(response.data)) {
+      // Estructura directa: [...]
+      savedOffers = response.data;
+      console.log('🔍 getSavedOffers - Usando response.data directamente (es array)');
+    } else if (response.data.offers) {
+      // Otra posible estructura: { offers: [...] }
+      savedOffers = response.data.offers;
+      console.log('🔍 getSavedOffers - Usando response.data.offers');
+    } else {
+      // Si no encontramos ninguna estructura conocida, loggear todo para debug
+      console.log('🔍 getSavedOffers - Estructura no reconocida, claves disponibles:', Object.keys(response.data));
+      savedOffers = [];
+    }
+    
+    console.log('🔍 getSavedOffers - Ofertas finales a devolver:', savedOffers);
+    console.log('🔍 getSavedOffers - Cantidad:', savedOffers?.length || 0);
+    
+    return savedOffers || [];
+  } catch (error) {
+    console.error('❌ getSavedOffers - Error:', error?.response?.data || error);
+    
+    // Verificar si es un error de verificación de email
+    const verificationError = handleEmailVerificationError(error?.response?.data || error);
+    if (verificationError.isEmailVerificationError) {
+      console.log('🚨 getSavedOffers - Error de verificación de email detectado');
+      throw {
+        ...error?.response?.data,
+        isEmailVerificationError: true,
+        needsEmailVerification: true,
+        ...verificationError
+      };
+    }
+    
+    throw error.response?.data || { message: 'Error al obtener ofertas guardadas' };
+  }
+};
+
+// ============================
+// EMAIL VERIFICATION FUNCTIONS
+// ============================
+
+// Obtener el estado de verificación del email del usuario
+export const getEmailVerificationStatus = async () => {
+  try {
+    const response = await api.get('/email/verification-status');
+    console.log('🔍 getEmailVerificationStatus - Respuesta:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ getEmailVerificationStatus - Error:', error?.response?.data || error);
+    throw error.response?.data || { message: 'Error al verificar estado del email' };
+  }
+};
+
+// Reenviar email de verificación
+export const resendEmailVerification = async () => {
+  try {
+    const response = await api.post('/email/verification-notification');
+    console.log('🔍 resendEmailVerification - Respuesta:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ resendEmailVerification - Error:', error?.response?.data || error);
+    throw error.response?.data || { message: 'Error al reenviar email de verificación' };
+  }
+};
+
+// Obtener información de pantalla de verificación
+export const getEmailVerificationNotice = async () => {
+  try {
+    const response = await api.get('/email/verification-notice');
+    console.log('🔍 getEmailVerificationNotice - Respuesta:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ getEmailVerificationNotice - Error:', error?.response?.data || error);
+    throw error.response?.data || { message: 'Error al obtener información de verificación' };
+  }
+};
+
+// Verificar si se requiere verificación de email para una acción específica
+export const checkEmailVerificationRequired = async () => {
+  try {
+    const statusResponse = await getEmailVerificationStatus();
+    const isVerified = statusResponse.data?.email_verified || false;
+    
+    console.log('🔍 checkEmailVerificationRequired - Email verificado:', isVerified);
+    return {
+      isRequired: !isVerified,
+      isVerified: isVerified,
+      email: statusResponse.data?.email,
+      userId: statusResponse.data?.user_id
+    };
+  } catch (error) {
+    console.error('❌ checkEmailVerificationRequired - Error:', error);
+    // En caso de error, asumir que se requiere verificación por seguridad
+    return {
+      isRequired: true,
+      isVerified: false,
+      error: true
+    };
+  }
+};
+
+// Manejar errores de verificación de email desde respuestas de API
+export const handleEmailVerificationError = (error) => {
+  // Verificar si el error es relacionado con verificación de email
+  if (error?.error === 'email_not_verified' || 
+      error?.message?.includes('verificar tu email') ||
+      error?.message?.includes('email_verified_at') ||
+      error?.action_required === 'email_verification') {
+    console.log('🚨 handleEmailVerificationError - Error de verificación de email detectado');
+    return {
+      isEmailVerificationError: true,
+      email: error?.data?.email,
+      userId: error?.data?.user_id,
+      message: error?.message || 'Necesitas verificar tu email para realizar esta acción.'
+    };
+  }
+  
+  // Verificar errores del backend Laravel relacionados con middleware de verificación
+  if (error?.message?.includes('Target class [verified') ||
+      error?.exception?.includes('BindingResolutionException') ||
+      error?.message?.includes('does not exist')) {
+    console.log('🚨 handleEmailVerificationError - Error de configuración del servidor detectado');
+    return {
+      isEmailVerificationError: true,
+      isBackendError: true,
+      email: error?.data?.email,
+      userId: error?.data?.user_id,
+      message: 'Hay un problema de configuración en el servidor. Es posible que necesites verificar tu email.'
+    };
+  }
+  
+  return {
+    isEmailVerificationError: false
+  };
 };

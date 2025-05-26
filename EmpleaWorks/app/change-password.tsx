@@ -11,12 +11,15 @@ import {
   Animated,
   Dimensions,
   View as RNView,
-  Text as RNText
+  Text as RNText,
+  Modal
 } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { router } from 'expo-router';
 import { getPasswordSettings, updatePassword } from '@/api/axios';
 import { FontAwesome } from '@expo/vector-icons';
+import { useEmailVerificationGuard } from '@/hooks/useEmailVerification';
+import EmailVerificationScreen from '@/components/EmailVerificationScreen';
 
 // Enhanced design constants
 const COLORS = {
@@ -44,13 +47,16 @@ export default function ChangePasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [isGoogleUser, setIsGoogleUser] = useState(false);
-  const [errors, setErrors] = useState({
+  const [isGoogleUser, setIsGoogleUser] = useState(false);  const [errors, setErrors] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
     general: ''
   });
+
+  // Email verification
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const { verificationState, checkBeforeAction, handleApiError } = useEmailVerificationGuard();
 
   // Animaciones
   const fadeAnim = useState(new Animated.Value(0))[0];
@@ -132,7 +138,6 @@ export default function ChangePasswordScreen() {
     setErrors(newErrors);
     return isValid;
   };
-
   // Manejar el envío del formulario
   const handleSubmit = async () => {
     if (isGoogleUser) {
@@ -143,6 +148,19 @@ export default function ChangePasswordScreen() {
       );
       return;
     }
+
+    // 🔒 VERIFICACIÓN DE EMAIL REQUERIDA
+    console.log('🔒 Verificando email antes de cambiar contraseña...');
+    
+    const verificationResult = await checkBeforeAction('cambiar contraseña');
+    
+    if (verificationResult.needsVerification) {
+      console.log('🚫 Email no verificado, mostrando pantalla de verificación');
+      setShowEmailVerification(true);
+      return;
+    }
+    
+    console.log('✅ Email verificado, procediendo con cambio de contraseña');
 
     if (!validateForm()) {
       return;
@@ -362,9 +380,26 @@ export default function ChangePasswordScreen() {
                 </TouchableOpacity>
               </View>
             </>
-          )}
-        </Animated.View>
+          )}        </Animated.View>
       </ScrollView>
+
+      {/* Modal de Verificación de Email */}
+      <Modal
+        visible={showEmailVerification}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowEmailVerification(false)}
+      >
+        <EmailVerificationScreen
+          email={verificationState?.email}
+          onGoBack={() => setShowEmailVerification(false)}
+          onVerificationSent={() => {
+            // Opcionalmente puedes cerrar el modal después de enviar
+            // setShowEmailVerification(false);
+          }}
+          showAsModal={true}
+        />
+      </Modal>
     </KeyboardAvoidingView>
   );
 }

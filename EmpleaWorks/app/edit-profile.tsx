@@ -11,12 +11,15 @@ import {
   Animated,
   Dimensions,
   Platform,
-  View as RNView
+  View as RNView,
+  Modal
 } from 'react-native';
 import { Text } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
 import { updateProfile, getProfile } from '@/api/axios';
 import { router } from 'expo-router';
+import { useEmailVerificationGuard } from '@/hooks/useEmailVerification';
+import EmailVerificationScreen from '@/components/EmailVerificationScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -378,10 +381,13 @@ export default function EditProfileScreen() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingCV, setUploadingCV] = useState(false);
   const [imageRemoved, setImageRemoved] = useState(false); // Nuevo estado para rastrear si la imagen fue eliminada
-
   // Añadir estados para rastrear si un campo se ha modificado
   const [newCvSelected, setNewCvSelected] = useState(false);
   const [newImageSelected, setNewImageSelected] = useState(false);
+
+  // Email verification
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const { verificationState, checkBeforeAction, handleApiError } = useEmailVerificationGuard();
 
   // Animaciones
   const fadeAnim = useState(new Animated.Value(0))[0];
@@ -625,8 +631,20 @@ export default function EditProfileScreen() {
       ]
     );
   };
-
   const handleSave = async () => {
+    // 🔒 VERIFICACIÓN DE EMAIL REQUERIDA
+    console.log('🔒 Verificando email antes de actualizar perfil...');
+    
+    const verificationResult = await checkBeforeAction('actualizar perfil');
+    
+    if (verificationResult.needsVerification) {
+      console.log('🚫 Email no verificado, mostrando pantalla de verificación');
+      setShowEmailVerification(true);
+      return;
+    }
+    
+    console.log('✅ Email verificado, procediendo con actualización de perfil');
+    
     setLoading(true);
     logUserData(); // Imprimir datos actuales para depuración
     
@@ -971,9 +989,26 @@ export default function EditProfileScreen() {
               <FontAwesome name="times" size={18} color={COLORS.cancelButtonText} style={styles.buttonIcon} />
               <Text style={styles.cancelButtonText}>Cancelar</Text>
             </TouchableOpacity>
-          </Animated.View>
-        )}
+          </Animated.View>        )}
       </ScrollView>
+
+      {/* Modal de Verificación de Email */}
+      <Modal
+        visible={showEmailVerification}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowEmailVerification(false)}
+      >
+        <EmailVerificationScreen
+          email={verificationState?.email}
+          onGoBack={() => setShowEmailVerification(false)}
+          onVerificationSent={() => {
+            // Opcionalmente puedes cerrar el modal después de enviar
+            // setShowEmailVerification(false);
+          }}
+          showAsModal={true}
+        />
+      </Modal>
     </View>
   );
 }

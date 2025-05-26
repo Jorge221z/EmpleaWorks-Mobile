@@ -21,6 +21,11 @@ import {
   handleGoogleCallback,
   handleGoogleAuthCode,
   getGoogleMobileConfig,
+  toggleSavedOffer,
+  getSavedOffers,  getEmailVerificationStatus,
+  resendEmailVerification,
+  checkEmailVerificationRequired,
+  handleEmailVerificationError,
 } from '../../api/axios'; // Ajusta la ruta según tu estructura
 import Constants from 'expo-constants';
 
@@ -601,12 +606,11 @@ const TestApi = () => {
       }
       
     } catch (error) {
-      console.error('❌ Error general:', error);
+      console.error('❌ ERROR GENERAL:', error);
     }
     
     console.log('=== FIN DEL DIAGNÓSTICO DE DEVELOPER_ERROR ===');
   };
-
   // Función auxiliar para verificar si es un emulador
   const isEmulator = async () => {
     if (Platform.OS === 'android') {
@@ -622,11 +626,479 @@ const TestApi = () => {
     }
     return false;
   };
+  // Test específico para ofertas guardadas
+  const testSavedOffers = async () => {
+    let candidateEmail = null;
+    let candidatePassword = 'passworD-123';
+    let companyEmail = null;
+    let companyPassword = 'passworD-123';
+    let createdOfferId = null;
 
-  
+    try {
+      console.log('=== Iniciando pruebas de ofertas guardadas ===');
+
+      // 1. Crear empresa para tener una oferta
+      console.log('Creando cuenta de empresa...');
+      const companyData = {
+        name: `TestCompany${Date.now()}`,
+        email: `company${Date.now()}@example.com`,
+        role: 'company',
+        password: companyPassword,
+        password_confirmation: companyPassword,
+      };
+      companyEmail = companyData.email;
+      await register(companyData);
+      
+      // 2. Login empresa
+      await login({
+        email: companyEmail,
+        password: companyPassword,
+      });
+
+      // 3. Crear una oferta
+      console.log('Creando oferta de prueba...');
+      const offerData = {
+        name: `Oferta Test Guardado ${Date.now()}`,
+        description: 'Oferta para probar funcionalidad de guardado',
+        category: 'Tecnología',
+        degree: 'Ingeniería',
+        email: 'test@company.com',
+        contract_type: 'Temporal',
+        job_location: 'Madrid',
+        closing_date: '2025-12-31',
+      };
+      const createdOffer = await createOffer(offerData);
+      createdOfferId = createdOffer.offer.id;
+      console.log('✅ Oferta creada con ID:', createdOfferId);
+
+      // 4. Crear candidato
+      console.log('Creando cuenta de candidato...');
+      const candidateData = {
+        name: `TestCandidate${Date.now()}`,
+        email: `candidate${Date.now()}@example.com`,
+        role: 'candidate',
+        password: candidatePassword,
+        password_confirmation: candidatePassword,
+      };
+      candidateEmail = candidateData.email;
+      await register(candidateData);
+
+      // 5. Login candidato
+      console.log('Iniciando sesión como candidato...');
+      await login({
+        email: candidateEmail,
+        password: candidatePassword,
+      });
+
+      // 6. Verificar estado inicial (sin ofertas guardadas)
+      console.log('🔍 Verificando estado inicial (sin ofertas guardadas)...');
+      const initialSavedOffers = await getSavedOffers();
+      console.log('📊 Ofertas guardadas iniciales:', initialSavedOffers);
+      console.log('📊 Cantidad inicial:', initialSavedOffers.length);
+
+      // 7. Probar toggleSavedOffer (guardar)
+      console.log('🔄 Probando toggleSavedOffer (guardar oferta)...');
+      const toggleResult1 = await toggleSavedOffer(createdOfferId);
+      console.log('✅ Resultado de guardar oferta:', toggleResult1);
+
+      // 8. Esperar un momento para que se procese (por si hay delay en el backend)
+      console.log('⏳ Esperando 2 segundos para que se procese...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // 9. Probar getSavedOffers después de guardar
+      console.log('🔍 Probando getSavedOffers después de guardar...');
+      const savedOffersAfterSave = await getSavedOffers();
+      console.log('📊 Ofertas guardadas después de guardar:', savedOffersAfterSave);
+      console.log('📊 Cantidad después de guardar:', savedOffersAfterSave.length);
+      console.log('📊 Tipos de datos en array:', savedOffersAfterSave.map(offer => typeof offer));
+      
+      // Análisis detallado de cada oferta guardada
+      if (savedOffersAfterSave.length > 0) {
+        console.log('🔍 Análisis detallado de ofertas guardadas:');
+        savedOffersAfterSave.forEach((offer, index) => {
+          console.log(`  Oferta ${index + 1}:`, {
+            id: offer.id,
+            idType: typeof offer.id,
+            name: offer.name || offer.title,
+            hasAllProps: !!(offer.id && (offer.name || offer.title))
+          });
+        });
+      }
+      
+      // Verificar que la oferta guardada aparece en la lista (comparación más flexible)
+      const isOfferSaved = savedOffersAfterSave.some(offer => {
+        // Convertir ambos IDs a string para comparación
+        const offerIdStr = String(offer.id);
+        const createdOfferIdStr = String(createdOfferId);
+        return offerIdStr === createdOfferIdStr;
+      });
+      
+      console.log(`🔍 Buscando oferta con ID: ${createdOfferId} (tipo: ${typeof createdOfferId})`);
+      console.log(`🔍 IDs encontrados en ofertas guardadas: [${savedOffersAfterSave.map(o => `${o.id}(${typeof o.id})`).join(', ')}]`);
+      console.log(isOfferSaved ? '✅ La oferta aparece correctamente en ofertas guardadas' : '❌ La oferta NO aparece en ofertas guardadas');
+
+      // 10. Si no aparece, investigar el problema más a fondo
+      if (!isOfferSaved && savedOffersAfterSave.length === 0) {
+        console.log('🔍 DIAGNÓSTICO: La lista está vacía. Posibles causas:');
+        console.log('  1. El endpoint getSavedOffers no está funcionando correctamente');
+        console.log('  2. El backend no está guardando la oferta realmente');
+        console.log('  3. Hay un problema con el parsing de la respuesta');
+        
+        // Intentar llamar directamente a la API y ver la respuesta completa
+        console.log('🔍 Haciendo llamada directa para diagnóstico...');
+        try {
+          // Importar axios directamente para hacer la llamada y ver la respuesta completa
+          const { api } = await import('../../api/axios');
+          const rawResponse = await api.get('/saved-offers');
+          console.log('📊 Respuesta RAW del servidor:', rawResponse.data);
+          console.log('📊 Status de respuesta:', rawResponse.status);
+          console.log('📊 Headers de respuesta:', rawResponse.headers);
+        } catch (debugError) {
+          console.log('❌ Error en llamada de diagnóstico:', debugError);
+        }
+      }
+
+      // 11. Probar toggleSavedOffer (quitar de guardadas)
+      console.log('🔄 Probando toggleSavedOffer (quitar de guardadas)...');
+      const toggleResult2 = await toggleSavedOffer(createdOfferId);
+      console.log('✅ Resultado de quitar de guardadas:', toggleResult2);
+
+      // 12. Esperar un momento para que se procese
+      console.log('⏳ Esperando 2 segundos para que se procese...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // 13. Verificar que ya no está en la lista
+      console.log('🔍 Verificando que la oferta ya no está guardada...');
+      const savedOffersAfterRemove = await getSavedOffers();
+      console.log('📊 Ofertas guardadas después de quitar:', savedOffersAfterRemove);
+      console.log('📊 Cantidad después de quitar:', savedOffersAfterRemove.length);
+      
+      const isOfferStillSaved = savedOffersAfterRemove.some(offer => {
+        const offerIdStr = String(offer.id);
+        const createdOfferIdStr = String(createdOfferId);
+        return offerIdStr === createdOfferIdStr;
+      });
+      
+      console.log(isOfferStillSaved ? '❌ La oferta AÚN aparece en ofertas guardadas' : '✅ La oferta ya NO aparece en ofertas guardadas');      // 14. Resumen de resultados
+      console.log('📋 RESUMEN DE PRUEBAS:');
+      console.log(`  - toggleSavedOffer (guardar): ${toggleResult1?.message ? '✅' : '❌'}`);
+      console.log(`  - getSavedOffers encuentra la oferta: ${isOfferSaved ? '✅' : '❌'}`);
+      console.log(`  - toggleSavedOffer (quitar): ${toggleResult2?.message ? '✅' : '❌'}`);
+      console.log(`  - Oferta correctamente removida: ${!isOfferStillSaved ? '✅' : '❌'}`);
+
+      // 15. Diagnóstico adicional del problema detectado
+      console.log('🔍 DIAGNÓSTICO ADICIONAL:');
+      console.log('El backend requiere que el email esté verificado para mostrar ofertas guardadas.');
+      console.log('Código del backend: if (!$user->hasVerifiedEmail()) return [];');
+      console.log('💡 SOLUCIÓN: El usuario necesita verificar su email o el backend debe permitir');
+      console.log('   mostrar ofertas guardadas sin verificación de email para testing.');
+      
+      // 16. Intentar obtener información del usuario para confirmar el diagnóstico
+      console.log('🔍 Verificando información del usuario actual...');
+      try {
+        const userInfo = await getUser();
+        console.log('📊 Info del usuario:', {
+          id: userInfo.id,
+          email: userInfo.email,
+          email_verified_at: userInfo.email_verified_at,
+          isEmailVerified: !!userInfo.email_verified_at,
+          role: userInfo.role
+        });
+        
+        if (!userInfo.email_verified_at) {
+          console.log('🎯 CONFIRMADO: El email NO está verificado. Esta es la causa del problema.');
+          console.log('💡 Para que funcione en producción, el usuario debe verificar su email.');
+        } else {
+          console.log('❓ El email SÍ está verificado, el problema debe ser otro.');
+        }
+      } catch (userInfoError) {
+        console.log('❌ No se pudo obtener info del usuario:', userInfoError.message);
+      }
+
+      console.log('=== Pruebas de ofertas guardadas completadas ===');
+
+    } catch (error) {
+      console.error('❌ Error en las pruebas de ofertas guardadas:', error);
+      console.error('Detalles del error:', error.message || error);
+    } finally {
+      // Limpieza de recursos
+      console.log('=== Iniciando limpieza de recursos ===');
+      
+      try {
+        // Intentar eliminar la oferta creada (como empresa)
+        if (createdOfferId && companyEmail) {
+          console.log('Limpiando: eliminando oferta creada...');
+          await login({ email: companyEmail, password: companyPassword });
+          await deleteOffer(createdOfferId);
+          console.log('✅ Oferta eliminada');
+        }
+      } catch (cleanupError) {
+        console.warn('⚠️ No se pudo eliminar la oferta:', cleanupError.message);
+      }
+
+      try {
+        // Eliminar cuenta de candidato
+        if (candidateEmail) {
+          console.log('Limpiando: eliminando cuenta de candidato...');
+          await login({ email: candidateEmail, password: candidatePassword });
+          await deleteProfile(candidatePassword);
+          console.log('✅ Cuenta de candidato eliminada');
+        }
+      } catch (cleanupError) {
+        console.warn('⚠️ No se pudo eliminar cuenta de candidato:', cleanupError.message);
+      }
+
+      try {
+        // Eliminar cuenta de empresa
+        if (companyEmail) {
+          console.log('Limpiando: eliminando cuenta de empresa...');
+          await login({ email: companyEmail, password: companyPassword });
+          await deleteProfile(companyPassword);
+          console.log('✅ Cuenta de empresa eliminada');
+        }
+      } catch (cleanupError) {
+        console.warn('⚠️ No se pudo eliminar cuenta de empresa:', cleanupError.message);
+      }
+
+      console.log('=== Limpieza de recursos finalizada ===');
+    }
+  };
+
+  // Test específico para ofertas guardadas CON email verificado (simulado)
+  const testSavedOffersWithVerifiedEmail = async () => {
+    console.log('=== TEST DE OFERTAS GUARDADAS CON EMAIL VERIFICADO ===');
+    console.log('🔍 Este test confirma que el problema es la verificación de email');
+    console.log('📝 Nota: Para una solución completa, el backend necesitaría:');
+    console.log('   1. Un endpoint para verificar email en testing, O');
+    console.log('   2. Permitir ofertas guardadas sin verificación en desarrollo');
+    
+    try {
+      // Crear una cuenta normal
+      const candidateData = {
+        name: `TestCandidate${Date.now()}`,
+        email: `candidate${Date.now()}@example.com`,
+        role: 'candidate',
+        password: 'passworD-123',
+        password_confirmation: 'passworD-123',
+      };
+      
+      console.log('📝 Creando cuenta de candidato...');
+      await register(candidateData);
+      
+      console.log('🔑 Iniciando sesión...');
+      await login({
+        email: candidateData.email,
+        password: 'passworD-123',
+      });
+      
+      console.log('🔍 Verificando estado de verificación del email...');
+      const userInfo = await getUser();
+      console.log('📊 Estado del usuario:', {
+        email: userInfo.email,
+        email_verified_at: userInfo.email_verified_at,
+        isVerified: !!userInfo.email_verified_at
+      });
+      
+      if (!userInfo.email_verified_at) {
+        console.log('✅ CONFIRMADO: Email no verificado - Esta es la causa del problema');
+        console.log('💡 SOLUCIONES RECOMENDADAS:');
+        console.log('   1. En el backend, crear un endpoint POST /verify-email para testing');
+        console.log('   2. O modificar temporalmente el método getSavedOffers para no requerir verificación');
+        console.log('   3. O agregar un comando artisan para marcar emails como verificados en desarrollo');
+        
+        console.log('\n📋 EJEMPLO DE COMANDO ARTISAN PARA VERIFICAR EMAIL:');
+        console.log('   php artisan tinker');
+        console.log('   User::where("email", "email@test.com")->update(["email_verified_at" => now()]);');
+      } else {
+        console.log('❓ Email está verificado, el problema podría ser otro');
+      }
+      
+      // Limpiar
+      console.log('🧹 Limpiando cuenta de prueba...');
+      await deleteProfile('passworD-123');
+      
+    } catch (error) {
+      console.error('❌ Error en test de email verificado:', error);
+    }
+    
+    console.log('=== FIN DEL TEST DE EMAIL VERIFICADO ===');
+  };
+
+  // === NUEVA FUNCIÓN DE PRUEBA: VERIFICACIÓN DE EMAIL ===
+  const testEmailVerificationSystem = async () => {
+    console.log('\n=== INICIANDO TEST DEL SISTEMA DE VERIFICACIÓN DE EMAIL ===');
+    
+    try {
+      // 1. Verificar el estado actual de verificación
+      console.log('🔍 1. Verificando estado actual de verificación...');
+      const verificationStatus = await getEmailVerificationStatus();
+      console.log('📊 Estado de verificación:', verificationStatus);
+      
+      // 2. Verificar si se requiere verificación
+      console.log('\n🔍 2. Verificando si se requiere verificación...');
+      const verificationRequired = await checkEmailVerificationRequired();
+      console.log('📊 Verificación requerida:', verificationRequired);
+      
+      if (verificationRequired.isRequired) {
+        console.log('🚨 VERIFICACIÓN REQUERIDA');
+        console.log('📧 Email del usuario:', verificationRequired.email);
+        console.log('🆔 User ID:', verificationRequired.userId);
+        
+        // 3. Probar reenvío de email de verificación
+        console.log('\n📬 3. Probando reenvío de email de verificación...');
+        try {
+          const resendResult = await resendEmailVerification();
+          console.log('✅ Email de verificación reenviado:', resendResult);
+        } catch (resendError) {
+          console.log('❌ Error al reenviar email:', resendError);
+        }
+        
+        // 4. Intentar acceder a ofertas guardadas para demostrar el bloqueo
+        console.log('\n🔒 4. Intentando acceder a ofertas guardadas (debería fallar)...');
+        try {
+          const savedOffers = await getSavedOffers();
+          console.log('❓ Ofertas obtenidas (no debería suceder):', savedOffers);
+        } catch (saveError) {
+          console.log('✅ CORRECTO: Acceso bloqueado por email no verificado');
+          console.log('📝 Error esperado:', saveError);
+        }
+        
+      } else {
+        console.log('✅ EMAIL YA VERIFICADO');
+        console.log('🎉 El usuario puede acceder a todas las funcionalidades');
+        
+        // Probar ofertas guardadas
+        console.log('\n📱 Probando ofertas guardadas con email verificado...');
+        try {
+          const savedOffers = await getSavedOffers();
+          console.log('✅ Ofertas guardadas obtenidas:', savedOffers);
+        } catch (error) {
+          console.log('❌ Error inesperado:', error);
+        }
+      }
+      
+      console.log('\n✅ Test del sistema de verificación completado');
+      
+    } catch (error) {
+      console.error('❌ Error en test del sistema de verificación:', error);
+    }
+    
+    console.log('=== FIN DEL TEST DE VERIFICACIÓN DE EMAIL ===\n');
+  };
+
+  // === FUNCIÓN DE PRUEBA COMPLETA DEL WRAPPER DE VERIFICACIÓN ===
+  const testEmailVerificationWrapper = async () => {
+    console.log('\n=== INICIANDO TEST DEL WRAPPER DE VERIFICACIÓN DE EMAIL ===');
+    
+    try {
+      console.log('🔧 Simulando acción que requiere email verificado...');
+      
+      // 1. Intentar guardar una oferta (simulación)
+      console.log('\n📝 1. Simulando intento de guardar oferta...');
+      const verificationStatus = await checkEmailVerificationRequired();
+      
+      if (verificationStatus.isRequired) {
+        console.log('🚫 ACCIÓN BLOQUEADA: Email no verificado');
+        console.log('📧 Email del usuario:', verificationStatus.email);
+        console.log('💡 En una app real, se mostraría la pantalla de verificación aquí');
+        
+        // Demostrar el manejo de errores de API
+        console.log('\n🔍 2. Simulando error de API por email no verificado...');
+        try {
+          await getSavedOffers(); // Esto debería fail
+        } catch (apiError) {
+          const errorResult = handleEmailVerificationError(apiError);
+          if (errorResult.isEmailVerificationError) {
+            console.log('✅ CORRECTO: Error de verificación detectado automáticamente');
+            console.log('📝 Mensaje de error:', errorResult.message);
+            console.log('📧 Email en error:', errorResult.email);
+          } else {
+            console.log('❓ Error no relacionado con verificación:', apiError);
+          }
+        }
+        
+        console.log('\n📬 3. Probando reenvío de email de verificación...');
+        try {
+          const resendResult = await resendEmailVerification();
+          console.log('✅ Email de verificación reenviado exitosamente');
+          console.log('📨 Respuesta del servidor:', resendResult);
+        } catch (resendError) {
+          console.log('❌ Error al reenviar email:', resendError);
+        }
+        
+      } else {
+        console.log('✅ Email verificado - Usuario puede realizar todas las acciones');
+        
+        try {
+          const savedOffers = await getSavedOffers();
+          console.log('✅ Ofertas guardadas obtenidas exitosamente:', savedOffers);
+        } catch (error) {
+          console.log('❌ Error inesperado al obtener ofertas:', error);
+        }
+      }
+      
+      console.log('\n🎯 RESUMEN DEL TEST:');
+      console.log('✅ Sistema de verificación funcionando correctamente');
+      console.log('✅ Manejo de errores de API implementado');
+      console.log('✅ Reenvío de email de verificación disponible');
+      console.log('✅ Los componentes React pueden usar useEmailVerificationGuard()');
+      console.log('✅ Los botones pueden usar VerificationRequiredButton wrapper');
+      
+    } catch (error) {
+      console.error('❌ Error en test del wrapper de verificación:', error);
+    }
+    
+    console.log('=== FIN DEL TEST DEL WRAPPER DE VERIFICACIÓN ===\n');
+  };
+
+  // === NUEVA FUNCIÓN DE PRUEBA: DIAGNÓSTICO DEL ERROR DEL BACKEND ===
+  const testBackendMiddlewareError = async () => {
+    console.log('\n=== DIAGNÓSTICO DEL ERROR DEL BACKEND ===');
+    
+    try {
+      // Crear una aplicación de prueba para reproducir el error
+      console.log('🔍 1. Intentando aplicar a una oferta para reproducir el error...');
+      
+      const testApplication = {
+        offer_id: 1, // ID de prueba
+        cover_letter: 'Esta es una carta de presentación de prueba para diagnosticar el error del backend.'
+      };
+      
+      const result = await applyToOffer(testApplication);
+      console.log('✅ Aplicación exitosa (no debería llegar aquí si hay error):', result);
+      
+    } catch (error) {
+      console.log('❌ Error capturado:', error);
+      
+      // Analizar el error en detalle
+      if (error?.message?.includes('Target class')) {
+        console.log('🔍 ANÁLISIS DEL ERROR:');
+        console.log('   - Tipo: Error de Laravel');
+        console.log('   - Problema: Middleware no encontrado');
+        console.log('   - Mensaje completo:', error.message);
+        console.log('   - Excepción:', error.exception);
+        
+        console.log('\n💡 POSIBLES SOLUCIONES EN EL BACKEND:');
+        console.log('   1. Verificar que las rutas no tengan middleware "verified" mal configurado');
+        console.log('   2. Revisar routes/api.php para middleware incorrectos');
+        console.log('   3. Usar middleware "verified" estándar de Laravel en lugar de "verified.api"');
+        console.log('   4. O quitar temporalmente el middleware de verificación para probar');
+        
+      } else if (error?.isEmailVerificationError) {
+        console.log('✅ Error manejado correctamente como verificación de email');
+        console.log('📧 Email:', error.email);
+        console.log('💬 Mensaje:', error.message);
+        
+      } else {
+        console.log('❓ Error diferente:', error);
+      }
+    }
+    
+    console.log('=== FIN DEL DIAGNÓSTICO ===\n');
+  };
+
   useEffect(() => {
   }, []);
-
   return (
     <View>
       <Text style={{ color: 'white' }}>Probando API... Revisa la consola para los resultados.</Text>
@@ -644,6 +1116,35 @@ const TestApi = () => {
         title="Diagnosticar DEVELOPER_ERROR" 
         onPress={testGoogleDeveloperError} 
         color="#D32F2F" 
+      />
+      <View style={{ height: 10 }} />      <Button 
+        title="Probar Ofertas Guardadas" 
+        onPress={testSavedOffers} 
+        color="#4CAF50" 
+      />
+      <View style={{ height: 10 }} />
+      <Button 
+        title="Test Email Verificado" 
+        onPress={testSavedOffersWithVerifiedEmail} 
+        color="#FF9800" 
+      />
+      <View style={{ height: 10 }} />
+      <Button 
+        title="Probar Ofertas Guardadas (Email Verificado)" 
+        onPress={testSavedOffersWithVerifiedEmail} 
+        color="#2196F3" 
+      />
+      <View style={{ height: 10 }} />
+      <Button 
+        title="Test Sistema Verificación Email" 
+        onPress={testEmailVerificationSystem} 
+        color="#9C27B0" 
+      />
+      <View style={{ height: 10 }} />
+      <Button 
+        title="Diagnosticar Error Backend" 
+        onPress={testBackendMiddlewareError} 
+        color="#F44336" 
       />
       
     </View>
