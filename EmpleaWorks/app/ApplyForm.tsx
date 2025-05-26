@@ -19,13 +19,14 @@ import { applyToOffer } from '@/api/axios';
 import { useAuth } from '@/context/AuthContext';
 import { FontAwesome } from '@expo/vector-icons';
 import { useColorScheme } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
-// Theme colors (similar to other screens)
+// Theme colors (similar to showOffer.tsx)
 const getThemeColors = (colorScheme: string) => {
   const isDark = colorScheme === 'dark';
   return {
     primary: '#4A2976',
-    primaryLight: '#6B46A3',
+    primaryLight: isDark ? '#5e3a8a' : '#3d2c52',
     primaryDark: '#3d2c52',
     secondary: '#9b6dff',
     accent: '#f6c667',
@@ -33,7 +34,10 @@ const getThemeColors = (colorScheme: string) => {
     text: isDark ? '#f0f0f0' : '#333',
     textLight: isDark ? '#bbbbbb' : '#666',
     error: '#e74c3c',
-    success: '#2ecc71',    white: isDark ? '#1e1e1e' : '#ffffff',
+    success: '#2ecc71',
+    white: isDark ? '#1e1e1e' : '#ffffff',
+    title: isDark ? '#f0f0f0' : '#f0f0f0',
+    subtitle: isDark ? '#e0e0e0' : '#e0e0e0',
     border: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(43, 31, 60, 0.2)',
     buttonText: '#ffffff',
     disabledButton: '#a0a0a0',
@@ -44,6 +48,8 @@ const getThemeColors = (colorScheme: string) => {
     titleText: isDark ? '#ffffff' : '#ffffff',
     buttonPrimaryText: isDark ? '#ffffff' : '#ffffff',
     iconPrimary: isDark ? '#ffffff' : '#ffffff',
+    cardBackground: isDark ? '#2d2d2d' : '#ffffff',
+    fieldBackground: isDark ? '#333333' : '#f8f8f8',
   };
 };
 
@@ -234,230 +240,261 @@ export default function ApplyFormScreen() {
       setLoading(false);
     }
   };
-
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.keyboardAvoidingView}
-    >
-      <View style={styles.headerGradient} />
+    <View style={styles.container}>
+      <LinearGradient
+        colors={[COLORS.primary, COLORS.primaryLight, COLORS.secondary]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      />
 
-      <Animated.View style={[styles.headerContainer, { opacity: fadeAnim }]}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => router.back()}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+      >
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          <FontAwesome name="arrow-left" size={20} color={COLORS.iconPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Aplicar a Oferta</Text>
-        <Text style={styles.subtitle}>Completa tu información para aplicar</Text>
-      </Animated.View>
-
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        <Animated.View
-          style={[
-            styles.formContainer,
-            {
-              opacity: formOpacity,
-              transform: [{ translateY: formTranslateY }]
-            }
-          ]}
-        >
-          <View style={styles.offerInfoContainer}>
-            <FontAwesome name="briefcase" size={20} color={COLORS.secondary} />
-            <Text style={styles.offerTitle} numberOfLines={2}>
-              {offerTitle}
-            </Text>
-          </View>
-
-          {/* Phone input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Teléfono *</Text>
-            <View style={[styles.inputWrapper, errors.phone ? styles.inputError : null]}>
-              <FontAwesome name="phone" size={18} color={COLORS.primary} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Tu número de teléfono"
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
-                placeholderTextColor={COLORS.placeholderText}
-                maxLength={15}
-              />
-            </View>
-            {errors.phone ? (
-              <Text style={styles.errorText}>
-                <FontAwesome name="exclamation-circle" size={14} color={COLORS.error} /> {errors.phone}
-              </Text>
-            ) : null}
-          </View>
-
-          {/* Email input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email *</Text>
-            <View style={[styles.inputWrapper, errors.email ? styles.inputError : null]}>
-              <FontAwesome name="envelope" size={18} color={COLORS.primary} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="tu@email.com"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                placeholderTextColor={COLORS.placeholderText}
-              />
-            </View>
-            {errors.email ? (
-              <Text style={styles.errorText}>
-                <FontAwesome name="exclamation-circle" size={14} color={COLORS.error} /> {errors.email}
-              </Text>
-            ) : null}
-          </View>
-
-          {/* Cover letter input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Carta de Presentación *</Text>
-            <View style={[styles.textAreaWrapper, errors.cl ? styles.inputError : null]}>
-              <TextInput
-                style={styles.textArea}
-                placeholder="Explica por qué eres el candidato ideal para esta posición..."
-                value={coverLetter}
-                onChangeText={setCoverLetter}
-                multiline={true}
-                numberOfLines={8}
-                textAlignVertical="top"
-                placeholderTextColor={COLORS.placeholderText}
-                maxLength={500}
-              />
-            </View>
-            <Text style={styles.characterCount}>
-              {coverLetter.length}/500 caracteres
-            </Text>
-            {errors.cl ? (
-              <Text style={styles.errorText}>
-                <FontAwesome name="exclamation-circle" size={14} color={COLORS.error} /> {errors.cl}
-              </Text>
-            ) : null}
-          </View>
-
-          {/* General error message */}
-          {errors.general ? (
-            <View style={styles.generalErrorContainer}>
-              <FontAwesome name="exclamation-triangle" size={20} color={COLORS.error} />
-              <Text style={styles.generalErrorText}>{errors.general}</Text>
-            </View>
-          ) : null}
-
-          {/* Info note */}
-          <View style={styles.noteContainer}>
-            <FontAwesome name="info-circle" size={18} color={COLORS.secondary} />
-            <Text style={styles.noteText}>
-              Asegúrate de que tu información sea correcta. Una vez enviada, no podrás modificar tu aplicación.
-            </Text>
-          </View>
-
-          {/* Buttons */}
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.buttonPrimary, loading && styles.buttonDisabled]}
-              onPress={handleSubmit}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              <RNView style={styles.buttonContent}>
-                {loading ? (
-                  <ActivityIndicator size="small" color={COLORS.iconPrimary} />                ) : (
-                  <>
-                    <FontAwesome name="paper-plane" size={18} color={COLORS.iconPrimary} style={styles.buttonIconLeft} />
-                    <RNText style={styles.buttonPrimaryText}>Enviar Aplicación</RNText>
-                  </>
-                )}
-              </RNView>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.buttonSecondary}
+          {/* Header Section */}
+          <Animated.View style={[styles.headerSection, { opacity: fadeAnim }]}>
+            <TouchableOpacity 
+              style={styles.backButton} 
               onPress={() => router.back()}
-              disabled={loading}
-              activeOpacity={0.8}
             >
-              <RNView style={styles.buttonContent}>
-                <FontAwesome name="times" size={18} color={COLORS.primary} style={styles.buttonIconLeft} />
-                <RNText style={styles.buttonSecondaryText}>Cancelar</RNText>
-              </RNView>
+              <FontAwesome name="arrow-left" size={20} color={COLORS.iconPrimary} />
             </TouchableOpacity>
-          </View>
-        </Animated.View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            <Text style={styles.title}>Aplicar a Oferta</Text>
+            <Text style={styles.subtitle}>Completa tu información para aplicar</Text>
+          </Animated.View>
+
+          <Animated.View
+            style={[
+              styles.formContainer,
+              {
+                opacity: formOpacity,
+                transform: [{ translateY: formTranslateY }]
+              }
+            ]}
+          >
+            <View style={styles.offerInfoContainer}>
+              <FontAwesome name="briefcase" size={20} color={COLORS.secondary} />
+              <Text style={styles.offerTitle} numberOfLines={2}>
+                {offerTitle}
+              </Text>
+            </View>
+
+            {/* Phone input */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Teléfono *</Text>
+              <View style={[styles.inputWrapper, errors.phone ? styles.inputError : null]}>
+                <FontAwesome name="phone" size={18} color={COLORS.primary} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Tu número de teléfono"
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                  placeholderTextColor={COLORS.placeholderText}
+                  maxLength={15}
+                />
+              </View>
+              {errors.phone ? (
+                <Text style={styles.errorText}>
+                  <FontAwesome name="exclamation-circle" size={14} color={COLORS.error} /> {errors.phone}
+                </Text>
+              ) : null}
+            </View>
+
+            {/* Email input */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Email *</Text>
+              <View style={[styles.inputWrapper, errors.email ? styles.inputError : null]}>
+                <FontAwesome name="envelope" size={18} color={COLORS.primary} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="tu@email.com"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholderTextColor={COLORS.placeholderText}
+                />
+              </View>
+              {errors.email ? (
+                <Text style={styles.errorText}>
+                  <FontAwesome name="exclamation-circle" size={14} color={COLORS.error} /> {errors.email}
+                </Text>
+              ) : null}
+            </View>
+
+            {/* Cover letter input */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Carta de Presentación *</Text>
+              <View style={[styles.textAreaWrapper, errors.cl ? styles.inputError : null]}>
+                <TextInput
+                  style={styles.textArea}
+                  placeholder="Explica por qué eres el candidato ideal para esta posición..."
+                  value={coverLetter}
+                  onChangeText={setCoverLetter}
+                  multiline={true}
+                  numberOfLines={8}
+                  textAlignVertical="top"
+                  placeholderTextColor={COLORS.placeholderText}
+                  maxLength={500}
+                />
+              </View>
+              <Text style={styles.characterCount}>
+                {coverLetter.length}/500 caracteres
+              </Text>
+              {errors.cl ? (
+                <Text style={styles.errorText}>
+                  <FontAwesome name="exclamation-circle" size={14} color={COLORS.error} /> {errors.cl}
+                </Text>
+              ) : null}
+            </View>
+
+            {/* General error message */}
+            {errors.general ? (
+              <View style={styles.generalErrorContainer}>
+                <FontAwesome name="exclamation-triangle" size={20} color={COLORS.error} />
+                <Text style={styles.generalErrorText}>{errors.general}</Text>
+              </View>
+            ) : null}
+
+            {/* Info note */}
+            <View style={styles.noteContainer}>
+              <FontAwesome name="info-circle" size={18} color={COLORS.secondary} />
+              <Text style={styles.noteText}>
+                Asegúrate de que tu información sea correcta. Una vez enviada, no podrás modificar tu aplicación.
+              </Text>
+            </View>
+
+            {/* Buttons */}
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={[styles.buttonPrimary, loading && styles.buttonDisabled]}
+                onPress={handleSubmit}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                {loading ? (
+                  <RNView style={styles.buttonContent}>
+                    <ActivityIndicator size="small" color={COLORS.iconPrimary} />
+                  </RNView>
+                ) : (
+                  <LinearGradient
+                    colors={[COLORS.primary, COLORS.secondary]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.buttonGradient}
+                  >
+                    <FontAwesome name="paper-plane" size={18} color="#ffffff" style={styles.buttonIconLeft} />
+                    <RNText style={styles.buttonPrimaryText}>Enviar Aplicación</RNText>
+                  </LinearGradient>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.buttonSecondary}
+                onPress={() => router.back()}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                <RNView style={styles.buttonContent}>
+                  <FontAwesome name="times" size={18} color={COLORS.primary} style={styles.buttonIconLeft} />
+                  <RNText style={styles.buttonSecondaryText}>Cancelar</RNText>
+                </RNView>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const { width } = Dimensions.get('window');
 
 const createStyles = (COLORS: ReturnType<typeof getThemeColors>) => StyleSheet.create({
-  keyboardAvoidingView: {
+  container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.background,
   },
   headerGradient: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 180,
+    height: 150,
     zIndex: 0,
-    backgroundColor: COLORS.primary,
   },
-  headerContainer: {
-    paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 30,
+    paddingTop: 20,
+  },
+  headerSection: {
     alignItems: 'center',
-    zIndex: 1,
-    position: 'relative',
+    marginBottom: 20,
+    paddingHorizontal: 20,
+    backgroundColor: 'transparent',
   },
   backButton: {
     position: 'absolute',
-    left: 20,
-    top: 50,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    left: -10,
+    top: 0,
+    backgroundColor: COLORS.primary,
     borderRadius: 25,
-    width: 40,
-    height: 40,
+    width: 50,
+    height: 50,
     alignItems: 'center',
     justifyContent: 'center',
+    elevation: 3,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: COLORS.titleText,
-    marginBottom: 5,
+    color: COLORS.title,
+    marginBottom: 8,
     textAlign: 'center',
+    backgroundColor: 'transparent',
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   subtitle: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: COLORS.subtitle,
     textAlign: 'center',
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingBottom: 30,
+    marginBottom: 20,
+    backgroundColor: 'transparent',
   },
   formContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 15,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 20,
     padding: 20,
     marginTop: 15,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
+    elevation: 8,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 15,
+    borderWidth: 0.5,
+    borderColor: COLORS.border,
+    overflow: 'hidden',
   },
   offerInfoContainer: {
     flexDirection: 'row',
@@ -475,18 +512,22 @@ const createStyles = (COLORS: ReturnType<typeof getThemeColors>) => StyleSheet.c
     color: COLORS.text,
     marginLeft: 10,
     flex: 1,
-  },  inputContainer: {
+    backgroundColor: 'transparent',
+  },
+  inputContainer: {
     width: '100%',
     marginBottom: 20,
-    backgroundColor: COLORS.white,
-  },  label: {
+    backgroundColor: 'transparent',
+  },
+  label: {
     fontSize: 16,
     marginBottom: 8,
     fontWeight: '600',
     color: COLORS.labelText,
     letterSpacing: 0.3,
-    backgroundColor: COLORS.white,
-  },inputWrapper: {
+    backgroundColor: 'transparent',
+  },
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
@@ -501,17 +542,20 @@ const createStyles = (COLORS: ReturnType<typeof getThemeColors>) => StyleSheet.c
   inputIcon: {
     marginLeft: 12,
     marginRight: 10,
-  },  input: {
+  },
+  input: {
     flex: 1,
     padding: 12,
     fontSize: 16,
     color: COLORS.text,
-  },textAreaWrapper: {
+  },
+  textAreaWrapper: {
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 10,
     backgroundColor: COLORS.inputBackground,
-  },  textArea: {
+  },
+  textArea: {
     padding: 12,
     fontSize: 16,
     color: COLORS.text,
@@ -522,12 +566,14 @@ const createStyles = (COLORS: ReturnType<typeof getThemeColors>) => StyleSheet.c
     color: COLORS.textLight,
     textAlign: 'right',
     marginTop: 5,
+    backgroundColor: 'transparent',
   },
   errorText: {
     color: COLORS.error,
     fontSize: 14,
     marginTop: 5,
     fontWeight: '500',
+    backgroundColor: 'transparent',
   },
   generalErrorContainer: {
     backgroundColor: 'rgba(231, 76, 60, 0.1)',
@@ -543,6 +589,7 @@ const createStyles = (COLORS: ReturnType<typeof getThemeColors>) => StyleSheet.c
     marginLeft: 10,
     flex: 1,
     fontWeight: '500',
+    backgroundColor: 'transparent',
   },
   noteContainer: {
     flexDirection: 'row',
@@ -560,15 +607,13 @@ const createStyles = (COLORS: ReturnType<typeof getThemeColors>) => StyleSheet.c
     color: COLORS.text,
     fontSize: 14,
     lineHeight: 20,
-  },  buttonContainer: {
+    backgroundColor: 'transparent',
+  },
+  buttonContainer: {
     width: '100%',
     gap: 12,
-    backgroundColor: COLORS.white,
-  },
-  buttonPrimary: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 18,
-    paddingHorizontal: 24,
+    backgroundColor: 'transparent',
+  },  buttonPrimary: {
     borderRadius: 14,
     width: '100%',
     elevation: 4,
@@ -576,9 +621,10 @@ const createStyles = (COLORS: ReturnType<typeof getThemeColors>) => StyleSheet.c
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
+    overflow: 'hidden',
   },
   buttonSecondary: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.cardBackground,
     borderWidth: 2,
     borderColor: COLORS.primary,
     paddingVertical: 18,
@@ -601,7 +647,8 @@ const createStyles = (COLORS: ReturnType<typeof getThemeColors>) => StyleSheet.c
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
-  },  buttonPrimaryText: {
+  },
+  buttonPrimaryText: {
     color: COLORS.buttonPrimaryText,
     fontSize: 16,
     fontWeight: 'bold',
@@ -612,8 +659,15 @@ const createStyles = (COLORS: ReturnType<typeof getThemeColors>) => StyleSheet.c
     fontSize: 16,
     fontWeight: 'bold',
     letterSpacing: 0.5,
-  },
-  buttonIconLeft: {
+  },  buttonIconLeft: {
     marginRight: 8,
+  },
+  buttonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    width: '100%',
   },
 });
