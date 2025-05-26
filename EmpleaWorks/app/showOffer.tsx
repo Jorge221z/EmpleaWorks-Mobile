@@ -64,7 +64,8 @@ const getThemeColors = (colorScheme: string) => {
     border: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(43, 31, 60, 0.15)',
     card: isDark ? '#2d2d2d' : '#ffffff',
     shadowColor: isDark ? '#000' : '#000',
-    golden: '#fac030',
+    golden: '#ffd700', // Bright gold color
+    goldenAlt: '#ffb700', // Alternative gold for effects
     cardBackground: isDark ? '#2d2d2d' : '#ffffff',
     fieldBackground: isDark ? '#333333' : '#f8f8f8',
     sectionHeaderBg: isDark ? '#242424' : '#f4f4f4',    saveButtonBackground: '#ffffff',
@@ -391,6 +392,19 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     borderColor: colors.saveButtonBorder,
     borderRadius: 15,
   },
+  savedButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    minHeight: 54,
+    width: '100%',
+    backgroundColor: colors.saveButtonBackground,
+    borderWidth: 2,
+    borderColor: colors.golden,
+    borderRadius: 15,
+  },
   disabledButtonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -405,10 +419,16 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     borderRadius: 15,
   },
   buttonIcon: {
-    marginRight: 6, // Reducir margen para mejor ajuste
-    width: 16, // Ancho fijo del icono
+    marginRight: 6,
+    width: 16,
     backgroundColor: 'transparent',
-  },  buttonText: {
+  },
+  savedButtonIcon: {
+    marginRight: 6,
+    width: 20, // Slightly larger
+    backgroundColor: 'transparent',
+  },
+  buttonText: {
     color: '#ffffff',
     fontWeight: 'bold',
     fontSize: 17, // Increased from 14 to 17
@@ -417,7 +437,14 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
   },  simpleButtonText: {
     color: colors.saveButtonText,
     fontWeight: 'bold',
-    fontSize: 17, // Increased from 14 to 17
+    fontSize: 17,
+    textAlign: 'center',
+    flex: 1,
+  },
+  savedButtonText: {
+    color: colors.golden,
+    fontWeight: 'bold',
+    fontSize: 17,
     textAlign: 'center',
     flex: 1,
   },
@@ -509,6 +536,7 @@ export default function ShowOfferScreen() {
     
     try {
       const result = await checkIfOfferIsSaved(offerId);
+      console.log("Is saved result:", result); // Debug log
       setIsSaved(result.isSaved || false);
     } catch (error) {
       console.error("Error al verificar estado de oferta guardada:", error);
@@ -595,10 +623,20 @@ export default function ShowOfferScreen() {
     
     try {
       setSavingOffer(true);
+      console.log("Before toggle - saved status:", isSaved);
       const response = await toggleSavedOffer(offerId);
+      console.log("Toggle response:", response);
       
-      // Después del toggle, verificar el estado real desde el servidor
-      await checkSavedStatus();
+      // Determine new state based on server response message
+      // "guardada correctamente" = saved, "eliminada de tus guardados" = removed
+      const newSavedState = response.message.includes("guardada correctamente");
+      console.log("Setting saved state to:", newSavedState);
+      
+      // Update state based on server response directly
+      setIsSaved(newSavedState);
+      
+      // Skip the checkIfOfferIsSaved call since it's not working correctly
+      // await checkSavedStatus();
       
       // Mostrar mensaje de confirmación
       Alert.alert(
@@ -646,6 +684,89 @@ export default function ShowOfferScreen() {
       }
     }, [offer, offerId])
   );
+
+  // Helper component for save button - COMPLETELY NEW APPROACH
+const SaveButton = ({ isSaved, isLoading, onPress }: { isSaved: boolean; isLoading: boolean; onPress: () => void }) => {
+  const colorScheme = useColorScheme();
+  const COLORS = getThemeColors(colorScheme || 'light');
+  
+  // Common button styles for both saved and unsaved states
+  const buttonContainerStyle = {
+    flex: 1,
+    borderRadius: 15,
+    overflow: 'hidden',
+    minHeight: 54,
+    elevation: 3,
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+  };
+  
+  const buttonContentStyle = {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    minHeight: 54,
+    width: '100%',
+    backgroundColor: COLORS.saveButtonBackground,
+    borderWidth: 2,
+    borderColor: COLORS.saveButtonBorder,  // Same border color for both states
+    borderRadius: 15,
+  };
+  
+  const buttonTextStyle = {
+    color: COLORS.saveButtonText,  // Same text color for both states
+    fontWeight: 'bold' as const,
+    fontSize: 17,
+    textAlign: 'center' as const,
+    flex: 1,
+  };
+  
+  return (
+    <TouchableOpacity 
+      style={buttonContainerStyle}
+      onPress={onPress}
+      disabled={isLoading}
+    >
+      <View style={buttonContentStyle}>
+        {isLoading ? (
+          <ActivityIndicator 
+            size="small" 
+            color={COLORS.saveButtonIcon} 
+            style={{ marginRight: 8 }} 
+          />
+        ) : (
+          // Only the icon changes between saved/unsaved states
+          isSaved ? (
+            <FontAwesome
+              name="bookmark"
+              size={22}
+              color={COLORS.golden}
+              style={{ marginRight: 8 }}
+            />
+          ) : (
+            <FontAwesome
+              name="bookmark-o"
+              size={16}
+              color={COLORS.saveButtonIcon}
+              style={{ marginRight: 8 }}
+            />
+          )
+        )}
+        <Text 
+          style={buttonTextStyle} 
+          numberOfLines={1} 
+          ellipsizeMode="tail"
+        >
+          {isSaved ? 'Guardada' : 'Guardar'}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
   return (
     <View style={styles.container}>
@@ -831,46 +952,32 @@ export default function ShowOfferScreen() {
         {offer && (
           <View style={styles.actionButtonsContainer}>
             <View style={styles.actionButtonsRow}>
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.saveButton]}
-                onPress={handleSaveOffer}
-                disabled={savingOffer || hasApplied}
-              >
-                {hasApplied ? (
-                  // Usando un contenedor específico para el estado deshabilitado
+              {hasApplied ? (
+                // Disabled button for users who already applied
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.saveButton]}
+                  disabled={true}
+                >
                   <View style={styles.disabledButtonContainer}>
-                    {savingOffer ? (
-                      <ActivityIndicator size="small" color={COLORS.lightText} style={styles.buttonIcon} />
-                    ) : (
-                      <Icon 
-                        name="bookmark-o" 
-                        size={16} 
-                        color={COLORS.lightText}
-                        style={styles.buttonIcon}
-                      />
-                    )}
+                    <Icon 
+                      name="bookmark-o" 
+                      size={16} 
+                      color={COLORS.lightText}
+                      style={styles.buttonIcon}
+                    />
                     <Text style={styles.disabledButtonText} numberOfLines={1} ellipsizeMode="tail">
                       No disponible
                     </Text>
                   </View>
-                ) : (
-                  <View style={styles.simpleButtonContainer}>
-                    {savingOffer ? (
-                      <ActivityIndicator size="small" color={COLORS.saveButtonIcon} style={styles.buttonIcon} />
-                    ) : (
-                      <Icon 
-                        name={isSaved ? "bookmark" : "bookmark-o"} 
-                        size={16} 
-                        color={isSaved ? COLORS.golden : COLORS.saveButtonIcon} 
-                        style={styles.buttonIcon}
-                      />
-                    )}
-                    <Text style={styles.simpleButtonText} numberOfLines={1} ellipsizeMode="tail">
-                      {isSaved ? 'Guardada' : 'Guardar'}
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
+                </TouchableOpacity>
+              ) : (
+                // Completely new save button implementation
+                <SaveButton 
+                  isSaved={isSaved} 
+                  isLoading={savingOffer} 
+                  onPress={handleSaveOffer} 
+                />
+              )}
 
               <TouchableOpacity 
                 style={[styles.actionButton, styles.applyButton]}
