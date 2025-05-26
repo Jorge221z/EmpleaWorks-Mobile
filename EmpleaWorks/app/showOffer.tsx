@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Modal } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { useEffect, useState, useCallback } from 'react';
 import { getOfferDetails, applyToOffer, checkIfUserAppliedToOffer, toggleSavedOffer, checkIfOfferIsSaved } from '@/api/axios';
@@ -7,6 +7,8 @@ import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useEmailVerificationGuard } from '@/hooks/useEmailVerification';
+import EmailVerificationScreen from '@/components/EmailVerificationScreen';
 
 // Define interfaces para los tipos de datos
 interface Company {
@@ -515,14 +517,17 @@ export default function ShowOfferScreen() {
   
   const { isAuthenticated } = useAuth();
   const params = useLocalSearchParams();
-  const offerId = params.id as string;
-    const [offer, setOffer] = useState<OfferDetails | null>(null);
+  const offerId = params.id as string;  const [offer, setOffer] = useState<OfferDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasApplied, setHasApplied] = useState(false);
   const [checkingApplication, setCheckingApplication] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [savingOffer, setSavingOffer] = useState(false);
+
+  // Email verification
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const { verificationState, checkBeforeAction, handleApiError } = useEmailVerificationGuard();
 
   // Función para determinar si una oferta es nueva (4 días o menos)
   const isOfferNew = (createdAt: string): boolean => {
@@ -620,6 +625,19 @@ export default function ShowOfferScreen() {
       );
       return;
     }
+
+    // 🔒 VERIFICACIÓN DE EMAIL REQUERIDA
+    console.log('🔒 Verificando email antes de guardar oferta...');
+    
+    const verificationResult = await checkBeforeAction('guardar oferta');
+    
+    if (verificationResult.needsVerification) {
+      console.log('🚫 Email no verificado, mostrando pantalla de verificación');
+      setShowEmailVerification(true);
+      return;
+    }
+    
+    console.log('✅ Email verificado, procediendo con guardar oferta');
     
     try {
       setSavingOffer(true);
@@ -647,6 +665,14 @@ export default function ShowOfferScreen() {
       
     } catch (error: any) {
       console.error("Error al guardar/eliminar oferta:", error);
+      
+      // 🚨 VERIFICAR SI ES ERROR DE VERIFICACIÓN DE EMAIL
+      const emailVerificationError = handleApiError(error);
+      if (emailVerificationError.isEmailVerificationError) {
+        console.log('🚨 Error de verificación de email detectado durante guardado de oferta');
+        setShowEmailVerification(true);
+        return;
+      }
       
       let errorMessage = 'Error al procesar la solicitud';
       
@@ -1018,10 +1044,18 @@ const SaveButton = ({ isSaved, isLoading, onPress }: { isSaved: boolean; isLoadi
                 )}
               </TouchableOpacity>
             </View>
-          </View>
-        )}
+          </View>        )}
         <View style={[styles.container, { height: 50 }]} />
-      </ScrollView>
+      </ScrollView>      {/* Email Verification Modal */}
+      <Modal
+        visible={showEmailVerification}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <EmailVerificationScreen 
+          onGoBack={() => setShowEmailVerification(false)}
+        />
+      </Modal>
     </View>
   );
 }
