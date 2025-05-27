@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, useColorScheme, Dimensions, StatusBar } from 'react-native';
+import { StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, useColorScheme, Dimensions, StatusBar, Image } from 'react-native';
 import { router } from 'expo-router';
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
@@ -27,12 +27,11 @@ const getThemeColors = (colorScheme: string) => {
     card: isDark ? '#2d2d2d' : '#ffffff',
     shadowColor: isDark ? '#000' : '#000',
     debug: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(43, 31, 60, 0.05)',
-    golden: '#fac030',
-    cardBackground: isDark ? '#2d2d2d' : '#ffffff',
-    fieldBackground: isDark ? '#333333' : '#f8f8f8',
+    golden: '#fac030',    cardBackground: isDark ? '#2d2d2d' : '#ffffff',    fieldBackground: isDark ? '#333333' : '#f8f8f8',
     inputBackground: isDark ? '#333333' : '#ffffff',
     placeholderText: isDark ? '#888888' : '#999999',
-    googleButtonBg: '#4285F4',
+    googleButtonBg: isDark ? '#3d3d3d' : '#f5f5f5',
+    googleButtonText: isDark ? '#ffffff' : '#333333',
     buttonText: '#ffffff',
   };
 };
@@ -66,11 +65,10 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       alignItems: 'center',
       marginBottom: 40,
       backgroundColor: 'transparent',
-    },
-    logoIcon: {
-      width: 80,
-      height: 80,
-      borderRadius: 40,
+    },    logoIcon: {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
       backgroundColor: colors.cardBackground,
       alignItems: 'center',
       justifyContent: 'center',
@@ -80,6 +78,12 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.2,
       shadowRadius: 8,
+      padding: 10,
+    },
+    logoImage: {
+      width: 80,
+      height: 80,
+      resizeMode: 'contain',
     },
     title: {
       fontSize: 28,
@@ -88,12 +92,11 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       marginBottom: 8,
       textAlign: 'center',
       backgroundColor: 'transparent',
-    },
-    subtitle: {
+    },    subtitle: {
       fontSize: 16,
       color: colors.subtitle,
       textAlign: 'center',
-      marginBottom: 30,
+      marginBottom: 10,
       backgroundColor: 'transparent',
     },
     formCard: {
@@ -176,10 +179,11 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       shadowColor: colors.shadowColor,
       shadowOffset: { width: 0, height: 3 },
       shadowOpacity: 0.3,
-      shadowRadius: 6,
-    },
-    googleIcon: {
-      marginRight: 12,
+      shadowRadius: 6,    },    googleIcon: {
+      marginRight: 8,
+      marginLeft: 2,
+      height: 24,
+      width: 72,
     },
     errorContainer: {
       flexDirection: 'row',
@@ -303,11 +307,13 @@ export default function LoginScreen() {
         style={styles.headerGradient}
       />
       
-      <View style={styles.scrollContent}>
-        {/* Logo and Title Section */}
+      <View style={styles.scrollContent}>        {/* Logo and Title Section */}
         <View style={styles.logoContainer}>
           <View style={styles.logoIcon}>
-            <FontAwesome name="briefcase" size={40} color={COLORS.secondary} />
+            <Image 
+              source={require('@/assets/images/logo.png')} 
+              style={styles.logoImage}
+            />
           </View>
           <Text style={styles.title}>Bienvenido</Text>
           <Text style={styles.subtitle}>Inicia sesión en tu cuenta</Text>
@@ -425,11 +431,12 @@ export default function LoginScreen() {
               <View style={styles.loadingContainer}>
                 <ActivityIndicator color={COLORS.buttonText} size="small" />
                 <Text style={styles.loadingText}>Conectando...</Text>
-              </View>
-            ) : (
-              <>
-                <FontAwesome name="google" size={18} color={COLORS.buttonText} style={styles.googleIcon} />
-                <Text style={styles.buttonText}>Continuar con Google</Text>
+              </View>            ) : (              <>
+                <Text style={[styles.buttonText, { color: COLORS.googleButtonText }]}>Continuar con </Text>
+                <Image 
+                  source={require('@/assets/images/google-logo.png')}
+                  style={styles.googleIcon}
+                />
               </>
             )}
           </TouchableOpacity>
