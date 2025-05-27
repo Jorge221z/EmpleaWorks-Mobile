@@ -5,9 +5,12 @@ import EditScreenInfo from '@/components/EditScreenInfo';
 import { Text, View } from '@/components/Themed';
 
 import TestApi from '@/components/src/TestApi'; 
-import { getCandidateDashboard } from '@/api/axios';
+import { getCandidateDashboard, getSavedOffers } from '@/api/axios';
 import { useAuth } from '@/context/AuthContext';
 import { router } from 'expo-router';
+import { FontAwesome } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useColorScheme } from 'react-native';
 
 // Updated interfaces based on the actual API response
 interface Company {
@@ -36,9 +39,35 @@ interface Offer {
 // The API returns an array of offers directly
 type CandidateData = Offer[];
 
+// Función para obtener colores del tema
+const getThemeColors = (colorScheme: string) => {
+  const isDark = colorScheme === 'dark';
+  return {
+    primary: '#4A2976',
+    primaryLight: isDark ? '#5e3a8a' : '#3d2c52',
+    secondary: '#9b6dff',
+    accent: '#f6c667',
+    background: isDark ? '#121212' : '#f8f9fa',
+    white: isDark ? '#1e1e1e' : '#ffffff',
+    text: isDark ? '#f0f0f0' : '#333',
+    lightText: isDark ? '#bbbbbb' : '#666',
+    error: '#e74c3c',
+    success: '#2ecc71',
+    border: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(43, 31, 60, 0.15)',
+    card: isDark ? '#2d2d2d' : '#ffffff',
+    shadowColor: isDark ? '#000' : '#000',
+    cardBackground: isDark ? '#2d2d2d' : '#ffffff',
+    golden: '#fac030',
+  };
+};
+
 export default function TabTwoScreen() {
   const { logout, isAuthenticated } = useAuth();
+  const colorScheme = useColorScheme();
+  const colors = getThemeColors(colorScheme || 'light');
+  
   const [dashboardData, setDashboardData] = useState<CandidateData | null>(null);
+  const [savedOffersCount, setSavedOffersCount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,7 +105,6 @@ export default function TabTwoScreen() {
         setDashboardData(null);
       }
       
-      //console.log("Dashboard data received:", response);
       setLoading(false);
     } catch (error) {
       console.error("Failed while trying to fetch candidateDashboard data: ", error);
@@ -85,11 +113,24 @@ export default function TabTwoScreen() {
     }
   };
 
+  // Función para obtener el número de ofertas guardadas
+  const fetchSavedOffersCount = async () => {
+    try {
+      const response = await getSavedOffers();
+      const savedOffers = response.savedOffers || response || [];
+      setSavedOffersCount(Array.isArray(savedOffers) ? savedOffers.length : 0);
+    } catch (error) {
+      console.error("Error al obtener ofertas guardadas:", error);
+      setSavedOffersCount(0);
+    }
+  };
+
   // Cargar datos al iniciar el componente y verificar autenticación
   useEffect(() => {
     // Solo intentamos cargar datos si el usuario está autenticado
     if (isAuthenticated) {
       fetchDashboardData();
+      fetchSavedOffersCount();
     } else {
       // Redirigir al login si no está autenticado
       router.replace('/login');
@@ -97,69 +138,190 @@ export default function TabTwoScreen() {
   }, [isAuthenticated]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Mis Solicitudes</Text>
-      <Text style={{ marginTop: 0, fontSize: 16 }}>Gestiona tus solicitudes y perfil</Text>
-      <View style={styles.separator} lightColor="#999797" darkColor="rgba(255, 255, 255, 0.66)" />
-      
-      {/* Botón de logout - igual que en index.tsx */}
-      <TouchableOpacity
-        style={[styles.reloadButton, { backgroundColor: '#007bff' }]}
-        onPress={handleLogout}
-        disabled={loading}
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={{ color: '#fff', fontWeight: 'bold' }}>
-          {loading ? "Cerrando sesión" : "Logout"}
-        </Text>
-      </TouchableOpacity>
-      
-      {/* TestApi sigue disponible para desarrollo */}
-      <TestApi />
-      <View style={styles.separator} lightColor="#999797" darkColor="rgba(255, 255, 255, 0.66)" />
-
-      {loading && <Text>Cargando datos...</Text>}
-      {error && <Text style={{ color: 'red' }}>Error: {error}</Text>}
-
-      {/* Sección de información de aplicaciones */}
-      <Text style={{marginVertical: 10}}>Estado de datos: {dashboardData ? "Datos cargados" : "Sin datos"}</Text>
-      {dashboardData && (
-        <Text>Hay {dashboardData.length || 0} solicitudes realizadas</Text>
-      )}
-      
-      {/* Lista de aplicaciones - actualizada para el nuevo formato */}
-      {dashboardData && dashboardData.length > 0 ? (
-        <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.applicationsContainer}>
-          {dashboardData.map((offer) => (
-            <View key={offer.id} style={styles.applicationCard}>
-              <Text style={styles.applicationTitle}>{offer.name}</Text>
-              <Text style={styles.applicationDetail}>Categoría: {offer.category}</Text>
-              <Text style={styles.applicationDetail}>Ubicación: {offer.job_location}</Text>
-              <Text style={styles.applicationDetail}>Tipo de contrato: {offer.contract_type}</Text>
-              <Text style={styles.applicationDetail}>Titulación: {offer.degree}</Text>
-              <Text style={styles.applicationDetail}>Empresa: {offer.company?.name || 'No disponible'}</Text>
-              <Text style={styles.applicationDate}>
-                Fecha límite: {new Date(offer.closing_date).toLocaleDateString()}
-              </Text>
-            </View>
-          ))}
-        </ScrollView>
-      ) : !loading && (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No has realizado solicitudes todavía</Text>
-          <Text style={styles.emptySubText}>Busca ofertas y aplica para verlas aquí</Text>
+        {/* Header */}
+        <View style={[styles.headerContainer, { backgroundColor: colors.background }]}>
+          <Text style={[styles.title, { color: colors.text }]}>Mis Solicitudes</Text>
+          <Text style={[styles.subtitle, { color: colors.lightText }]}>
+            Gestiona tus solicitudes y perfil
+          </Text>
+          <View style={[styles.separator, { backgroundColor: colors.border }]} />
         </View>
-      )}
 
-      {/* Botón de recarga de API para desarrollo */}
-      <TouchableOpacity 
-        style={styles.reloadButton} 
-        onPress={fetchDashboardData}
-        disabled={loading}
-      >        
-        <Text style={styles.reloadButtonText}>
-          {loading ? "Cargando..." : "Recargar API"}
-        </Text>
-      </TouchableOpacity>
+        {/* Main Cards Section */}
+        <View style={[styles.cardsContainer, { backgroundColor: colors.background }]}>
+          
+          {/* Applications Card */}
+          <TouchableOpacity 
+            style={[styles.card, { backgroundColor: colors.card }]}
+            onPress={() => {
+              // TODO: Navigate to applications detail view
+              console.log('Navigate to applications view');
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.cardLayout}>
+              <LinearGradient
+                colors={[colors.primary, colors.secondary]}
+                style={styles.cardGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <FontAwesome 
+                  name="briefcase" 
+                  size={32} 
+                  color="#ffffff" 
+                />
+              </LinearGradient>
+              
+              <View style={[styles.cardContent, { backgroundColor: colors.card }]}>
+                <Text style={[styles.cardTitle, { color: colors.text }]}>
+                  Mis Aplicaciones
+                </Text>
+                <Text style={[styles.cardSubtitle, { color: colors.lightText }]}>
+                  Ofertas aplicadas
+                </Text>
+                
+                <View style={[styles.cardStatsContainer, { backgroundColor: colors.card }]}>
+                  <Text style={[styles.cardNumber, { color: colors.primary }]}>
+                    {loading ? '...' : (dashboardData?.length || 0)}
+                  </Text>
+                  <Text style={[styles.cardUnit, { color: colors.lightText }]}>
+                    {(dashboardData?.length || 0) === 1 ? 'solicitud' : 'solicitudes'}
+                  </Text>
+                </View>
+                
+                <View style={[styles.cardArrow, { backgroundColor: colors.card }]}>
+                  <FontAwesome 
+                    name="chevron-right" 
+                    size={16} 
+                    color={colors.lightText} 
+                  />
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {/* Saved Offers Card */}
+          <TouchableOpacity 
+            style={[styles.card, { backgroundColor: colors.card }]}
+            onPress={() => {
+              // TODO: Navigate to saved offers detail view
+              console.log('Navigate to saved offers view');
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.cardLayout}>
+              <LinearGradient
+                colors={[colors.golden, '#f39c12']}
+                style={styles.cardGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <FontAwesome 
+                  name="bookmark" 
+                  size={32} 
+                  color="#ffffff" 
+                />
+              </LinearGradient>
+              
+              <View style={[styles.cardContent, { backgroundColor: colors.card }]}>
+                <Text style={[styles.cardTitle, { color: colors.text }]}>
+                  Ofertas Guardadas
+                </Text>
+                <Text style={[styles.cardSubtitle, { color: colors.lightText }]}>
+                  Ofertas de interés
+                </Text>
+                
+                <View style={[styles.cardStatsContainer, { backgroundColor: colors.card }]}>
+                  <Text style={[styles.cardNumber, { color: colors.golden }]}>
+                    {savedOffersCount}
+                  </Text>
+                  <Text style={[styles.cardUnit, { color: colors.lightText }]}>
+                    {savedOffersCount === 1 ? 'oferta' : 'ofertas'}
+                  </Text>
+                </View>
+                
+                <View style={[styles.cardArrow, { backgroundColor: colors.card }]}>
+                  <FontAwesome 
+                    name="chevron-right" 
+                    size={16} 
+                    color={colors.lightText} 
+                  />
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Action Buttons */}
+        <View style={[styles.actionsContainer, { backgroundColor: colors.background }]}>
+          {/* Logout Button */}
+          <TouchableOpacity
+            style={[styles.actionButton, { borderColor: colors.border }]}
+            onPress={handleLogout}
+            disabled={loading}
+          >
+            <LinearGradient
+              colors={['#3498db', '#2980b9']}
+              style={styles.actionButtonGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <FontAwesome 
+                name="sign-out" 
+                size={16} 
+                color="#ffffff" 
+                style={styles.actionButtonIcon}
+              />
+              <Text style={styles.actionButtonText}>
+                {loading ? "Cerrando sesión..." : "Logout"}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* Reload Data Button */}
+          <TouchableOpacity 
+            style={[styles.actionButton, { borderColor: colors.border }]}
+            onPress={() => {
+              fetchDashboardData();
+              fetchSavedOffersCount();
+            }}
+            disabled={loading}
+          >
+            <LinearGradient
+              colors={[colors.golden, '#f39c12']}
+              style={styles.actionButtonGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <FontAwesome 
+                name="refresh" 
+                size={16} 
+                color="#ffffff" 
+                style={styles.actionButtonIcon}
+              />
+              <Text style={styles.actionButtonText}>
+                {loading ? "Cargando..." : "Recargar datos"}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
+        {/* Error Display */}
+        {error && (
+          <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
+            <Text style={[styles.errorText, { color: colors.error }]}>
+              Error: {error}
+            </Text>
+          </View>
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -167,86 +329,135 @@ export default function TabTwoScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 30,
+  },
+  headerContainer: {
+    marginBottom: 24,
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: 10,
-    width: '100%',
   },
   title: {
-    fontSize: 20,
+    fontSize: 28,
     fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 16,
   },
   separator: {
-    marginTop: 10,
-    marginBottom: 0,
     height: 1,
     width: '80%',
-  },
-  scrollContainer: {
-    width: '100%', 
-    paddingHorizontal: 16,
-  },
-  applicationsContainer: {
-    alignItems: 'center',
-    paddingBottom: 20,
-  },
-  applicationCard: {
-    backgroundColor: '#f5f5f5',
-    padding: 16,
-    borderRadius: 8,
-    width: '100%',
     marginVertical: 8,
-    shadowColor: '#000',
+  },
+  cardsContainer: {
+    marginBottom: 24,
+  },
+  card: {
+    borderRadius: 16,
+    marginBottom: 16,
+    elevation: 4,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    marginTop: 15
+    shadowRadius: 8,
+    overflow: 'hidden',
+    minHeight: 160,
   },
-  applicationTitle: {
-    fontSize: 18,
+  cardLayout: {
+    flexDirection: 'row',
+    height: 160,
+  },
+  cardGradient: {
+    width: 80,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardIconContainer: {
+    width: 80,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+    position: 'relative',
+  },
+  cardContent: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'space-between',
+    position: 'relative',
+  },
+  cardTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  applicationDetail: {
-    fontSize: 14,
     marginBottom: 4,
   },
-  applicationStatus: {
+  cardSubtitle: {
     fontSize: 14,
-    marginTop: 8,
-    color: '#444',
+    marginBottom: 12,
   },
-  applicationDate: {
-    fontSize: 12,
-    marginTop: 5,
-    color: '#666',
-    fontStyle: 'italic',
-  },
-  reloadButton: {
-    backgroundColor: '#fff600',
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  reloadButtonText: {
-    color: '#010101',
-    fontWeight: 'bold',
-  },
-  emptyContainer: {
-    marginTop: 30,
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  cardStatsContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
     marginBottom: 8,
   },
-  emptySubText: {
+  cardNumber: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginRight: 8,
+  },
+  cardUnit: {
+    fontSize: 16,
+  },
+  cardArrow: {
+    position: 'absolute',
+    right: 20,
+    top: '50%',
+    marginTop: -8,
+  },
+  actionsContainer: {
+    marginTop: 8,
+  },
+  actionButton: {
+    borderRadius: 12,
+    marginBottom: 12,
+    overflow: 'hidden',
+    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    borderWidth: 1,
+  },
+  actionButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+  },
+  actionButtonIcon: {
+    marginRight: 8,
+  },
+  actionButtonText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  errorContainer: {
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  errorText: {
     fontSize: 14,
-    color: '#666',
+    textAlign: 'center',
   },
 });
