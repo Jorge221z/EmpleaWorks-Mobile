@@ -230,7 +230,7 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      marginTop: 20,
+      marginTop: 4,
       backgroundColor: 'transparent',
     },
     registerText: {
