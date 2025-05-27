@@ -17,7 +17,7 @@ export {
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
+  initialRouteName: 'welcome',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -62,25 +62,27 @@ function AuthRedirect() {
       return;
     }
 
-    // const inAuthGroup = segments[0] === '(auth)'; // Removed because '(auth)' is not a valid segment
     const inTabsGroup = segments[0] === '(tabs)';
     
-    // If the user is authenticated but they're on a non-protected route,
-    // redirect them to the home page
-    if (
-      isAuthenticated &&
-      ((!segments[0]) ||
-        segments[0] === 'login' ||
-        segments[0] === 'register')
-    ) {
-      console.log('Usuario autenticado redirigiendo a tabs...');
-      router.replace('/(tabs)');
+    // If the user is authenticated, redirect to main app
+    if (isAuthenticated) {
+      if (!inTabsGroup) {
+        console.log('Usuario autenticado redirigiendo a tabs...');
+        router.replace('/(tabs)');
+      }
     } 
-    // If the user is not authenticated and they're on a protected route,
-    // redirect them to the login page
-    else if (!isAuthenticated && segments.length > 0 && segments[0] === '(tabs)') {
-      console.log('Usuario no autenticado redirigiendo a login...');
-      router.replace('/login');
+    // If the user is not authenticated
+    else {
+      // If they're trying to access protected routes, redirect to welcome
+      if (inTabsGroup) {
+        console.log('Usuario no autenticado intentando acceder a área protegida, redirigiendo a welcome...');
+        router.replace('/welcome');
+      }
+      // If they're on root or any other protected route, redirect to welcome
+      else if (!segments[0] || !['login', 'register', 'welcome'].includes(segments[0])) {
+        console.log('Usuario no autenticado, redirigiendo a welcome...');
+        router.replace('/welcome');
+      }
     }
   }, [isAuthenticated, segments, isLoading]);
 

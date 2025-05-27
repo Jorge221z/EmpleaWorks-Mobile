@@ -49,6 +49,23 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       flex: 1,
       backgroundColor: colors.background,
     },
+    backButton: {
+      position: 'absolute' as const,
+      top: 50,
+      left: 20,
+      zIndex: 10,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors.cardBackground,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      elevation: 4,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+    },
     scrollContent: {
       flexGrow: 1,
       justifyContent: 'center',
@@ -320,7 +337,6 @@ export default function RegisterScreen() {
       // El manejo de errores se realiza en el hook
     }
   };
-
   return (
     <View style={styles.container}>
       <StatusBar
@@ -328,6 +344,15 @@ export default function RegisterScreen() {
         backgroundColor="transparent"
         translucent
       />
+      
+      {/* Botón de volver a Welcome */}
+      <TouchableOpacity 
+        style={styles.backButton}
+        onPress={() => router.push('/welcome')}
+        activeOpacity={0.7}
+      >
+        <FontAwesome name="arrow-left" size={20} color={COLORS.primary} />
+      </TouchableOpacity>
       
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
