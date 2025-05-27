@@ -434,9 +434,21 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     marginRight: 8,
   },
   emailNotVerifiedIcon: {
-    marginRight: 8,
-  },
+    marginRight: 8,  },
 });
+
+// Función helper para calcular el tamaño de fuente dinámico basado en la longitud del email
+const getEmailFontSize = (email: string) => {
+  if (!email) return 15; // Tamaño por defecto
+  
+  const length = email.length;
+  
+  if (length <= 20) return 15;      // Email corto
+  if (length <= 25) return 14;      // Email medio
+  if (length <= 30) return 13;      // Email largo
+  if (length <= 35) return 12;      // Email muy largo
+  return 11;                        // Email extremadamente largo
+};
 
 // Función para obtener los datos completos del usuario (incluyendo candidato)
 const getFullUserData = async () => {
@@ -1015,11 +1027,15 @@ export default function ProfileScreen() {
               <View style={styles.infoValueContainer}>
                 <Text style={styles.infoValue}>{getSurname(user) || 'No disponible'}</Text>
               </View>
-            </View>
-            <View style={styles.infoContainer}>
+            </View>            <View style={styles.infoContainer}>
               <Text style={styles.infoLabel}>Email:</Text>
               <View style={styles.infoValueContainer}>
-                <Text style={styles.infoValue}>{user?.email || 'No disponible'}</Text>
+                <Text style={[
+                  styles.infoValue, 
+                  { fontSize: getEmailFontSize(user?.email || '') }
+                ]}>
+                  {user?.email || 'No disponible'}
+                </Text>
               </View>
             </View>
             
