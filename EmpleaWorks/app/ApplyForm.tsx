@@ -276,6 +276,22 @@ export default function ApplyFormScreen() {
       setLoading(false);
     }
   };
+
+  const handleDisabledButtonPress = () => {
+    if (!dataConsent) {
+      Alert.alert(
+        'Consentimiento requerido',
+        'Debes marcar el checkbox para aceptar compartir tus datos con el empleador antes de poder enviar tu aplicación.',
+        [
+          {
+            text: 'Entendido',
+            style: 'default'
+          }
+        ]
+      );
+    }
+  };
+
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -441,9 +457,9 @@ export default function ApplyFormScreen() {
                   styles.buttonPrimary, 
                   (loading || !dataConsent) && styles.buttonDisabled
                 ]}
-                onPress={handleSubmit}
-                disabled={loading || !dataConsent}
-                activeOpacity={loading || !dataConsent ? 1 : 0.8}
+                onPress={!dataConsent ? handleDisabledButtonPress : handleSubmit}
+                disabled={loading}
+                activeOpacity={loading ? 1 : 0.8}
               >
                 {loading ? (
                   <RNView style={styles.buttonContent}>
@@ -795,9 +811,9 @@ const createStyles = (COLORS: ReturnType<typeof getThemeColors>) => StyleSheet.c
     backgroundColor: 'transparent',
   },
   checkboxText: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.text,
-    lineHeight: 20,
+    lineHeight: 16,
     backgroundColor: 'transparent',
   },
   linkText: {
