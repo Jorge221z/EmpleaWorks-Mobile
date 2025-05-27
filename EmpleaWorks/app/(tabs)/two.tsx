@@ -370,8 +370,8 @@ const styles = StyleSheet.create({
   headerContainer: {
     marginBottom: 24,
     alignItems: 'center',
-    paddingTop: 40,
-    paddingBottom: 20,
+    paddingTop: 20,
+    paddingBottom: 45,
   },
   headerContent: {
     alignItems: 'center',
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: 16,
-    marginBottom: 16,
+    marginBottom: 40,
     elevation: 4,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
