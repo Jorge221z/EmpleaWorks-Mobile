@@ -286,11 +286,11 @@ export default function MyApplicationsScreen() {
             </TouchableOpacity>
           </View>
         )}
-
-        {/* Applications list */}
+              
+              {/* Applications list */}
         {!loading && !error && applications.length > 0 && (
-          <View style={[styles.applicationsContainer, { backgroundColor: colors.background }]}>
-            {applications.map((application, index) => (              
+          <View style={[styles.applicationsContainer, { backgroundColor: 'transparent' }]}>
+            {applications.map((application, index) => (
                 <TouchableOpacity
                 key={application.id}
                 style={[styles.applicationCard, { backgroundColor: colors.card }]}
@@ -314,7 +314,9 @@ export default function MyApplicationsScreen() {
                   <Text style={[styles.companyName, { color: colors.primary }]} numberOfLines={1}>
                     {application.company.name}
                   </Text>
-                </View>                {/* Job details */}
+                    </View>
+                    
+                    {/* Job details */}
                 <View style={[styles.detailsContainer, { backgroundColor: colors.card }]}>
                   <View style={[styles.detailRow, { backgroundColor: colors.card }]}>
                     <FontAwesome 

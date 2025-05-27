@@ -336,11 +336,9 @@ export default function SavedOffersScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-        )}
-
-        {/* Saved offers list */}
+        )}        {/* Saved offers list */}
         {!loading && !error && savedOffers.length > 0 && (
-          <View style={[styles.offersContainer, { backgroundColor: colors.background }]}>
+          <View style={[styles.offersContainer, { backgroundColor: 'transparent' }]}>
             {savedOffers.map((offer, index) => (
               <TouchableOpacity
                 key={offer.id}
