@@ -43,7 +43,7 @@ type CandidateData = Offer[];
 const getThemeColors = (colorScheme: string) => {
   const isDark = colorScheme === 'dark';
   return {
-    primary: '#4A2976',
+    primary: isDark ? '#8b5fc8' : '#4A2976',
     primaryLight: isDark ? '#5e3a8a' : '#3d2c52',
     secondary: '#9b6dff',
     accent: '#f6c667',
