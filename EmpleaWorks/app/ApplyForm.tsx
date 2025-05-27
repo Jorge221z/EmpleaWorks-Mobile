@@ -12,7 +12,8 @@ import {
   Dimensions,
   View as RNView,
   Text as RNText,
-  Modal
+  Modal,
+  Linking
 } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -64,6 +65,7 @@ interface FormErrors {
   phone: string;
   email: string;
   cl: string;
+  dataConsent: string;
   general: string;
 }
 
@@ -76,15 +78,16 @@ export default function ApplyFormScreen() {
   const params = useLocalSearchParams();
   const offerId = params.offerId as string;
   const offerTitle = params.offerTitle as string || 'esta oferta';
-  
-  // Form states
+    // Form states
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [coverLetter, setCoverLetter] = useState('');
+  const [dataConsent, setDataConsent] = useState(false);
   const [loading, setLoading] = useState(false);  const [errors, setErrors] = useState<FormErrors>({
     phone: '',
     email: '',
     cl: '',
+    dataConsent: '',
     general: ''
   });
   
@@ -127,11 +130,11 @@ export default function ApplyFormScreen() {
   }, [user]);
 
   const validateForm = (): boolean => {
-    let isValid = true;
-    const newErrors: FormErrors = {
+    let isValid = true;    const newErrors: FormErrors = {
       phone: '',
       email: '',
       cl: '',
+      dataConsent: '',
       general: ''
     };
 
@@ -154,14 +157,18 @@ export default function ApplyFormScreen() {
         newErrors.email = 'Por favor ingresa un email válido';
         isValid = false;
       }
-    }
-
-    // Cover letter validation
+    }    // Cover letter validation
     if (!coverLetter.trim()) {
       newErrors.cl = 'La carta de presentación es obligatoria';
       isValid = false;
     } else if (coverLetter.trim().length < 20) {
       newErrors.cl = 'La carta de presentación debe tener al menos 20 caracteres';
+      isValid = false;
+    }
+
+    // Data consent validation
+    if (!dataConsent) {
+      newErrors.dataConsent = 'Debes aceptar compartir tus datos con el empleador';
       isValid = false;
     }
 
@@ -187,8 +194,7 @@ export default function ApplyFormScreen() {
     console.log('✅ Email verificado, procediendo con aplicación a oferta');
 
     try {
-      setLoading(true);
-      setErrors(prev => ({ ...prev, general: '' }));
+      setLoading(true);      setErrors(prev => ({ ...prev, general: '' }));
 
       const applicationData = {
         phone: phone.trim(),
@@ -359,9 +365,7 @@ export default function ApplyFormScreen() {
                   <FontAwesome name="exclamation-circle" size={14} color={COLORS.error} /> {errors.email}
                 </Text>
               ) : null}
-            </View>
-
-            {/* Cover letter input */}
+            </View>            {/* Cover letter input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Carta de Presentación *</Text>
               <View style={[styles.textAreaWrapper, errors.cl ? styles.inputError : null]}>
@@ -387,7 +391,36 @@ export default function ApplyFormScreen() {
               ) : null}
             </View>
 
-            {/* General error message */}
+            {/* Data consent checkbox */}
+            <View style={styles.inputContainer}>
+              <TouchableOpacity
+                style={styles.checkboxContainer}
+                onPress={() => setDataConsent(!dataConsent)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.checkbox, dataConsent && styles.checkboxChecked, errors.dataConsent ? styles.checkboxError : null]}>
+                  {dataConsent && (
+                    <FontAwesome name="check" size={14} color={COLORS.white} />
+                  )}
+                </View>
+                <View style={styles.checkboxTextContainer}>
+                  <Text style={styles.checkboxText}>
+                    Acepto compartir mis datos con el empleador. Consulta nuestros{' '}
+                    <Text
+                      style={styles.linkText}
+                      onPress={() => Linking.openURL('https://empleaworks.com/terminos-y-condiciones')}
+                    >
+                      Términos y Condiciones
+                    </Text>
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              {errors.dataConsent ? (
+                <Text style={styles.errorText}>
+                  <FontAwesome name="exclamation-circle" size={14} color={COLORS.error} /> {errors.dataConsent}
+                </Text>
+              ) : null}
+            </View>            {/* General error message */}
             {errors.general ? (
               <View style={styles.generalErrorContainer}>
                 <FontAwesome name="exclamation-triangle" size={20} color={COLORS.error} />
@@ -401,34 +434,47 @@ export default function ApplyFormScreen() {
               <Text style={styles.noteText}>
                 Asegúrate de que tu información sea correcta. Una vez enviada, no podrás modificar tu aplicación.
               </Text>
-            </View>
-
-            {/* Buttons */}
+            </View>            {/* Buttons */}
             <View style={styles.buttonContainer}>
               <TouchableOpacity
-                style={[styles.buttonPrimary, loading && styles.buttonDisabled]}
+                style={[
+                  styles.buttonPrimary, 
+                  (loading || !dataConsent) && styles.buttonDisabled
+                ]}
                 onPress={handleSubmit}
-                disabled={loading}
-                activeOpacity={0.8}
+                disabled={loading || !dataConsent}
+                activeOpacity={loading || !dataConsent ? 1 : 0.8}
               >
                 {loading ? (
                   <RNView style={styles.buttonContent}>
                     <ActivityIndicator size="small" color={COLORS.iconPrimary} />
-                  </RNView>
-                ) : (
+                  </RNView>                ) : (
                   <LinearGradient
-                    colors={[COLORS.primary, COLORS.secondary]}
+                    colors={
+                      !dataConsent 
+                        ? [COLORS.disabledButton, COLORS.disabledButton] 
+                        : [COLORS.primary, COLORS.secondary]
+                    }
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.buttonGradient}
                   >
-                    <FontAwesome name="paper-plane" size={18} color="#ffffff" style={styles.buttonIconLeft} />
-                    <RNText style={styles.buttonPrimaryText}>Enviar Aplicación</RNText>
+                    <FontAwesome 
+                      name="paper-plane" 
+                      size={18} 
+                      color={!dataConsent ? COLORS.textLight : "#ffffff"} 
+                      style={styles.buttonIconLeft} 
+                    />
+                    <RNText style={[
+                      styles.buttonPrimaryText,
+                      !dataConsent && styles.buttonDisabledText
+                    ]}>
+                      Enviar Aplicación
+                    </RNText>
                   </LinearGradient>
                 )}
                 </TouchableOpacity>
-                          
-                <TouchableOpacity
+                            <TouchableOpacity
                   style={styles.buttonSecondary}
                   onPress={() => router.back()}
                   disabled={loading}
@@ -684,37 +730,79 @@ const createStyles = (COLORS: ReturnType<typeof getThemeColors>) => StyleSheet.c
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
-  },
-  buttonDisabled: {
+  },  buttonDisabled: {
     backgroundColor: COLORS.disabledButton,
     elevation: 1,
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
+    opacity: 0.6,
   },
   buttonContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
-  },
-  buttonPrimaryText: {
+  },  buttonPrimaryText: {
     color: COLORS.buttonPrimaryText,
     fontSize: 16,
     fontWeight: 'bold',
     letterSpacing: 0.5,
-  },  buttonSecondaryText: {
+  },
+  buttonDisabledText: {
+    color: COLORS.textLight,
+  },
+  buttonSecondaryText: {
     color: COLORS.buttonSecondaryText,
     fontSize: 16,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },buttonIconLeft: {
     marginRight: 8,
-  },
-  buttonGradient: {
+  },  buttonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 18,
     paddingHorizontal: 24,
     width: '100%',
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: 'transparent',
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderRadius: 4,
+    backgroundColor: COLORS.inputBackground,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  checkboxChecked: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  checkboxError: {
+    borderColor: COLORS.error,
+    borderWidth: 2,
+  },
+  checkboxTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+    backgroundColor: 'transparent',
+  },
+  checkboxText: {
+    fontSize: 14,
+    color: COLORS.text,
+    lineHeight: 20,
+    backgroundColor: 'transparent',
+  },
+  linkText: {
+    color: COLORS.secondary,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });
