@@ -424,7 +424,7 @@ export default function ApplyFormScreen() {
                     Acepto compartir mis datos con el empleador. Consulta nuestros{' '}
                     <Text
                       style={styles.linkText}
-                      onPress={() => Linking.openURL('https://empleaworks.com/terminos-y-condiciones')}
+                      onPress={() => Linking.openURL('https://emplea.works/terms')}
                     >
                       Términos y Condiciones
                     </Text>
