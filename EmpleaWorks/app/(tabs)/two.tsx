@@ -143,18 +143,35 @@ export default function TabTwoScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Full-width header gradient like profile - neutral colors */}
+      <LinearGradient
+        colors={
+          colorScheme === 'dark' 
+            ? ['#2a2a2a', '#1e1e1e', '#151515'] 
+            : ['#f8f9fa', '#e9ecef', '#dee2e6']
+        }
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      />
+      
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={[styles.headerContainer, { backgroundColor: colors.background }]}>
-          <Text style={[styles.title, { color: colors.text }]}>Mis Solicitudes</Text>
-          <Text style={[styles.subtitle, { color: colors.lightText }]}>
-            Gestiona tus solicitudes e intereses
-          </Text>
-          <View style={[styles.separator, { backgroundColor: colors.border }]} />
+        <View style={[styles.headerContainer, { backgroundColor: 'transparent' }]}>
+          <View style={styles.headerContent}>
+            <Text style={[styles.title, { 
+              color: colorScheme === 'dark' ? '#f0f0f0' : '#333333'
+            }]}>Mis Solicitudes</Text>
+            <Text style={[styles.subtitle, { 
+              color: colorScheme === 'dark' ? 'rgba(240, 240, 240, 0.8)' : 'rgba(51, 51, 51, 0.8)'
+            }]}>
+              Gestiona tus solicitudes e intereses
+            </Text>
+          </View>
         </View>
 
         {/* Main Cards Section */}
@@ -334,27 +351,46 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  headerGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 150,
+    zIndex: 0,
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     padding: 16,
     paddingBottom: 30,
+    paddingTop: 20,
   },
   headerContainer: {
     marginBottom: 24,
     alignItems: 'center',
+    paddingTop: 40,
+    paddingBottom: 20,
+  },
+  headerContent: {
+    alignItems: 'center',
+    zIndex: 1,
+    backgroundColor: 'transparent',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 8,
     textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   subtitle: {
     fontSize: 16,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   separator: {
     height: 1,
