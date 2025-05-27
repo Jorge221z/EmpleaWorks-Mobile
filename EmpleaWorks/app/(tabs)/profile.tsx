@@ -444,11 +444,10 @@ const getEmailFontSize = (email: string) => {
 };
 
 // Función para obtener los datos completos del usuario (incluyendo candidato)
-const getFullUserData = async () => {
-  try {
+const getFullUserData = async () => {  try {
     // Obtener datos básicos del usuario
     const timestamp = new Date().getTime();
-    const user = await getUser(`?_t=${timestamp}`);
+    const user = await getUser();
 
     // Si no tenemos acceso a candidate en la respuesta inicial, intentamos recuperar los datos de localStorage para mejor rendimiento
     if (!user.candidate && localStorage) {
@@ -599,11 +598,9 @@ export default function ProfileScreen() {
 
       // Limpiar cualquier dato en caché antes de cargar
       setLocalUser(null);
-      setCandidateData(null);
-
-      // Añadir un parámetro aleatorio para evitar caché
+      setCandidateData(null);      // Añadir un parámetro aleatorio para evitar caché
       const timestamp = Date.now();
-      const profileData = await getProfile(`?_nocache=${timestamp}`);
+      const profileData = await getProfile();
       console.log('Datos de perfil recibidos, candidate:',
         profileData?.candidate ? 'presente' : 'ausente');
 
@@ -705,10 +702,9 @@ export default function ProfileScreen() {
   // Función para manejar el proceso de logout
   const handleLogout = async () => {
     try {
-      setLoading(true);
-      await logout();
-      // Después de cerrar sesión, redirige al usuario a la página de login
-      router.replace('/login');
+      setLoading(true);      await logout();
+      // Después de cerrar sesión, redirige al usuario a la página de welcome
+      router.replace('/welcome');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
       setError('Error al cerrar sesión');
@@ -728,11 +724,10 @@ export default function ProfileScreen() {
       ]
     );
   };
-
   // Verificar autenticación
   useEffect(() => {
     if (!isAuthenticated) {
-      router.replace('/login');
+      router.replace('/welcome');
     }  }, [isAuthenticated]);
 
   // Función helper para acceder al apellido (con mejor depuración)

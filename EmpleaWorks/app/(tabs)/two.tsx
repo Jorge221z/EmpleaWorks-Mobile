@@ -135,8 +135,8 @@ export default function TabTwoScreen() {
       fetchDashboardData();
       fetchSavedOffersCount();
     } else {
-      // Redirigir al login si no está autenticado
-      router.replace('/login');
+      // Redirigir al welcome si no está autenticado
+      router.replace('/welcome');
     }
   }, [isAuthenticated]);
 

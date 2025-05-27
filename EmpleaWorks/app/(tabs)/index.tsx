@@ -473,13 +473,12 @@ export default function TabOneScreen() {
     setRefreshing(true);
     await fetchDashboardData();
     setRefreshing(false);
-  };
-  useEffect(() => {
+  };  useEffect(() => {
     fetchDashboardData();
     
     // Redirección si el usuario no está autenticado en el contexto
     if (!isAuthenticated) {
-      router.replace('/login');
+      router.replace('/welcome');
     }
   }, [isAuthenticated]);
 

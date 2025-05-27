@@ -16,35 +16,12 @@ export {
 } from 'expo-router';
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
+  // Start with welcome screen for better UX
   initialRouteName: 'welcome',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
-
-// Redirección según autenticación
-function AuthChecker({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
-  const segments = useSegments();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (isLoading) return;
-
-    const inAuthGroup = segments[0] === '(tabs)';
-
-    if (!isAuthenticated && inAuthGroup) {
-      // Si no está autenticado y trata de acceder a una ruta protegida
-      router.replace('/login');
-    } else if (isAuthenticated && (segments[0] === 'login' || segments[0] === 'register')) {
-      // Si está autenticado y trata de acceder a la pantalla de login o registro
-      router.replace('/');
-    }
-  }, [isAuthenticated, segments, isLoading, router]);
-
-  return <>{children}</>;
-}
 
 // Este componente se encarga de la redirección basada en autenticación
 function AuthRedirect() {
@@ -53,38 +30,52 @@ function AuthRedirect() {
   const router = useRouter();
 
   useEffect(() => {
-    console.log('AuthRedirect check - Auth state:', isAuthenticated ? 'Autenticado' : 'No autenticado');
-    console.log('Current path segments:', segments.join('/'));
+    console.log('=== AuthRedirect Debug ===');
+    console.log('Auth state:', isAuthenticated ? 'Autenticado' : 'No autenticado');
+    console.log('isLoading:', isLoading);
+    console.log('Current path segments:', segments);
+    console.log('Current route:', segments[0] || 'root/undefined');
     
     // Skip redirections during loading state
     if (isLoading) {
-      console.log('Cargando estado de autenticación...');
+      console.log('⏳ Cargando estado de autenticación...');
       return;
     }
 
     const inTabsGroup = segments[0] === '(tabs)';
+    const currentRoute = segments[0];
+    
+    console.log('inTabsGroup:', inTabsGroup);
+    console.log('Processing route logic...');
     
     // If the user is authenticated, redirect to main app
     if (isAuthenticated) {
-      if (!inTabsGroup) {
-        console.log('Usuario autenticado redirigiendo a tabs...');
+      console.log('✅ Usuario autenticado');
+      if (!inTabsGroup && currentRoute !== 'modal') {
+        console.log('🔄 Redirigiendo usuario autenticado a tabs...');
         router.replace('/(tabs)');
+      } else {
+        console.log('✅ Usuario autenticado ya en ruta correcta');
       }
     } 
     // If the user is not authenticated
     else {
-      // If they're trying to access protected routes, redirect to welcome
-      if (inTabsGroup) {
-        console.log('Usuario no autenticado intentando acceder a área protegida, redirigiendo a welcome...');
+      console.log('❌ Usuario NO autenticado');
+      // Only allow access to welcome, login, and register screens
+      const allowedRoutes = ['welcome', 'login', 'register'];
+      console.log('Rutas permitidas:', allowedRoutes);
+      console.log('Ruta actual válida?', currentRoute ? allowedRoutes.includes(currentRoute) : false);
+      
+      // If user is not on an allowed route OR on root route (no segments), redirect to welcome
+      if (!currentRoute || !allowedRoutes.includes(currentRoute)) {
+        console.log('🔄 Redirigiendo usuario no autenticado a welcome desde:', currentRoute || 'root');
         router.replace('/welcome');
-      }
-      // If they're on root or any other protected route, redirect to welcome
-      else if (!segments[0] || !['login', 'register', 'welcome'].includes(segments[0])) {
-        console.log('Usuario no autenticado, redirigiendo a welcome...');
-        router.replace('/welcome');
+      } else {
+        console.log('✅ Usuario no autenticado ya en ruta permitida:', currentRoute);
       }
     }
-  }, [isAuthenticated, segments, isLoading]);
+    console.log('=== Fin AuthRedirect Debug ===');
+  }, [isAuthenticated, segments, isLoading, router]);
 
   return <Slot />;
 }
