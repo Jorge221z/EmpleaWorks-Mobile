@@ -29,9 +29,9 @@ const getThemeColors = (colorScheme: string) => {
     debug: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(43, 31, 60, 0.05)',
     golden: '#fac030',    cardBackground: isDark ? '#2d2d2d' : '#ffffff',    fieldBackground: isDark ? '#333333' : '#f8f8f8',
     inputBackground: isDark ? '#333333' : '#ffffff',
-    placeholderText: isDark ? '#888888' : '#999999',
-    googleButtonBg: isDark ? '#3d3d3d' : '#f5f5f5',
+    placeholderText: isDark ? '#888888' : '#999999',    googleButtonBg: isDark ? '#3d3d3d' : '#f5f5f5',
     googleButtonText: isDark ? '#ffffff' : '#333333',
+    googleLoadingText: isDark ? '#ffffff' : '#4a4a4a',
     buttonText: '#ffffff',
   };
 };
@@ -240,9 +240,15 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: 'transparent',
-    },
-    loadingText: {
+    },    loadingText: {
       color: colors.buttonText,
+      fontWeight: 'bold',
+      fontSize: 16,
+      marginLeft: 8,
+      backgroundColor: 'transparent',
+    },
+    googleLoadingText: {
+      color: colors.googleLoadingText,
       fontWeight: 'bold',
       fontSize: 16,
       marginLeft: 8,
@@ -412,12 +418,11 @@ export default function LoginScreen() {
             onPress={handleGoogleLogin}
             disabled={isLoading || googleLoading}
             activeOpacity={0.8}
-          >
-            {googleLoading ? (
+          >            {googleLoading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator color={COLORS.buttonText} size="small" />
-                <Text style={styles.loadingText}>Conectando...</Text>
-              </View>            ) : (              <>
+                <ActivityIndicator color={COLORS.googleButtonText} size="small" />
+                <Text style={styles.googleLoadingText}>Conectando...</Text>
+              </View>) : (              <>
                 <Text style={[styles.buttonText, { color: COLORS.googleButtonText }]}>Continuar con </Text>
                 <Image 
                   source={require('@/assets/images/google-logo.png')}
