@@ -380,7 +380,8 @@ export default function ChangePasswordScreen() {
                 </TouchableOpacity>
               </View>
             </>
-          )}        </Animated.View>
+          )}
+        </Animated.View>
       </ScrollView>
 
       {/* Modal de Verificación de Email */}
