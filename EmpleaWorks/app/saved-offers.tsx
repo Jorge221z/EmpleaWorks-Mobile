@@ -336,7 +336,9 @@ export default function SavedOffersScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-        )}        {/* Saved offers list */}
+        )}
+        
+        {/* Saved offers list */}
         {!loading && !error && savedOffers.length > 0 && (
           <View style={[styles.offersContainer, { backgroundColor: 'transparent' }]}>
             {savedOffers.map((offer, index) => (
@@ -346,7 +348,8 @@ export default function SavedOffersScreen() {
                 onPress={() => navigateToOffer(offer.id)}
                 activeOpacity={0.7}
                 >
-                          {/* Card header with saved indicator where chevron was */}
+                          
+                {/* Card header with saved indicator where chevron was */}
                 <View style={[styles.cardHeader, { backgroundColor: colors.card }]}>
                   <LinearGradient
                     colors={[colors.golden, '#e67e22']}
@@ -381,7 +384,9 @@ export default function SavedOffersScreen() {
                   <Text style={[styles.companyName, { color: colors.primary }]} numberOfLines={1}>
                     {offer.company.name}
                   </Text>
-                </View>                {/* Job details */}
+                </View>
+                    
+                {/* Job details */}
                 <View style={[styles.detailsContainer, { backgroundColor: colors.card }]}>
                   <View style={[styles.detailRow, { backgroundColor: colors.card }]}>
                     <FontAwesome 
@@ -420,7 +425,7 @@ export default function SavedOffersScreen() {
                   </View>
                 </View>
                    
-                          {/* Dates */}
+                {/* Dates */}
                 <View style={[styles.datesContainer, { backgroundColor: colors.card }]}>
                   <View style={[styles.dateInfo, { backgroundColor: colors.card }]}>
                     <Text style={[styles.dateLabel, { color: colors.lightText }]}>
