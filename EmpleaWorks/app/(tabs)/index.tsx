@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Image } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { useEffect, useState } from 'react';
 import { getDashboard } from '@/api/axios';
@@ -61,7 +61,9 @@ const getThemeColors = (colorScheme: string) => {
     golden: '#fac030',
     cardBackground: isDark ? '#2d2d2d' : '#ffffff',
     fieldBackground: isDark ? '#333333' : '#f8f8f8',
-    sectionHeaderBg: isDark ? '#242424' : '#f4f4f4',
+    sectionHeaderBg: isDark ? '#242424' : '#f4f4f4',    // Colores específicos para el contador de ofertas
+    offersCountNumber: isDark ? '#e0e0e0' : '#000000', // Más claro en dark, negro en light
+    offersCountIconBg: isDark ? '#333333' : '#e8e8e8', // Mantener en dark, más oscuro en light
   };
 };
 
@@ -107,44 +109,12 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     textAlign: 'center',
     marginBottom: 20,
     backgroundColor: 'transparent', // Fondo transparente para consistencia
-  },
-  separator: {
+  },  separator: {
     height: 1,
     backgroundColor: colors.border,
     width: '100%',
     marginBottom: 20,
-  },
-  debugSection: {
-    marginBottom: 20,
-    backgroundColor: 'transparent', // Fondo transparente para consistencia
-  },
-  debugButton: {
-    backgroundColor: colors.debug,
-    padding: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 8,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    elevation: 2,
-    shadowColor: colors.shadowColor,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-  },
-  debugButtonText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8,
-    backgroundColor: colors.debug, // Fondo consistente con el botón
-  },
-  debugIcon: {
-    marginRight: 5,
-  },
-  statusSection: {
+  },statusSection: {
     backgroundColor: colors.cardBackground,
     borderRadius: 15,
     padding: 16,
@@ -167,6 +137,45 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     color: colors.lightText,
     textAlign: 'center',
     backgroundColor: colors.cardBackground, // Fondo consistente con la tarjeta
+  },  offersCountSection: {
+    marginBottom: 20,
+    backgroundColor: 'transparent',
+  },
+  offersCountContainer: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: 20,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: colors.shadowColor,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,  },  offersCountIcon: {
+    backgroundColor: colors.offersCountIconBg,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 16,
+    padding: 8,
+  },offersCountContent: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },  offersCountNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.offersCountNumber,
+    backgroundColor: 'transparent',
+    marginRight: 8,
+  },  offersCountLabel: {
+    fontSize: 14,
+    color: colors.lightText,
+    backgroundColor: 'transparent',
+    fontWeight: '500',
   },
   loadingContainer: {
     flexDirection: 'row',
@@ -388,8 +397,7 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     textAlign: 'center',
     backgroundColor: 'transparent',
     fontWeight: '500',
-  },
-  noOffersSubText: {
+  },  noOffersSubText: {
     fontSize: 14,
     color: colors.lightText,
     textAlign: 'center',
@@ -397,50 +405,13 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     backgroundColor: 'transparent',
     opacity: 0.7,
   },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 20,
-    backgroundColor: 'transparent', // Fondo transparente para consistencia
-  },
-  actionButton: {
-    flex: 1,
-    borderRadius: 10,
-    elevation: 2,
-    shadowColor: colors.shadowColor,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    overflow: 'hidden',
-  },
-  buttonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 15,
-  },
-  buttonIcon: {
-    marginRight: 8,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  logoutGradient: {
-    backgroundColor: colors.error,
-  },
-  reloadGradient: {
-    backgroundColor: colors.primary,
-  },
 });
 
 export default function TabOneScreen() {
   const colorScheme = useColorScheme();
   const COLORS = getThemeColors(colorScheme || 'light');
   const styles = createStyles(COLORS);
-  
-  // Obtenemos la función logout del contexto de autenticación
+    // Obtenemos la función logout del contexto de autenticación
   const { logout, isAuthenticated } = useAuth();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -453,21 +424,6 @@ export default function TabOneScreen() {
     const currentDate = new Date();
     const daysDifference = Math.floor((currentDate.getTime() - offerDate.getTime()) / (1000 * 60 * 60 * 24));
     return daysDifference <= 4;
-  };
-
-  // Función para manejar el proceso de logout (similar a la de AuthContext)
-  const handleLogout = async () => {
-    try {
-      setLoading(true);
-      await logout();
-      // Después de cerrar sesión, redirige al usuario a la página de login
-      router.replace('/login');
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      setError('Error al cerrar sesión');
-    } finally {
-      setLoading(false);
-    }
   };
 
   // Función para obtener datos del dashboard
@@ -513,8 +469,7 @@ export default function TabOneScreen() {
         end={{ x: 1, y: 1 }}
         style={styles.headerGradient}
       />
-      
-      <ScrollView 
+        <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
@@ -523,74 +478,17 @@ export default function TabOneScreen() {
             onRefresh={onRefresh}
             colors={[COLORS.primary]}
             tintColor={COLORS.primary}
+            progressBackgroundColor={COLORS.cardBackground}
           />
         }
+        showsVerticalScrollIndicator={false}
+        bounces={true}
       >
         {/* Header Section */}
         <View style={styles.headerSection}>
           <Text style={styles.title}>Ofertas de empleo recientes</Text>
           <Text style={styles.subtitle}>Explora las últimas oportunidades disponibles</Text>
           <View style={{ paddingTop: 15 }} />
-        </View>
-
-        {/* Debug Section */}
-        <View style={styles.debugSection}>
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={handleLogout}
-              disabled={loading}
-            >
-              <LinearGradient
-                colors={['#e74c3c', '#c0392b']}
-                style={styles.buttonGradient}
-              >
-                <FontAwesome 
-                  name="sign-out" 
-                  size={16} 
-                  color="#ffffff" 
-                  style={styles.buttonIcon}
-                />
-                <Text style={styles.buttonText}>
-                  {loading ? "Cerrando..." : "Logout"}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.actionButton} 
-              onPress={fetchDashboardData}
-              disabled={loading}
-            >
-              <LinearGradient
-                colors={[COLORS.primary, COLORS.primaryLight]}
-                style={styles.buttonGradient}
-              >
-                <FontAwesome 
-                  name="refresh" 
-                  size={16} 
-                  color="#ffffff" 
-                  style={styles.buttonIcon}
-                />
-                <Text style={styles.buttonText}>
-                  {loading ? "Cargando..." : "Recargar"}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-
-          {/* Debug Info - Esta parte sirve durante las primeras fases de desarrollo */}
-          <TouchableOpacity style={styles.debugButton}>
-            <FontAwesome 
-              name="info-circle" 
-              size={14} 
-              color={COLORS.primary} 
-              style={styles.debugIcon}
-            />
-            <Text style={styles.debugButtonText}>
-              Debug: {dashboardData ? "Datos cargados" : "Sin datos"}
-            </Text>
-          </TouchableOpacity>
         </View>
 
         {/* Loading State */}
@@ -608,16 +506,25 @@ export default function TabOneScreen() {
             <Text style={styles.errorText}>Error: {error}</Text>
           </View>
         )}
-
-        {/* Status Section */}
+        
+        {/* Offers Count Section */}
         {dashboardData && (
-          <View style={styles.statusSection}>
-            <Text style={styles.statusText}>
-              Estado: {dashboardData ? "✅ Datos cargados" : "❌ Sin datos"}
-            </Text>
-            <Text style={styles.countText}>
-              {dashboardData.offers?.length || 0} ofertas disponibles
-            </Text>
+          <View style={styles.offersCountSection}>
+            <View style={styles.offersCountContainer}>
+              <Image 
+                source={require('@/assets/images/logo.png')} 
+                style={styles.offersCountIcon}
+                resizeMode="contain"
+              />
+              <View style={styles.offersCountContent}>
+                <Text style={styles.offersCountNumber}>
+                  {dashboardData.offers?.length || 0}
+                </Text>
+                <Text style={styles.offersCountLabel}>
+                  {dashboardData.offers?.length === 1 ? 'oferta disponible' : 'ofertas disponibles'}
+                </Text>
+              </View>
+            </View>
           </View>
         )}
 
