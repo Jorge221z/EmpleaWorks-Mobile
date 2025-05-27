@@ -4,7 +4,7 @@ import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
 import { router, useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getUser, getProfile } from '@/api/axios';
+import { getUser, getProfile, getEmailVerificationStatus, resendEmailVerification } from '@/api/axios';
 import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'react-native';
@@ -318,10 +318,46 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
   },
   cvAvailable: {
     color: colors.success,
-    fontWeight: '500',
-  },
-  cvMissing: {
+    fontWeight: '500',  },  cvMissing: {
     color: colors.error,
+  },
+  emailVerificationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.cardBackground,
+    paddingHorizontal: 8,
+    paddingVertical: 0,
+    borderRadius: 0,
+    flex: 1,
+    height: 24, // Misma altura que otros campos para consistencia
+  },  emailVerificationIcon: {
+    marginRight: 8,
+  },
+  emailVerified: {
+    color: colors.success,
+    fontWeight: '600',
+    fontSize: 15,
+    flex: 1,
+  },
+  emailNotVerified: {
+    color: colors.error,
+    fontSize: 15,
+    fontWeight: '500',
+  },  emailVerificationButton: {
+    marginLeft: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: colors.secondary,
+    minWidth: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emailVerificationButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   descriptionContainer: {
     marginTop: 5,
@@ -365,11 +401,39 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     color: '#ffffff',
     fontWeight: 'bold',
     fontSize: 16,
-  },
-  infoValue: {
+  },  infoValue: {
     fontSize: 15,
     flex: 1,
     color: colors.text,
+  },
+  // Nuevos estilos para el campo de verificación de email con estilo de caja
+  emailVerificationSection: {
+    marginTop: 5,
+    backgroundColor: colors.cardBackground,
+  },
+  emailVerificationBox: {
+    borderRadius: 10,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.cardBackground,
+    overflow: 'hidden',
+  },
+  emailVerificationContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  emailNotVerifiedContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  emailVerifiedIcon: {
+    marginRight: 8,
+  },
+  emailNotVerifiedIcon: {
+    marginRight: 8,
   },
 });
 
@@ -409,9 +473,14 @@ export default function ProfileScreen() {
   const [candidateData, setCandidateData] = useState(contextUser?.candidate);
   // Añadir estado local para el usuario
   const [localUser, setLocalUser] = useState(contextUser);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailVerificationStatus, setEmailVerificationStatus] = useState<{
+    email_verified: boolean;
+    email: string;
+    user_id: number;
+  } | null>(null);
+  const [isResendingVerification, setIsResendingVerification] = useState(false);
   const params = useLocalSearchParams();
   const expoRouter = useRouter();
 
@@ -472,7 +541,40 @@ export default function ProfileScreen() {
     }
   }, [contextUser]);
 
-  // Función para cargar los datos del usuario desde la API con protección de cooldown
+  // Función para cargar el estado de verificación de email
+  const loadEmailVerificationStatus = useCallback(async () => {
+    try {
+      const response = await getEmailVerificationStatus();
+      setEmailVerificationStatus(response.data);
+    } catch (error) {
+      console.error('Error al obtener estado de verificación de email:', error);
+      // No mostrar error al usuario por este estado opcional
+    }
+  }, []);
+
+  // Función para reenviar email de verificación
+  const handleResendVerificationEmail = async () => {
+    try {
+      setIsResendingVerification(true);
+      await resendEmailVerification();
+      Alert.alert(
+        'Email enviado',
+        'Se ha enviado un nuevo email de verificación. Por favor, revisa tu correo.',
+        [{ text: 'OK' }]
+      );
+      // Recargar el estado después de enviar
+      await loadEmailVerificationStatus();
+    } catch (error) {
+      console.error('Error al reenviar email de verificación:', error);
+      Alert.alert(
+        'Error',
+        'No se pudo enviar el email de verificación. Inténtalo de nuevo.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsResendingVerification(false);
+    }
+  };
   const loadUserData = useCallback(async () => {
     // Verificar si ha pasado suficiente tiempo desde la última carga
     const now = Date.now();
@@ -516,12 +618,13 @@ export default function ProfileScreen() {
       }
 
       // Actualizar usuario local siempre
-      setLocalUser(profileData);
-
-      // Intentar actualizar el contexto también (si está disponible)
+      setLocalUser(profileData);      // Intentar actualizar el contexto también (si está disponible)
       if (setUser) {
         setUser(profileData);
       }
+
+      // Cargar también el estado de verificación de email
+      await loadEmailVerificationStatus();
     } catch (e) {
       console.error('Error al recargar datos del usuario:', e);
       setError('No se pudieron cargar los datos actualizados');
@@ -573,7 +676,6 @@ export default function ProfileScreen() {
       }
     }
   }, [isAuthenticated, loadUserData, localUser]);
-
   // Mantener el candidateData actualizado si viene del contexto
   useEffect(() => {
     if (contextUser?.candidate && !candidateData) {
@@ -581,6 +683,13 @@ export default function ProfileScreen() {
       setCandidateData(contextUser.candidate);
     }
   }, [contextUser, candidateData]);
+
+  // Cargar el estado de verificación de email al inicializar
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadEmailVerificationStatus();
+    }
+  }, [isAuthenticated, loadEmailVerificationStatus]);
 
   // Función para el Pull-to-refresh manual
   const onRefresh = useCallback(() => {
@@ -912,6 +1021,7 @@ export default function ProfileScreen() {
                 <Text style={styles.infoValue}>{user?.email || 'No disponible'}</Text>
               </View>
             </View>
+            
             <View style={styles.infoContainer}>
               <Text style={styles.infoLabel}>CV:</Text>
               <View style={styles.cvStatusContainer}>
@@ -928,14 +1038,44 @@ export default function ProfileScreen() {
                 )}
               </View>
             </View>
+            
+            {/* Campo de verificación de email - estilo caja como descripción */}
+            <View style={styles.emailVerificationSection}>
+              <Text style={styles.descriptionLabel}>Verificación de Email:</Text>
+              <View style={styles.emailVerificationBox}>
+                {emailVerificationStatus?.email_verified ? (
+                  <View style={styles.emailVerificationContent}>
+                    <FontAwesome name="check-circle" size={18} color={COLORS.success} style={styles.emailVerificationIcon} />
+                    <Text style={[styles.emailVerified]}>Tu email está verificado</Text>
+                  </View>
+                ) : (
+                  <View style={styles.emailVerificationContent}>
+                    <View style={styles.emailNotVerifiedContent}>
+                      <FontAwesome name="times-circle" size={18} color={COLORS.error} style={styles.emailVerificationIcon} />
+                      <Text style={[styles.emailNotVerified]}>Email no verificado</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.emailVerificationButton}
+                      onPress={handleResendVerificationEmail}
+                      disabled={isResendingVerification}
+                    >
+                      {isResendingVerification ? (
+                        <ActivityIndicator size="small" color="#ffffff" />
+                      ) : (
+                        <Text style={styles.emailVerificationButtonText}>Reenviar</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </View>
 
             <View style={styles.divider} />
 
             <View style={styles.descriptionContainer}>
               <Text style={styles.descriptionLabel}>Descripción:</Text>
               <View style={styles.descriptionBox}>
-                <Text style={styles.descriptionText}>
-                  {getUserDescription(user) || 'No has añadido una descripción todavía'}
+                <Text style={styles.descriptionText}>                  {getUserDescription(user) || 'No has añadido una descripción todavía'}
                 </Text>
               </View>
             </View>
