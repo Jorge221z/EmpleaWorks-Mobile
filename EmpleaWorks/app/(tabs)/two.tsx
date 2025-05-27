@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import React, { useState, useEffect } from 'react';
 
 import EditScreenInfo from '@/components/EditScreenInfo';
@@ -71,21 +71,7 @@ export default function TabTwoScreen() {
   const [loading, setLoading] = useState(false);
   const [loadingSavedOffers, setLoadingSavedOffers] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Función para manejar el proceso de logout
-  const handleLogout = async () => {
-    try {
-      setLoading(true);
-      await logout();
-      // Después de cerrar sesión, redirige al usuario a la página de login
-      router.replace('/login');
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      setError('Error al cerrar sesión');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [refreshing, setRefreshing] = useState(false);
 
   // Función para obtener datos del candidateDashboard
   const fetchDashboardData = async () => {
@@ -129,6 +115,16 @@ export default function TabTwoScreen() {
     }
   };
 
+  // Función para refrescar los datos
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([
+      fetchDashboardData(),
+      fetchSavedOffersCount()
+    ]);
+    setRefreshing(false);
+  };
+
   // Cargar datos al montar el componente y verificar autenticación
   useEffect(() => {
     // Solo intentamos cargar datos si el usuario está autenticado
@@ -159,6 +155,16 @@ export default function TabTwoScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+            progressBackgroundColor={colors.cardBackground}
+          />
+        }
+        bounces={true}
       >
         {/* Header */}
         <View style={[styles.headerContainer, { backgroundColor: 'transparent' }]}>
@@ -275,60 +281,6 @@ export default function TabTwoScreen() {
                 </View>
               </View>
             </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Action Buttons */}
-        <View style={[styles.actionsContainer, { backgroundColor: colors.background }]}>
-          {/* Logout Button */}
-          <TouchableOpacity
-            style={[styles.actionButton, { borderColor: colors.border }]}
-            onPress={handleLogout}
-            disabled={loading}
-          >
-            <LinearGradient
-              colors={['#3498db', '#2980b9']}
-              style={styles.actionButtonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <FontAwesome 
-                name="sign-out" 
-                size={16} 
-                color="#ffffff" 
-                style={styles.actionButtonIcon}
-              />
-              <Text style={styles.actionButtonText}>
-                {loading ? "Cerrando sesión..." : "Logout"}
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          {/* Reload Data Button */}
-          <TouchableOpacity 
-            style={[styles.actionButton, { borderColor: colors.border }]}
-            onPress={() => {
-              fetchDashboardData();
-              fetchSavedOffersCount();
-            }}
-            disabled={loading}
-          >
-            <LinearGradient
-              colors={[colors.golden, '#f39c12']}
-              style={styles.actionButtonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <FontAwesome 
-                name="refresh" 
-                size={16} 
-                color="#ffffff" 
-                style={styles.actionButtonIcon}
-              />
-              <Text style={styles.actionButtonText}>
-                {loading ? "Cargando..." : "Recargar datos"}
-              </Text>
-            </LinearGradient>
           </TouchableOpacity>
         </View>
 
@@ -459,34 +411,6 @@ const styles = StyleSheet.create({
     right: 20,
     top: '50%',
     marginTop: -8,
-  },
-  actionsContainer: {
-    marginTop: 8,
-  },
-  actionButton: {
-    borderRadius: 12,
-    marginBottom: 12,
-    overflow: 'hidden',
-    elevation: 2,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    borderWidth: 1,
-  },
-  actionButtonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-  },
-  actionButtonIcon: {
-    marginRight: 8,
-  },
-  actionButtonText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-    fontSize: 16,
   },
   errorContainer: {
     marginTop: 16,
