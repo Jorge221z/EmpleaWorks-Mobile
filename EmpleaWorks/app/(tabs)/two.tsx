@@ -231,8 +231,7 @@ export default function TabTwoScreen() {
           <TouchableOpacity 
             style={[styles.card, { backgroundColor: colors.card }]}
             onPress={() => {
-              // TODO: Navigate to saved offers detail view
-              console.log('Navigate to saved offers view');
+              router.push('/saved-offers');
             }}
             activeOpacity={0.7}
           >

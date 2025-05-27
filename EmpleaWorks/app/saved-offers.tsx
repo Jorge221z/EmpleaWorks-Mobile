@@ -1,7 +1,7 @@
-import { StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Text, View } from '@/components/Themed';
-import { getCandidateDashboard, getOfferDetails } from '@/api/axios';
+import { getSavedOffers, toggleSavedOffer } from '@/api/axios';
 import { useAuth } from '@/context/AuthContext';
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -19,8 +19,8 @@ interface Company {
   web_link: string | null;
 }
 
-// Interface para las ofertas/solicitudes
-interface Application {
+// Interface para las ofertas guardadas
+interface SavedOffer {
   id: number;
   name: string;
   category: string;
@@ -56,18 +56,19 @@ const getThemeColors = (colorScheme: string) => {
   };
 };
 
-export default function MyApplicationsScreen() {
+export default function SavedOffersScreen() {
   const { isAuthenticated } = useAuth();
   const colorScheme = useColorScheme();
   const colors = getThemeColors(colorScheme || 'light');
   
-  const [applications, setApplications] = useState<Application[]>([]);
+  const [savedOffers, setSavedOffers] = useState<SavedOffer[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [removingOfferId, setRemovingOfferId] = useState<number | null>(null);
 
-  // Función para obtener las solicitudes del candidato
-  const fetchApplications = async (isRefresh = false) => {
+  // Función para obtener las ofertas guardadas
+  const fetchSavedOffers = async (isRefresh = false) => {
     try {
       if (isRefresh) {
         setRefreshing(true);
@@ -76,27 +77,28 @@ export default function MyApplicationsScreen() {
       }
       
       setError(null);
-      const response = await getCandidateDashboard();
+      const response = await getSavedOffers();
       
       // Asegurar que la respuesta es un array
       if (Array.isArray(response)) {
-        setApplications(response);
-      } else if (response && response.applications) {
-        setApplications(response.applications);
+        setSavedOffers(response);
+      } else if (response && response.savedOffers) {
+        setSavedOffers(response.savedOffers);
       } else {
         console.warn("Formato de respuesta inesperado:", response);
-        setApplications([]);
+        setSavedOffers([]);
       }
       
     } catch (error) {
-      console.error("Error al obtener solicitudes:", error);
+      console.error("Error al obtener ofertas guardadas:", error);
       setError(error instanceof Error ? error.message : String(error));
-      setApplications([]);
+      setSavedOffers([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
+
   // Función para determinar si una oferta es nueva (creada en los últimos 4 días)
   const isOfferNew = (createdAt: string): boolean => {
     const offerDate = new Date(createdAt);
@@ -124,12 +126,61 @@ export default function MyApplicationsScreen() {
   };
 
   // Función para navegar a los detalles de la oferta
-  const navigateToOffer = (applicationId: number) => {
+  const navigateToOffer = (offerId: number) => {
     router.push({
       pathname: '/showOffer',
-      params: { id: applicationId.toString() }
+      params: { id: offerId.toString() }
     });
   };
+
+  // Función para remover oferta de guardados
+  const handleRemoveOffer = async (offerId: number, offerName: string) => {
+    Alert.alert(
+      'Remover de guardados',
+      `¿Estás seguro de que quieres remover "${offerName}" de tus ofertas guardadas?`,
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Remover',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setRemovingOfferId(offerId);
+              await toggleSavedOffer(offerId);
+              
+              // Actualizar la lista local removiendo la oferta
+              setSavedOffers(prev => prev.filter(offer => offer.id !== offerId));
+              
+            } catch (error) {
+              console.error("Error al remover oferta:", error);
+              Alert.alert(
+                'Error',
+                'No se pudo remover la oferta de guardados. Inténtalo de nuevo.',
+                [{ text: 'OK' }]
+              );
+            } finally {
+              setRemovingOfferId(null);
+            }
+          },
+        },
+      ]    );
+  };
+
+  // Función para aplicar a la oferta
+  const handleApplyToOffer = (offer: SavedOffer) => {
+    // Navegar al formulario de aplicación con los datos de la oferta
+    router.push({
+      pathname: '/ApplyForm',
+      params: {
+        offerId: offer.id.toString(),
+        offerTitle: offer.name,
+      }
+    });
+  };
+
   // Función para obtener el icono según el tipo de contrato
   const getContractTypeIcon = (contractType: string): any => {
     switch (contractType.toLowerCase()) {
@@ -165,7 +216,7 @@ export default function MyApplicationsScreen() {
   // Cargar datos al montar el componente
   useEffect(() => {
     if (isAuthenticated) {
-      fetchApplications();
+      fetchSavedOffers();
     } else {
       router.replace('/login');
     }
@@ -175,14 +226,14 @@ export default function MyApplicationsScreen() {
   useFocusEffect(
     useCallback(() => {
       if (isAuthenticated) {
-        fetchApplications();
+        fetchSavedOffers();
       }
     }, [isAuthenticated])
   );
 
   // Función para el refresh pull-to-refresh
   const onRefresh = useCallback(() => {
-    fetchApplications(true);
+    fetchSavedOffers(true);
   }, []);
 
   return (
@@ -203,7 +254,7 @@ export default function MyApplicationsScreen() {
       <View style={[styles.headerContainer, { backgroundColor: 'transparent' }]}>
         <TouchableOpacity 
           style={[styles.backButton, { backgroundColor: colors.card }]}
-          onPress={() => router.push('/(tabs)/two')}
+          onPress={() => router.back()}
         >
           <FontAwesome 
             name="arrow-left" 
@@ -215,11 +266,11 @@ export default function MyApplicationsScreen() {
         <View style={styles.headerContent}>
           <Text style={[styles.title, { 
             color: colorScheme === 'dark' ? '#f0f0f0' : '#333333'
-          }]}>Mis Solicitudes</Text>
+          }]}>Ofertas Guardadas</Text>
           <Text style={[styles.subtitle, { 
             color: colorScheme === 'dark' ? 'rgba(240, 240, 240, 0.8)' : 'rgba(51, 51, 51, 0.8)'
           }]}>
-            {applications.length} {applications.length === 1 ? 'solicitud activa' : 'solicitudes activas'}
+            {savedOffers.length} {savedOffers.length === 1 ? 'oferta guardada' : 'ofertas guardadas'}
           </Text>
         </View>
       </View>
@@ -242,7 +293,7 @@ export default function MyApplicationsScreen() {
           <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={[styles.loadingText, { color: colors.text }]}>
-              Cargando solicitudes...
+              Cargando ofertas guardadas...
             </Text>
           </View>
         )}
@@ -256,7 +307,7 @@ export default function MyApplicationsScreen() {
             </Text>
             <TouchableOpacity
               style={[styles.retryButton, { borderColor: colors.primary }]}
-              onPress={() => fetchApplications()}
+              onPress={() => fetchSavedOffers()}
             >
               <Text style={[styles.retryButtonText, { color: colors.primary }]}>
                 Reintentar
@@ -266,14 +317,14 @@ export default function MyApplicationsScreen() {
         )}
 
         {/* Empty state */}
-        {!loading && !error && applications.length === 0 && (
+        {!loading && !error && savedOffers.length === 0 && (
           <View style={[styles.emptyContainer, { backgroundColor: colors.cardBackground }]}>
-            <FontAwesome name="inbox" size={48} color={colors.lightText} />
+            <FontAwesome name="bookmark-o" size={48} color={colors.lightText} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              No tienes solicitudes activas
+              No tienes ofertas guardadas
             </Text>
             <Text style={[styles.emptySubtitle, { color: colors.lightText }]}>
-              Cuando apliques a ofertas, aparecerán aquí para que puedas hacer seguimiento
+              Guarda ofertas que te interesen para acceder a ellas fácilmente más tarde
             </Text>            
             <TouchableOpacity
               style={[styles.exploreButton, { backgroundColor: colors.primary }]}
@@ -287,17 +338,16 @@ export default function MyApplicationsScreen() {
           </View>
         )}
 
-        {/* Applications list */}
-        {!loading && !error && applications.length > 0 && (
-          <View style={[styles.applicationsContainer, { backgroundColor: colors.background }]}>
-            {applications.map((application, index) => (              
-                <TouchableOpacity
-                key={application.id}
-                style={[styles.applicationCard, { backgroundColor: colors.card }]}
-                onPress={() => navigateToOffer(application.id)}
+        {/* Saved offers list */}
+        {!loading && !error && savedOffers.length > 0 && (
+          <View style={[styles.offersContainer, { backgroundColor: colors.background }]}>
+            {savedOffers.map((offer, index) => (
+              <TouchableOpacity
+                key={offer.id}
+                style={[styles.offerCard, { backgroundColor: colors.card }]}
+                onPress={() => navigateToOffer(offer.id)}
                 activeOpacity={0.7}
-              >
-                {/* Card header with only chevron */}
+              >                {/* Card header with only chevron */}
                 <View style={[styles.cardHeader, { backgroundColor: colors.card }]}>
                   <FontAwesome 
                     name="chevron-right" 
@@ -309,10 +359,10 @@ export default function MyApplicationsScreen() {
                 {/* Job title and company */}
                 <View style={[styles.cardContent, { backgroundColor: colors.card }]}>
                   <Text style={[styles.jobTitle, { color: colors.text }]} numberOfLines={2}>
-                    {application.name}
+                    {offer.name}
                   </Text>
                   <Text style={[styles.companyName, { color: colors.primary }]} numberOfLines={1}>
-                    {application.company.name}
+                    {offer.company.name}
                   </Text>
                 </View>
 
@@ -320,13 +370,13 @@ export default function MyApplicationsScreen() {
                 <View style={[styles.detailsContainer, { backgroundColor: colors.card }]}>
                   <View style={styles.detailRow}>
                     <FontAwesome 
-                      name={getContractTypeIcon(application.contract_type)} 
+                      name={getContractTypeIcon(offer.contract_type)} 
                       size={14} 
-                      color={getContractTypeColor(application.contract_type)}
+                      color={getContractTypeColor(offer.contract_type)}
                       style={styles.detailIcon}
                     />
                     <Text style={[styles.detailText, { color: colors.lightText }]}>
-                      {application.contract_type}
+                      {offer.contract_type}
                     </Text>
                   </View>
                   
@@ -338,7 +388,7 @@ export default function MyApplicationsScreen() {
                       style={styles.detailIcon}
                     />
                     <Text style={[styles.detailText, { color: colors.lightText }]} numberOfLines={1}>
-                      {application.job_location}
+                      {offer.job_location}
                     </Text>
                   </View>
                   
@@ -350,20 +400,19 @@ export default function MyApplicationsScreen() {
                       style={styles.detailIcon}
                     />
                     <Text style={[styles.detailText, { color: colors.lightText }]} numberOfLines={1}>
-                      {application.category}
+                      {offer.category}
                     </Text>
                   </View>
                 </View>
-                    
-                {/* Application date and closing date */}
-                
+
+                {/* Dates */}
                 <View style={[styles.datesContainer, { backgroundColor: colors.card }]}>
                   <View style={styles.dateInfo}>
                     <Text style={[styles.dateLabel, { color: colors.lightText }]}>
                       Publicada el:
                     </Text>
                     <Text style={[styles.dateValue, { color: colors.text }]}>
-                      {formatDate(application.created_at)}
+                      {formatDate(offer.created_at)}
                     </Text>
                   </View>
                   
@@ -373,40 +422,87 @@ export default function MyApplicationsScreen() {
                     </Text>
                     <Text style={[
                       styles.dateValue, 
-                      { color: isOfferClosingSoon(application.closing_date) ? colors.error : colors.text }
+                      { color: isOfferClosingSoon(offer.closing_date) ? colors.error : colors.text }
                     ]}>
-                      {formatDate(application.closing_date)}
+                      {formatDate(offer.closing_date)}
                     </Text>
                   </View>
-                </View>
-                    
-                    {/* Status indicator */}
+                </View>                {/* Status indicator */}
                 <View style={[styles.statusContainer, { backgroundColor: colors.card }]}>
                   <LinearGradient
-                    colors={[colors.success, '#27ae60']}
+                    colors={[colors.golden, '#e67e22']}
                     style={styles.statusIndicator}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                   >
                     <FontAwesome 
-                      name="check-circle" 
+                      name="bookmark" 
                       size={12} 
                       color="#ffffff" 
                       style={styles.statusIcon}
                     />
-                    <Text style={styles.statusText}>Solicitud enviada</Text>
+                    <Text style={styles.statusText}>Guardada</Text>
                   </LinearGradient>
                 </View>
 
+                {/* Action buttons */}
+                <View style={[styles.actionButtonsContainer, { backgroundColor: colors.card }]}>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.removeButton, { backgroundColor: colors.error }]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleRemoveOffer(offer.id, offer.name);
+                    }}
+                    disabled={removingOfferId === offer.id}
+                  >
+                    {removingOfferId === offer.id ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <>
+                        <FontAwesome 
+                          name="trash" 
+                          size={14} 
+                          color="#ffffff" 
+                          style={styles.actionButtonIcon}
+                        />
+                        <Text style={styles.actionButtonText}>Eliminar</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.applyButton]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleApplyToOffer(offer);
+                    }}
+                  >
+                    <LinearGradient
+                      colors={[colors.primary, colors.secondary]}
+                      style={styles.actionButtonGradient}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                    >
+                      <FontAwesome 
+                        name="paper-plane" 
+                        size={14} 
+                        color="#ffffff" 
+                        style={styles.actionButtonIcon}
+                      />
+                      <Text style={styles.actionButtonText}>Aplicar</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+
                 {/* Badges in bottom right corner */}
-                {(isOfferNew(application.created_at) || isOfferClosingSoon(application.closing_date)) && (
+                {(isOfferNew(offer.created_at) || isOfferClosingSoon(offer.closing_date)) && (
                   <View style={styles.bottomRightBadgesContainer}>
-                    {isOfferNew(application.created_at) && (
+                    {isOfferNew(offer.created_at) && (
                       <View style={[styles.badge, styles.newBadge, styles.bottomBadge]}>
                         <Text style={styles.badgeText}>NUEVO</Text>
                       </View>
                     )}
-                    {isOfferClosingSoon(application.closing_date) && (
+                    {isOfferClosingSoon(offer.closing_date) && (
                       <View style={[styles.badge, styles.urgentBadge, styles.bottomBadge]}>
                         <Text style={styles.badgeText}>CIERRA PRONTO</Text>
                       </View>
@@ -550,9 +646,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  applicationsContainer: {
+  offersContainer: {
     paddingVertical: 8,
-  },  applicationCard: {
+  },
+  offerCard: {
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -563,36 +660,14 @@ const styles = StyleSheet.create({
     position: 'relative',
   },  cardHeader: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 0,
     paddingBottom: 0,
     zIndex: 10,
     position: 'relative',
   },
-  badgesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    flex: 1,
-  },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 8,
-    marginBottom: 4,
-  },
-  newBadge: {
-    backgroundColor: '#2ecc71',
-  },
-  urgentBadge: {
-    backgroundColor: '#e74c3c',
-  },
-  badgeText: {
-    color: '#ffffff',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },  cardContent: {
+  cardContent: {
     marginBottom: 16,
     marginTop: -4,
     paddingTop: 4,
@@ -640,7 +715,8 @@ const styles = StyleSheet.create({
   dateValue: {
     fontSize: 14,
     fontWeight: '600',
-  },  statusContainer: {
+  },
+  statusContainer: {
     alignItems: 'flex-start',
     paddingBottom: 8,
   },
@@ -653,20 +729,78 @@ const styles = StyleSheet.create({
   },
   statusIcon: {
     marginRight: 6,
-  },  statusText: {
+  },
+  statusText: {
     color: '#ffffff',
     fontSize: 12,
     fontWeight: '600',
-  },  bottomRightBadgesContainer: {
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 8,
+    marginBottom: 4,
+  },
+  newBadge: {
+    backgroundColor: '#2ecc71',
+  },
+  urgentBadge: {
+    backgroundColor: '#e74c3c',
+  },
+  badgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  bottomRightBadgesContainer: {
     position: 'absolute',
     bottom: 12,
     right: 12,
     flexDirection: 'column',
     alignItems: 'flex-end',
     zIndex: 5,
-  },
-  bottomBadge: {
+  },  bottomBadge: {
     marginBottom: 4,
     marginRight: 0,
+  },  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 8,
+    gap: 8,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    minWidth: 80,
+  },
+  actionButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    minWidth: 80,
+  },
+  actionButtonIcon: {
+    marginRight: 4,
+  },
+  actionButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  removeButton: {
+    backgroundColor: '#e74c3c',
+    opacity: 0.9,
+  },  applyButton: {
+    backgroundColor: 'transparent',
   },
 });
