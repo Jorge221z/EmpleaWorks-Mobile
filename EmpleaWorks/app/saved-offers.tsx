@@ -348,12 +348,11 @@ export default function SavedOffersScreen() {
                 onPress={() => navigateToOffer(offer.id)}
                 activeOpacity={0.7}
                 >
-                    
-                    {/* Saved indicator in top left corner */}
-                <View style={styles.topLeftSavedContainer}>
+                          {/* Card header with saved indicator where chevron was */}
+                <View style={[styles.cardHeader, { backgroundColor: colors.card }]}>
                   <LinearGradient
                     colors={[colors.golden, '#e67e22']}
-                    style={styles.topLeftSavedIndicator}
+                    style={styles.savedIndicatorInHeader}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                   >
@@ -367,8 +366,8 @@ export default function SavedOffersScreen() {
                   </LinearGradient>
                 </View>
 
-                {/* Card header with just chevron */}
-                <View style={[styles.cardHeader, { backgroundColor: colors.card }]}>
+                {/* Chevron positioned at mid-height on right edge */}
+                <View style={styles.chevronRightEdge}>
                   <FontAwesome 
                     name="chevron-right" 
                     size={16} 
@@ -664,12 +663,13 @@ const  styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     position: 'relative',
-  },cardHeader: {
+  },  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
     marginBottom: 0,
     paddingBottom: 0,
+    paddingTop: 0,
     zIndex: 10,
     position: 'relative',
   },
@@ -769,7 +769,7 @@ const  styles = StyleSheet.create({
     marginBottom: 4,
     marginRight: 0,  },  actionButtonsContainer: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 4,
     marginBottom: 0,
@@ -819,12 +819,25 @@ const  styles = StyleSheet.create({
     top: 12,
     left: 12,
     zIndex: 15,
-  },
-  topLeftSavedIndicator: {
+  },  topLeftSavedIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
+  },  savedIndicatorInHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 12,
+    marginRight: -4,
+    marginTop: -4,
+  },  chevronRightEdge: {
+    position: 'absolute',
+    right: 12,
+    top: '25%',
+    transform: [{ translateY: -8 }],
+    zIndex: 5,
   },
 });
