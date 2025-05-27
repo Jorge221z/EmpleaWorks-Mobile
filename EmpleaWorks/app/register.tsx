@@ -326,7 +326,7 @@ export default function RegisterScreen() {
             />
           </View>
           <Text style={styles.title}>Crear Cuenta</Text>
-          <Text style={styles.subtitle}>Únete a nuestra comunidad</Text>
+          <Text style={styles.subtitle}>Únete la comunidad de EmpleaWorks</Text>
         </View>
         
         {/* Form Card */}
@@ -508,6 +508,7 @@ export default function RegisterScreen() {
             <Text style={styles.linkText}>Iniciar sesión</Text>
           </TouchableOpacity>
         </View>
+        <View style={{ height: 80 }} />
       </ScrollView>
     </View>
   );

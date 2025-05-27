@@ -302,7 +302,7 @@ export default function LoginScreen() {
             />
           </View>
           <Text style={styles.title}>Bienvenido</Text>
-          <Text style={styles.subtitle}>Inicia sesión en tu cuenta</Text>
+          <Text style={styles.subtitle}>Inicia sesión en EmpleaWorks</Text>
         </View>
         
         {/* Form Card */}
