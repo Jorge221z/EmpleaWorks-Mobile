@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, useColorScheme, Dimensions, StatusBar, Image } from 'react-native';
+import { StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, useColorScheme, Dimensions, StatusBar, Image, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
@@ -42,24 +42,15 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
   
   return StyleSheet.create({
     container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    headerGradient: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      height: 200,
-      zIndex: 0,
-    },
-    scrollContent: {
-      flex: 1,
+      flex: 1,      backgroundColor: colors.background,
+    },    scrollContent: {
+      flexGrow: 1,
       justifyContent: 'center',
       alignItems: 'center',
       paddingHorizontal: 20,
-      paddingTop: 60,
+      paddingTop: 25,
       paddingBottom: 40,
+      minHeight: Dimensions.get('window').height - 100,
     },
     logoContainer: {
       alignItems: 'center',
@@ -290,24 +281,19 @@ export default function LoginScreen() {
       console.log('Google login failed:', error instanceof Error ? error.message : error);
       // Error handling is done in the hook
     }
-  };
-  return (
+  };  return (
     <View style={styles.container}>
       <StatusBar
-        barStyle={colorScheme === 'dark' ? 'light-content' : 'light-content'}
+        barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
         backgroundColor="transparent"
         translucent
       />
       
-      {/* Header Gradient */}
-      <LinearGradient
-        colors={[COLORS.primary, COLORS.secondary]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerGradient}
-      />
-      
-      <View style={styles.scrollContent}>        {/* Logo and Title Section */}
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >{/* Logo and Title Section */}
         <View style={styles.logoContainer}>
           <View style={styles.logoIcon}>
             <Image 
@@ -441,15 +427,16 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
         </View>
-        
-        {/* Register Link */}
+          {/* Register Link */}
         <View style={styles.registerContainer}>
           <Text style={styles.registerText}>¿No tienes una cuenta? </Text>
           <TouchableOpacity onPress={() => router.push('/register')} activeOpacity={0.7}>
             <Text style={styles.linkText}>Regístrate</Text>
           </TouchableOpacity>
         </View>
-      </View>
+        <View style={{ height: 80 }} />
+      </ScrollView>
+      
     </View>
   );
 };

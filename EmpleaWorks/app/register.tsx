@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, useColorScheme, Dimensions, StatusBar, Image } from 'react-native';
+import { StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, useColorScheme, Dimensions, StatusBar, Image, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
@@ -44,27 +44,20 @@ const getThemeColors = (colorScheme: string) => {
 const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
   const { width } = Dimensions.get('window');
   
-  return StyleSheet.create({
-    container: {
+  return StyleSheet.create({    container: {
       flex: 1,
       backgroundColor: colors.background,
-    },    headerGradient: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      height: 160,
-      zIndex: 0,
     },    scrollContent: {
-      flex: 1,
-      justifyContent: 'flex-start',
+      flexGrow: 1,
+      justifyContent: 'center',
       alignItems: 'center',
       paddingHorizontal: 20,
-      paddingTop: 40,
-      paddingBottom: 20,
-    },    logoContainer: {
+      paddingTop: 25,
+      paddingBottom: 40,
+      minHeight: Dimensions.get('window').height - 100,
+    },logoContainer: {
       alignItems: 'center',
-      marginBottom: 20,
+      marginBottom: 40,
       backgroundColor: 'transparent',
     },    logoIcon: {
       width: 100,
@@ -73,7 +66,7 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       backgroundColor: colors.cardBackground,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 12,
+      marginBottom: 20,
       elevation: 8,
       shadowColor: colors.shadowColor,
       shadowOffset: { width: 0, height: 4 },
@@ -85,21 +78,21 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       width: 80,
       height: 80,
       resizeMode: 'contain',
-    },title: {
-      fontSize: 24,
+    },    title: {
+      fontSize: 28,
       fontWeight: 'bold',
       color: colors.title,
-      marginBottom: 6,
+      marginBottom: 8,
       textAlign: 'center',
       backgroundColor: 'transparent',
     },
     subtitle: {
-      fontSize: 15,
+      fontSize: 16,
       color: colors.subtitle,
       textAlign: 'center',
-      marginBottom: 5,
+      marginBottom: 10,
       backgroundColor: 'transparent',
-    },    formCard: {
+    },formCard: {
       width: '100%',
       maxWidth: 400,
       backgroundColor: colors.cardBackground,
@@ -233,7 +226,7 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      marginTop: 20,
+      marginTop: 8,
       backgroundColor: 'transparent',
     },
     loginText: {
@@ -313,22 +306,17 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar
+    <View style={styles.container}>      <StatusBar
         barStyle={colorScheme === 'dark' ? 'light-content' : 'light-content'}
         backgroundColor="transparent"
         translucent
       />
       
-      {/* Header Gradient */}
-      <LinearGradient
-        colors={[COLORS.primary, COLORS.secondary]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerGradient}
-      />
-      
-      <View style={styles.scrollContent}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Logo and Title Section */}
         <View style={styles.logoContainer}>
           <View style={styles.logoIcon}>
@@ -513,15 +501,14 @@ export default function RegisterScreen() {
             )}
           </TouchableOpacity>
         </View>
-        
-        {/* Login Link */}
+          {/* Login Link */}
         <View style={styles.loginContainer}>
           <Text style={styles.loginText}>¿Ya tienes una cuenta? </Text>
           <TouchableOpacity onPress={() => router.push('/login')} activeOpacity={0.7}>
             <Text style={styles.linkText}>Iniciar sesión</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
