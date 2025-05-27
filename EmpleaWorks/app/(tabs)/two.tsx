@@ -36,7 +36,7 @@ interface Offer {
   company: Company;
 }
 
-// The API returns an array of offers directly
+// Creamos un array porque es lo que devuelve la API
 type CandidateData = Offer[];
 
 // Función para obtener colores del tema
@@ -69,6 +69,7 @@ export default function TabTwoScreen() {
   const [dashboardData, setDashboardData] = useState<CandidateData | null>(null);
   const [savedOffersCount, setSavedOffersCount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
+  const [loadingSavedOffers, setLoadingSavedOffers] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Función para manejar el proceso de logout
@@ -99,7 +100,7 @@ export default function TabTwoScreen() {
         // Si la API cambia y devuelve el formato esperado originalmente
         setDashboardData(response.applications);
       } else {
-        // Si la respuesta no tiene la estructura esperada
+        // Si la respuesta no tiene la estructura esperada por fallos del backend
         console.error("Unexpected API response format:", response);
         setError("Formato de respuesta inesperado");
         setDashboardData(null);
@@ -116,16 +117,19 @@ export default function TabTwoScreen() {
   // Función para obtener el número de ofertas guardadas
   const fetchSavedOffersCount = async () => {
     try {
+      setLoadingSavedOffers(true);
       const response = await getSavedOffers();
       const savedOffers = response.savedOffers || response || [];
       setSavedOffersCount(Array.isArray(savedOffers) ? savedOffers.length : 0);
     } catch (error) {
       console.error("Error al obtener ofertas guardadas:", error);
       setSavedOffersCount(0);
+    } finally {
+      setLoadingSavedOffers(false);
     }
   };
 
-  // Cargar datos al iniciar el componente y verificar autenticación
+  // Cargar datos al montar el componente y verificar autenticación
   useEffect(() => {
     // Solo intentamos cargar datos si el usuario está autenticado
     if (isAuthenticated) {
@@ -148,7 +152,7 @@ export default function TabTwoScreen() {
         <View style={[styles.headerContainer, { backgroundColor: colors.background }]}>
           <Text style={[styles.title, { color: colors.text }]}>Mis Solicitudes</Text>
           <Text style={[styles.subtitle, { color: colors.lightText }]}>
-            Gestiona tus solicitudes y perfil
+            Gestiona tus solicitudes e intereses
           </Text>
           <View style={[styles.separator, { backgroundColor: colors.border }]} />
         </View>
@@ -181,7 +185,7 @@ export default function TabTwoScreen() {
               
               <View style={[styles.cardContent, { backgroundColor: colors.card }]}>
                 <Text style={[styles.cardTitle, { color: colors.text }]}>
-                  Mis Aplicaciones
+                  Mis Solicitudes
                 </Text>
                 <Text style={[styles.cardSubtitle, { color: colors.lightText }]}>
                   Ofertas aplicadas
@@ -240,7 +244,7 @@ export default function TabTwoScreen() {
                 
                 <View style={[styles.cardStatsContainer, { backgroundColor: colors.card }]}>
                   <Text style={[styles.cardNumber, { color: colors.golden }]}>
-                    {savedOffersCount}
+                    {loadingSavedOffers ? '...' : savedOffersCount}
                   </Text>
                   <Text style={[styles.cardUnit, { color: colors.lightText }]}>
                     {savedOffersCount === 1 ? 'oferta' : 'ofertas'}
