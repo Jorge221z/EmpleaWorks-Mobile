@@ -391,11 +391,13 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     color: '#ffffff',
     fontWeight: 'bold',
     fontSize: 16,
-  },
-  loadingLogout: {
+  },  loadingLogout: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.error, // Mismo color que el botón de logout
+    borderRadius: 10,
+    padding: 15,
   },
   logoutButtonText: {
     color: '#ffffff',
@@ -1153,6 +1155,8 @@ export default function ProfileScreen() {
                 <Text style={styles.buttonText}>Cambiar Contraseña</Text>
               </LinearGradient>
             </TouchableOpacity>
+
+            <View style={[styles.infoContainer, { height: 1 }]} />
 
             <TouchableOpacity
               style={styles.logoutButton}
