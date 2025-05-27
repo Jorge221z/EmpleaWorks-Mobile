@@ -383,11 +383,9 @@ export default function SavedOffersScreen() {
                   <Text style={[styles.companyName, { color: colors.primary }]} numberOfLines={1}>
                     {offer.company.name}
                   </Text>
-                </View>
-
-                {/* Job details */}
+                </View>                {/* Job details */}
                 <View style={[styles.detailsContainer, { backgroundColor: colors.card }]}>
-                  <View style={styles.detailRow}>
+                  <View style={[styles.detailRow, { backgroundColor: colors.card }]}>
                     <FontAwesome 
                       name={getContractTypeIcon(offer.contract_type)} 
                       size={14} 
@@ -399,7 +397,7 @@ export default function SavedOffersScreen() {
                     </Text>
                   </View>
                   
-                  <View style={styles.detailRow}>
+                  <View style={[styles.detailRow, { backgroundColor: colors.card }]}>
                     <FontAwesome 
                       name="map-marker" 
                       size={14} 
@@ -411,7 +409,7 @@ export default function SavedOffersScreen() {
                     </Text>
                   </View>
                   
-                  <View style={styles.detailRow}>
+                  <View style={[styles.detailRow, { backgroundColor: colors.card }]}>
                     <FontAwesome 
                       name="tag" 
                       size={14} 
@@ -424,10 +422,9 @@ export default function SavedOffersScreen() {
                   </View>
                 </View>
                    
-                    
-                    {/* Dates */}
+                          {/* Dates */}
                 <View style={[styles.datesContainer, { backgroundColor: colors.card }]}>
-                  <View style={styles.dateInfo}>
+                  <View style={[styles.dateInfo, { backgroundColor: colors.card }]}>
                     <Text style={[styles.dateLabel, { color: colors.lightText }]}>
                       Publicada el:
                     </Text>
@@ -436,7 +433,7 @@ export default function SavedOffersScreen() {
                     </Text>
                   </View>
                   
-                  <View style={styles.dateInfo}>
+                  <View style={[styles.dateInfo, { backgroundColor: colors.card }]}>
                     <Text style={[styles.dateLabel, { color: colors.lightText }]}>
                       Cierra el:
                     </Text>
