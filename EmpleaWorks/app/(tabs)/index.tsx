@@ -1,6 +1,6 @@
-import { StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Image } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Image, Animated } from 'react-native';
 import { Text, View } from '@/components/Themed';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { getDashboard } from '@/api/axios';
 import { useAuth } from '@/context/AuthContext';
 import { router } from 'expo-router';
@@ -405,6 +405,28 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     backgroundColor: 'transparent',
     opacity: 0.7,
   },
+  // Estilos para el indicador de recarga
+  refreshIndicator: {
+    borderRadius: 10,
+    marginBottom: 15,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  solidContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: colors.cardBackground,
+  },
+  refreshText: {
+    marginLeft: 10,
+    color: colors.secondary,
+    fontSize: 14,
+    fontWeight: '500',
+  },
 });
 
 export default function TabOneScreen() {
@@ -412,11 +434,13 @@ export default function TabOneScreen() {
   const COLORS = getThemeColors(colorScheme || 'light');
   const styles = createStyles(COLORS);
     // Obtenemos la función logout del contexto de autenticación
-  const { logout, isAuthenticated } = useAuth();
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const { logout, isAuthenticated } = useAuth();  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Animación para el indicador de recarga
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // Función para determinar si una oferta es nueva (4 días o menos)
   const isOfferNew = (createdAt: string): boolean => {
@@ -450,7 +474,6 @@ export default function TabOneScreen() {
     await fetchDashboardData();
     setRefreshing(false);
   };
-
   useEffect(() => {
     fetchDashboardData();
     
@@ -459,6 +482,23 @@ export default function TabOneScreen() {
       router.replace('/login');
     }
   }, [isAuthenticated]);
+
+  // Efecto para animar el indicador de recarga
+  useEffect(() => {
+    if (refreshing) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true
+      }).start();
+    } else {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true
+      }).start();
+    }
+  }, [refreshing]);
       
 
   return (
@@ -480,10 +520,24 @@ export default function TabOneScreen() {
             tintColor={COLORS.primary}
             progressBackgroundColor={COLORS.cardBackground}
           />
-        }
-        showsVerticalScrollIndicator={false}
+        }        showsVerticalScrollIndicator={false}
         bounces={true}
       >
+        {/* Indicador de recarga */}
+        {refreshing && (
+          <Animated.View
+            style={[
+              styles.refreshIndicator,
+              { opacity: fadeAnim }
+            ]}
+          >
+            <View style={styles.solidContainer}>
+              <ActivityIndicator size="small" color={COLORS.secondary} />
+              <Text style={styles.refreshText}>Actualizando ofertas...</Text>
+            </View>
+          </Animated.View>
+        )}
+
         {/* Header Section */}
         <View style={styles.headerSection}>
           <Text style={styles.title}>Ofertas de empleo recientes</Text>

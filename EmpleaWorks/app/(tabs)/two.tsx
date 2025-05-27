@@ -1,5 +1,5 @@
-import { StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import { StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Animated } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
 
 import EditScreenInfo from '@/components/EditScreenInfo';
 import { Text, View } from '@/components/Themed';
@@ -73,6 +73,9 @@ export default function TabTwoScreen() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Animación para el indicador de recarga
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
   // Función para obtener datos del candidateDashboard
   const fetchDashboardData = async () => {
     try {
@@ -137,6 +140,23 @@ export default function TabTwoScreen() {
     }
   }, [isAuthenticated]);
 
+  // Efecto para animar el indicador de recarga
+  useEffect(() => {
+    if (refreshing) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true
+      }).start();
+    } else {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true
+      }).start();
+    }
+  }, [refreshing]);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Full-width header gradient like profile - neutral colors */}
@@ -166,6 +186,24 @@ export default function TabTwoScreen() {
         }
         bounces={true}
       >
+        {/* Indicador de recarga */}
+        {refreshing && (
+          <Animated.View
+            style={[
+              styles.refreshIndicator,
+              { 
+                opacity: fadeAnim,
+                borderColor: colors.border
+              }
+            ]}
+          >
+            <View style={[styles.solidContainer, { backgroundColor: colors.cardBackground }]}>
+              <ActivityIndicator size="small" color={colors.secondary} />
+              <Text style={[styles.refreshText, { color: colors.secondary }]}>Actualizando solicitudes...</Text>
+            </View>
+          </Animated.View>
+        )}
+
         {/* Header */}
         <View style={[styles.headerContainer, { backgroundColor: 'transparent' }]}>
           <View style={styles.headerContent}>
@@ -481,5 +519,24 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 14,
     textAlign: 'center',
+  },
+  // Estilos para el indicador de recarga
+  refreshIndicator: {
+    borderRadius: 10,
+    marginBottom: 15,
+    overflow: 'hidden',
+    borderWidth: 1,
+  },
+  solidContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+    borderRadius: 10,
+  },
+  refreshText: {
+    marginLeft: 10,
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
