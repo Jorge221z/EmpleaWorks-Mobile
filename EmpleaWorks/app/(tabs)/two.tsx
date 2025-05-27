@@ -181,8 +181,7 @@ export default function TabTwoScreen() {
           <TouchableOpacity 
             style={[styles.card, { backgroundColor: colors.card }]}
             onPress={() => {
-              // TODO: Navigate to applications detail view
-              console.log('Navigate to applications view');
+              router.push('/my-applications');
             }}
             activeOpacity={0.7}
           >
