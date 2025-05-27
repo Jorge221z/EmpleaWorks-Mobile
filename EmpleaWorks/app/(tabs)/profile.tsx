@@ -1075,7 +1075,8 @@ export default function ProfileScreen() {
             <View style={styles.descriptionContainer}>
               <Text style={styles.descriptionLabel}>Descripción:</Text>
               <View style={styles.descriptionBox}>
-                <Text style={styles.descriptionText}>                  {getUserDescription(user) || 'No has añadido una descripción todavía'}
+                <Text style={styles.descriptionText}>
+                  {getUserDescription(user) || 'No has añadido una descripción todavía'}
                 </Text>
               </View>
             </View>
