@@ -284,6 +284,33 @@ export default function TabTwoScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Tips Section */}
+        <View style={[styles.tipsSection, { backgroundColor: colors.background }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            💡 Tip del día
+          </Text>
+          
+          <View style={[styles.tipCard, { backgroundColor: colors.card }]}>
+            <LinearGradient
+              colors={[
+                colorScheme === 'dark' ? 'rgba(139, 95, 200, 0.1)' : 'rgba(74, 41, 118, 0.05)',
+                colorScheme === 'dark' ? 'rgba(155, 109, 255, 0.1)' : 'rgba(155, 109, 255, 0.05)'
+              ]}
+              style={styles.tipGradient}
+            >
+              <FontAwesome 
+                name="lightbulb-o" 
+                size={24} 
+                color={colors.primary} 
+                style={styles.tipIcon}
+              />
+              <Text style={[styles.tipText, { color: colors.text }]}>
+                Personaliza tu perfil para aumentar tus posibilidades. Los reclutadores valoran perfiles completos y actualizados.
+              </Text>
+            </LinearGradient>
+          </View>
+        </View>
+
         {/* Error Display */}
         {error && (
           <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
@@ -348,7 +375,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   cardsContainer: {
-    marginBottom: 24,
+    marginBottom: 8,
   },
   card: {
     borderRadius: 16,
@@ -411,6 +438,39 @@ const styles = StyleSheet.create({
     right: 20,
     top: '50%',
     marginTop: -8,
+  },
+  // New sections styles
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'left',
+  },
+  tipsSection: {
+    marginBottom: 24,
+    marginTop: 0,
+  },
+  tipCard: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  tipGradient: {
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  tipIcon: {
+    marginRight: 12,
+    marginTop: 2,
+  },
+  tipText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
   },
   errorContainer: {
     marginTop: 16,
