@@ -347,7 +347,27 @@ export default function SavedOffersScreen() {
                 style={[styles.offerCard, { backgroundColor: colors.card }]}
                 onPress={() => navigateToOffer(offer.id)}
                 activeOpacity={0.7}
-              >                {/* Card header with only chevron */}
+                >
+                    
+                    {/* Saved indicator in top left corner */}
+                <View style={styles.topLeftSavedContainer}>
+                  <LinearGradient
+                    colors={[colors.golden, '#e67e22']}
+                    style={styles.topLeftSavedIndicator}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                  >
+                    <FontAwesome 
+                      name="bookmark" 
+                      size={10} 
+                      color="#ffffff" 
+                      style={styles.savedIconSmall}
+                    />
+                    <Text style={styles.savedTextSmall}>Guardada</Text>
+                  </LinearGradient>
+                </View>
+
+                {/* Card header with just chevron */}
                 <View style={[styles.cardHeader, { backgroundColor: colors.card }]}>
                   <FontAwesome 
                     name="chevron-right" 
@@ -404,8 +424,9 @@ export default function SavedOffersScreen() {
                     </Text>
                   </View>
                 </View>
-
-                {/* Dates */}
+                   
+                    
+                    {/* Dates */}
                 <View style={[styles.datesContainer, { backgroundColor: colors.card }]}>
                   <View style={styles.dateInfo}>
                     <Text style={[styles.dateLabel, { color: colors.lightText }]}>
@@ -427,25 +448,9 @@ export default function SavedOffersScreen() {
                       {formatDate(offer.closing_date)}
                     </Text>
                   </View>
-                </View>                {/* Status indicator */}
-                <View style={[styles.statusContainer, { backgroundColor: colors.card }]}>
-                  <LinearGradient
-                    colors={[colors.golden, '#e67e22']}
-                    style={styles.statusIndicator}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                  >
-                    <FontAwesome 
-                      name="bookmark" 
-                      size={12} 
-                      color="#ffffff" 
-                      style={styles.statusIcon}
-                    />
-                    <Text style={styles.statusText}>Guardada</Text>
-                  </LinearGradient>
                 </View>
 
-                {/* Action buttons */}
+                {/* Action buttons where status indicator was */}
                 <View style={[styles.actionButtonsContainer, { backgroundColor: colors.card }]}>
                   <TouchableOpacity
                     style={[styles.actionButton, styles.removeButton, { backgroundColor: colors.error }]}
@@ -518,7 +523,7 @@ export default function SavedOffersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const  styles = StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -648,20 +653,21 @@ const styles = StyleSheet.create({
   },
   offersContainer: {
     paddingVertical: 8,
-  },
-  offerCard: {
+  },  offerCard: {
     borderRadius: 16,
-    padding: 20,
+    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 12,
     marginBottom: 16,
     elevation: 4,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     position: 'relative',
-  },  cardHeader: {
+  },cardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
     marginBottom: 0,
     paddingBottom: 0,
     zIndex: 10,
@@ -698,11 +704,10 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 14,
     flex: 1,
-  },
-  datesContainer: {
+  },  datesContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 0,
     paddingHorizontal: 4,
   },
   dateInfo: {
@@ -762,13 +767,12 @@ const styles = StyleSheet.create({
     zIndex: 5,
   },  bottomBadge: {
     marginBottom: 4,
-    marginRight: 0,
-  },  actionButtonsContainer: {
+    marginRight: 0,  },  actionButtonsContainer: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 8,
+    marginTop: 4,
+    marginBottom: 0,
     gap: 8,
   },
   actionButton: {
@@ -790,7 +794,7 @@ const styles = StyleSheet.create({
     minWidth: 80,
   },
   actionButtonIcon: {
-    marginRight: 4,
+    marginRight: 6,
   },
   actionButtonText: {
     color: '#ffffff',
@@ -802,5 +806,25 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },  applyButton: {
     backgroundColor: 'transparent',
+  },
+  savedIconSmall: {
+    marginRight: 4,
+  },  savedTextSmall: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  topLeftSavedContainer: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    zIndex: 15,
+  },
+  topLeftSavedIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
 });
