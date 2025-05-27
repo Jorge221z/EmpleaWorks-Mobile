@@ -97,13 +97,12 @@ export default function MyApplicationsScreen() {
       setRefreshing(false);
     }
   };
-
-  // Función para determinar si una oferta es nueva (creada en los últimos 7 días)
+  // Función para determinar si una oferta es nueva (creada en los últimos 4 días)
   const isOfferNew = (createdAt: string): boolean => {
     const offerDate = new Date(createdAt);
     const currentDate = new Date();
     const daysDifference = Math.floor((currentDate.getTime() - offerDate.getTime()) / (1000 * 60 * 60 * 24));
-    return daysDifference <= 7;
+    return daysDifference <= 4;
   };
 
   // Función para determinar si una oferta está próxima a cerrar (menos de 7 días)
@@ -275,7 +274,8 @@ export default function MyApplicationsScreen() {
             </Text>
             <Text style={[styles.emptySubtitle, { color: colors.lightText }]}>
               Cuando apliques a ofertas, aparecerán aquí para que puedas hacer seguimiento
-            </Text>            <TouchableOpacity
+            </Text>            
+            <TouchableOpacity
               style={[styles.exploreButton, { backgroundColor: colors.primary }]}
               onPress={() => router.push('/(tabs)' as any)}
             >
@@ -290,27 +290,15 @@ export default function MyApplicationsScreen() {
         {/* Applications list */}
         {!loading && !error && applications.length > 0 && (
           <View style={[styles.applicationsContainer, { backgroundColor: colors.background }]}>
-            {applications.map((application, index) => (
-              <TouchableOpacity
+            {applications.map((application, index) => (              
+                <TouchableOpacity
                 key={application.id}
                 style={[styles.applicationCard, { backgroundColor: colors.card }]}
                 onPress={() => navigateToOffer(application.id)}
                 activeOpacity={0.7}
               >
-                {/* Card header with badges */}
+                {/* Card header with only chevron */}
                 <View style={[styles.cardHeader, { backgroundColor: colors.card }]}>
-                  <View style={styles.badgesContainer}>
-                    {isOfferNew(application.created_at) && (
-                      <View style={[styles.badge, styles.newBadge]}>
-                        <Text style={styles.badgeText}>NUEVO</Text>
-                      </View>
-                    )}
-                    {isOfferClosingSoon(application.closing_date) && (
-                      <View style={[styles.badge, styles.urgentBadge]}>
-                        <Text style={styles.badgeText}>CIERRA PRONTO</Text>
-                      </View>
-                    )}
-                  </View>
                   <FontAwesome 
                     name="chevron-right" 
                     size={16} 
@@ -366,12 +354,13 @@ export default function MyApplicationsScreen() {
                     </Text>
                   </View>
                 </View>
-
+                    
                 {/* Application date and closing date */}
+                
                 <View style={[styles.datesContainer, { backgroundColor: colors.card }]}>
                   <View style={styles.dateInfo}>
                     <Text style={[styles.dateLabel, { color: colors.lightText }]}>
-                      Aplicado el:
+                      Publicada el:
                     </Text>
                     <Text style={[styles.dateValue, { color: colors.text }]}>
                       {formatDate(application.created_at)}
@@ -390,8 +379,8 @@ export default function MyApplicationsScreen() {
                     </Text>
                   </View>
                 </View>
-
-                {/* Status indicator */}
+                    
+                    {/* Status indicator */}
                 <View style={[styles.statusContainer, { backgroundColor: colors.card }]}>
                   <LinearGradient
                     colors={[colors.success, '#27ae60']}
@@ -408,6 +397,22 @@ export default function MyApplicationsScreen() {
                     <Text style={styles.statusText}>Solicitud enviada</Text>
                   </LinearGradient>
                 </View>
+
+                {/* Badges in bottom right corner */}
+                {(isOfferNew(application.created_at) || isOfferClosingSoon(application.closing_date)) && (
+                  <View style={styles.bottomRightBadgesContainer}>
+                    {isOfferNew(application.created_at) && (
+                      <View style={[styles.badge, styles.newBadge, styles.bottomBadge]}>
+                        <Text style={styles.badgeText}>NUEVO</Text>
+                      </View>
+                    )}
+                    {isOfferClosingSoon(application.closing_date) && (
+                      <View style={[styles.badge, styles.urgentBadge, styles.bottomBadge]}>
+                        <Text style={styles.badgeText}>CIERRA PRONTO</Text>
+                      </View>
+                    )}
+                  </View>
+                )}
               </TouchableOpacity>
             ))}
           </View>
@@ -547,8 +552,7 @@ const styles = StyleSheet.create({
   },
   applicationsContainer: {
     paddingVertical: 8,
-  },
-  applicationCard: {
+  },  applicationCard: {
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -556,12 +560,15 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-  },
-  cardHeader: {
+    position: 'relative',
+  },  cardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 0,
+    paddingBottom: 0,
+    zIndex: 10,
+    position: 'relative',
   },
   badgesContainer: {
     flexDirection: 'row',
@@ -585,9 +592,10 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 10,
     fontWeight: 'bold',
-  },
-  cardContent: {
+  },  cardContent: {
     marginBottom: 16,
+    marginTop: -4,
+    paddingTop: 4,
   },
   jobTitle: {
     fontSize: 18,
@@ -632,9 +640,9 @@ const styles = StyleSheet.create({
   dateValue: {
     fontSize: 14,
     fontWeight: '600',
-  },
-  statusContainer: {
+  },  statusContainer: {
     alignItems: 'flex-start',
+    paddingBottom: 8,
   },
   statusIndicator: {
     flexDirection: 'row',
@@ -645,10 +653,20 @@ const styles = StyleSheet.create({
   },
   statusIcon: {
     marginRight: 6,
-  },
-  statusText: {
+  },  statusText: {
     color: '#ffffff',
     fontSize: 12,
     fontWeight: '600',
+  },  bottomRightBadgesContainer: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    zIndex: 5,
+  },
+  bottomBadge: {
+    marginBottom: 4,
+    marginRight: 0,
   },
 });
