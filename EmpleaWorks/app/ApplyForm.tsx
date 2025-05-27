@@ -288,6 +288,7 @@ export default function ApplyFormScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          <View style={[styles.headerSection, { paddingTop: 20 }]} />
           {/* Header Section */}
           <Animated.View style={[styles.headerSection, { opacity: fadeAnim }]}>
             <TouchableOpacity 

@@ -807,6 +807,7 @@ const SaveButton = ({ isSaved, isLoading, onPress }: { isSaved: boolean; isLoadi
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
+        <View style={[styles.headerSection, { paddingTop: 20 }]} />
         {/* Header Section */}
         <View style={styles.headerSection}>
           <TouchableOpacity 

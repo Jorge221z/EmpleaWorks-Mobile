@@ -423,6 +423,7 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: colors.cardBackground,
   },
   emailNotVerifiedContent: {
     flexDirection: 'row',
@@ -1070,7 +1071,7 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            <View style={styles.divider} />
+            <View style={[styles.infoContainer, { height: 1 }]} />
 
             <View style={styles.descriptionContainer}>
               <Text style={styles.descriptionLabel}>Descripción:</Text>
