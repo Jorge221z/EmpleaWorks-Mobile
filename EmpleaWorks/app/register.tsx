@@ -44,10 +44,12 @@ const getThemeColors = (colorScheme: string) => {
 const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
   const { width } = Dimensions.get('window');
   
-  return StyleSheet.create({    container: {
+  return StyleSheet.create({
+    container: {
       flex: 1,
       backgroundColor: colors.background,
-    },    scrollContent: {
+    },
+    scrollContent: {
       flexGrow: 1,
       justifyContent: 'center',
       alignItems: 'center',
@@ -55,11 +57,13 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       paddingTop: 25,
       paddingBottom: 40,
       minHeight: Dimensions.get('window').height - 100,
-    },logoContainer: {
+    },
+    logoContainer: {
       alignItems: 'center',
       marginBottom: 40,
       backgroundColor: 'transparent',
-    },    logoIcon: {
+    },
+    logoIcon: {
       width: 100,
       height: 100,
       borderRadius: 50,
@@ -78,7 +82,8 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       width: 80,
       height: 80,
       resizeMode: 'contain',
-    },    title: {
+    },
+    title: {
       fontSize: 28,
       fontWeight: 'bold',
       color: colors.title,
@@ -92,7 +97,8 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       textAlign: 'center',
       marginBottom: 10,
       backgroundColor: 'transparent',
-    },formCard: {
+    },
+    formCard: {
       width: '100%',
       maxWidth: 400,
       backgroundColor: colors.cardBackground,
@@ -139,7 +145,8 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       flex: 1,
       fontSize: 16,
       color: colors.text,
-    },    button: {
+    },
+    button: {
       borderRadius: 12,
       marginBottom: 12,
       elevation: 4,
@@ -161,7 +168,8 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       fontWeight: 'bold',
       fontSize: 16,
       backgroundColor: 'transparent',
-    },    googleButton: {
+    },
+    googleButton: {
       backgroundColor: colors.googleButtonBg,
       borderRadius: 12,
       flexDirection: 'row',
@@ -203,7 +211,8 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       fontSize: 14,
       flex: 1,
       backgroundColor: 'transparent',
-    },    divider: {
+    },
+    divider: {
       width: '100%',
       flexDirection: 'row',
       alignItems: 'center',
@@ -245,7 +254,8 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: 'transparent',
-    },    loadingText: {
+    },
+    loadingText: {
       color: colors.buttonText,
       fontWeight: 'bold',
       fontSize: 16,
@@ -312,7 +322,8 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View style={styles.container}>      <StatusBar
+    <View style={styles.container}>
+      <StatusBar
         barStyle={colorScheme === 'dark' ? 'light-content' : 'light-content'}
         backgroundColor="transparent"
         translucent
@@ -490,7 +501,8 @@ export default function RegisterScreen() {
             onPress={handleGoogleRegister}
             disabled={isLoading || googleLoading}
             activeOpacity={0.8}
-          >            {googleLoading ? (
+          >
+            {googleLoading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator color={COLORS.googleButtonText} size="small" />
                 <Text style={styles.googleLoadingText}>Conectando...</Text>
@@ -506,7 +518,8 @@ export default function RegisterScreen() {
             )}
           </TouchableOpacity>
         </View>
-          {/* Login Link */}
+        
+        {/* Login Link */}
         <View style={styles.loginContainer}>
           <Text style={styles.loginText}>¿Ya tienes una cuenta? </Text>
           <TouchableOpacity onPress={() => router.push('/login')} activeOpacity={0.7}>

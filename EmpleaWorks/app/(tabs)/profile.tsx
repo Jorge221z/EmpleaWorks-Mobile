@@ -57,7 +57,8 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     paddingHorizontal: 16,
     paddingBottom: 30,
     paddingTop: 20,
-  },  refreshText: {
+  },
+  refreshText: {
     marginLeft: 10,
     color: colors.secondary,
     fontSize: 14,
@@ -98,7 +99,8 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     padding: 2,
     alignItems: 'center',
     justifyContent: 'center',
-  },  avatarInner: {
+  },
+  avatarInner: {
     width: 120,
     height: 120,
     borderRadius: 60,
@@ -191,13 +193,15 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     backgroundColor: '#ffebee',
     borderWidth: 1,
     borderColor: 'rgba(231, 76, 60, 0.2)',
-  },  avatarOuterContainer: {
+  },
+  avatarOuterContainer: {
     marginBottom: 15,
     backgroundColor: 'transparent', // Cambiar a transparente
     borderRadius: 62, // Mismo border radius
     alignItems: 'center',
     justifyContent: 'center',
-  },avatarContainer: {
+  },
+  avatarContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent', // Cambiar a transparente
@@ -298,7 +302,9 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
   },
   cvAvailable: {
     color: colors.success,
-    fontWeight: '500',  },  cvMissing: {
+    fontWeight: '500',
+  },
+  cvMissing: {
     color: colors.error,
   },
   emailVerificationContainer: {
@@ -310,7 +316,8 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     borderRadius: 0,
     flex: 1,
     height: 24, // Misma altura que otros campos para consistencia
-  },  emailVerificationIcon: {
+  },
+  emailVerificationIcon: {
     marginRight: 8,
   },
   emailVerified: {
@@ -323,7 +330,8 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     color: colors.error,
     fontSize: 15,
     fontWeight: '500',
-  },  emailVerificationButton: {
+  },
+  emailVerificationButton: {
     marginLeft: 12,
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -371,7 +379,8 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     color: '#ffffff',
     fontWeight: 'bold',
     fontSize: 16,
-  },  loadingLogout: {
+  },
+  loadingLogout: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -383,7 +392,8 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     color: '#ffffff',
     fontWeight: 'bold',
     fontSize: 16,
-  },  infoValue: {
+  },
+  infoValue: {
     fontSize: 15,
     flex: 1,
     color: colors.text,
@@ -416,7 +426,8 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     marginRight: 8,
   },
   emailNotVerifiedIcon: {
-    marginRight: 8,  },
+    marginRight: 8,
+  },
 });
 
 // Función helper para calcular el tamaño de fuente dinámico basado en la longitud del email
@@ -811,7 +822,8 @@ export default function ProfileScreen() {
       return candidateData.cv;
     }
 
-    return null;  };
+    return null;
+  };
 
   // Función para navegar a la pantalla de edición with datos completos
   const navigateToEditProfile = () => {
@@ -875,7 +887,8 @@ export default function ProfileScreen() {
               <ActivityIndicator size="small" color={COLORS.secondary} />
               <Text style={styles.refreshText}>Actualizando perfil...</Text>
             </View>
-          </Animated.View>        )}
+          </Animated.View>
+        )}
 
         <Animated.View
           style={[
@@ -975,7 +988,8 @@ export default function ProfileScreen() {
               <View style={styles.infoValueContainer}>
                 <Text style={styles.infoValue}>{getSurname(user) || 'No disponible'}</Text>
               </View>
-            </View>            <View style={styles.infoContainer}>
+            </View>
+            <View style={styles.infoContainer}>
               <Text style={styles.infoLabel}>Email:</Text>
               <View style={styles.infoValueContainer}>
                 <Text style={[

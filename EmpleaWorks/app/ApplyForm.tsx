@@ -381,7 +381,9 @@ export default function ApplyFormScreen() {
                   <FontAwesome name="exclamation-circle" size={14} color={COLORS.error} /> {errors.email}
                 </Text>
               ) : null}
-            </View>            {/* Cover letter input */}
+            </View>
+            
+            {/* Cover letter input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Carta de Presentación *</Text>
               <View style={[styles.textAreaWrapper, errors.cl ? styles.inputError : null]}>
@@ -436,7 +438,9 @@ export default function ApplyFormScreen() {
                   <FontAwesome name="exclamation-circle" size={14} color={COLORS.error} /> {errors.dataConsent}
                 </Text>
               ) : null}
-            </View>            {/* General error message */}
+            </View>
+            
+            {/* General error message */}
             {errors.general ? (
               <View style={styles.generalErrorContainer}>
                 <FontAwesome name="exclamation-triangle" size={20} color={COLORS.error} />
@@ -450,7 +454,9 @@ export default function ApplyFormScreen() {
               <Text style={styles.noteText}>
                 Asegúrate de que tu información sea correcta. Una vez enviada, no podrás modificar tu aplicación.
               </Text>
-            </View>            {/* Buttons */}
+            </View>
+            
+            {/* Buttons */}
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={[

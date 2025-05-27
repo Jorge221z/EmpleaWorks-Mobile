@@ -10,7 +10,8 @@ import GoogleAuthErrorInfo from '@/components/GoogleAuthErrorInfo';
 
 // Constantes de diseño para temas
 const getThemeColors = (colorScheme: string) => {
-  const isDark = colorScheme === 'dark';  return {
+  const isDark = colorScheme === 'dark';
+  return {
     primary: '#4A2976',
     primaryLight: isDark ? '#5e3a8a' : '#3d2c52',
     secondary: '#9b6dff',
@@ -42,8 +43,10 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
   
   return StyleSheet.create({
     container: {
-      flex: 1,      backgroundColor: colors.background,
-    },    scrollContent: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
       flexGrow: 1,
       justifyContent: 'center',
       alignItems: 'center',
@@ -56,7 +59,8 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       alignItems: 'center',
       marginBottom: 40,
       backgroundColor: 'transparent',
-    },    logoIcon: {
+    },
+    logoIcon: {
       width: 100,
       height: 100,
       borderRadius: 50,
@@ -83,7 +87,8 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       marginBottom: 8,
       textAlign: 'center',
       backgroundColor: 'transparent',
-    },    subtitle: {
+    },
+    subtitle: {
       fontSize: 16,
       color: colors.subtitle,
       textAlign: 'center',
@@ -128,8 +133,12 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       borderColor: colors.secondary,
       borderWidth: 2,
       elevation: 4,
-      shadowOpacity: 0.2,    },    inputIcon: {
-      marginRight: 12,    },input: {
+      shadowOpacity: 0.2,
+    },
+    inputIcon: {
+      marginRight: 12,
+    },
+    input: {
       flex: 1,
       fontSize: 16,
       color: colors.text,
@@ -170,7 +179,9 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       shadowColor: colors.shadowColor,
       shadowOffset: { width: 0, height: 3 },
       shadowOpacity: 0.3,
-      shadowRadius: 6,    },    googleIcon: {
+      shadowRadius: 6,
+    },
+    googleIcon: {
       marginRight: 8,
       marginLeft: 2,
       height: 24,
@@ -240,7 +251,8 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: 'transparent',
-    },    loadingText: {
+    },
+    loadingText: {
       color: colors.buttonText,
       fontWeight: 'bold',
       fontSize: 16,
@@ -299,7 +311,8 @@ export default function LoginScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-      >{/* Logo and Title Section */}
+      >
+        {/* Logo and Title Section */}
         <View style={styles.logoContainer}>
           <View style={styles.logoIcon}>
             <Image 
@@ -317,7 +330,8 @@ export default function LoginScreen() {
             <View style={[
               styles.inputWrapper,
               emailFocused && styles.inputWrapperFocused
-            ]}>              <FontAwesome 
+            ]}>
+              <FontAwesome 
                 name="envelope" 
                 size={18} 
                 color={emailFocused ? COLORS.secondary : COLORS.lightText} 
@@ -340,7 +354,8 @@ export default function LoginScreen() {
             <View style={[
               styles.inputWrapper,
               passwordFocused && styles.inputWrapperFocused
-            ]}>              <FontAwesome 
+            ]}>
+              <FontAwesome 
                 name="lock" 
                 size={20} 
                 color={passwordFocused ? COLORS.secondary : COLORS.lightText} 
@@ -418,13 +433,16 @@ export default function LoginScreen() {
             onPress={handleGoogleLogin}
             disabled={isLoading || googleLoading}
             activeOpacity={0.8}
-          >            {googleLoading ? (
+          >
+            {googleLoading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator color={COLORS.googleButtonText} size="small" />
                 <Text style={styles.googleLoadingText}>Conectando...</Text>
-              </View>) : (              <>
+              </View>)
+              : (
+              <>
                 <Text style={[styles.buttonText, { color: COLORS.googleButtonText }]}>Continuar con </Text>
-                <Image 
+                <Image
                   source={require('@/assets/images/google-logo.png')}
                   style={styles.googleIcon}
                 />
@@ -432,16 +450,16 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
         </View>
-          {/* Register Link */}
-        <View style={styles.registerContainer}>
-          <Text style={styles.registerText}>¿No tienes una cuenta? </Text>
-          <TouchableOpacity onPress={() => router.push('/register')} activeOpacity={0.7}>
-            <Text style={styles.linkText}>Regístrate</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={{ height: 80 }} />
-      </ScrollView>
       
-    </View>
+      {/* Register Link */}
+      <View style={styles.registerContainer}>
+        <Text style={styles.registerText}>¿No tienes una cuenta? </Text>
+        <TouchableOpacity onPress={() => router.push('/register')} activeOpacity={0.7}>
+          <Text style={styles.linkText}>Regístrate</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={{ height: 80 }} />
+    </ScrollView>
+  </View>
   );
 };
