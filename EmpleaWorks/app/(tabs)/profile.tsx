@@ -57,31 +57,11 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     paddingHorizontal: 16,
     paddingBottom: 30,
     paddingTop: 20,
-  },
-  refreshText: {
+  },  refreshText: {
     marginLeft: 10,
     color: colors.secondary,
     fontSize: 14,
     fontWeight: '500',
-  },
-  debugButton: {
-    backgroundColor: colors.debug,
-    padding: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 15,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  debugButtonText: {
-    color: colors.primary,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  debugIcon: {
-    marginRight: 5,
   },
   solidContainer: {
     flexDirection: 'row',
@@ -742,14 +722,7 @@ export default function ProfileScreen() {
   useEffect(() => {
     if (!isAuthenticated) {
       router.replace('/login');
-    }
-  }, [isAuthenticated]);
-
-  // Función para forzar recarga de datos
-  const forceRefresh = useCallback(() => {
-    console.log('Forzando recarga manual de datos');
-    loadUserData();
-  }, [loadUserData]);
+    }  }, [isAuthenticated]);
 
   // Función helper para acceder al apellido (con mejor depuración)
   const getSurname = (userData: any) => {
@@ -838,21 +811,7 @@ export default function ProfileScreen() {
       return candidateData.cv;
     }
 
-    return null;
-  };
-
-  // Función de depuración para mostrar contenido completo en la consola
-  const debugUserData = () => {
-    console.log('============= DATOS ACTUALES =============');
-    console.log('Usuario local:', localUser);
-    console.log('Datos de candidato:', candidateData);
-    console.log('Usuario combinado:', user);
-    console.log('Apellido calculado:', getSurname(user));
-    console.log('Description:', getUserDescription(user));
-    console.log('Imagen de perfil:', getUserProfileImage(user));
-    console.log('CV:', getUserCV(user));
-    console.log('==========================================');
-  };
+    return null;  };
 
   // Función para navegar a la pantalla de edición with datos completos
   const navigateToEditProfile = () => {
@@ -916,20 +875,7 @@ export default function ProfileScreen() {
               <ActivityIndicator size="small" color={COLORS.secondary} />
               <Text style={styles.refreshText}>Actualizando perfil...</Text>
             </View>
-          </Animated.View>
-        )}
-
-        {/* Botón para forzar recarga y debug (solo en desarrollo) */}
-        <TouchableOpacity
-          style={styles.debugButton}
-          onPress={() => {
-            forceRefresh();
-            debugUserData();
-          }}
-        >
-          <FontAwesome name="refresh" size={12} color={COLORS.primary} style={styles.debugIcon} />
-          <Text style={styles.debugButtonText}>Debug y Actualizar</Text>
-        </TouchableOpacity>
+          </Animated.View>        )}
 
         <Animated.View
           style={[
