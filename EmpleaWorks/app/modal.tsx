@@ -1,11 +1,12 @@
 import { StatusBar } from 'expo-status-bar';
-import { Platform, StyleSheet, ScrollView, Linking, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { Platform, StyleSheet, ScrollView, Linking, TouchableOpacity, Animated, Dimensions, Image } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef } from 'react';
+import { router } from 'expo-router';
 
 export default function ModalScreen() {
   const colorScheme = useColorScheme();
@@ -45,6 +46,10 @@ export default function ModalScreen() {
     }
   };
 
+  const goBack = () => {
+    router.back();
+  };
+
   const isDark = colorScheme === 'dark';
   
   const gradientColors = isDark 
@@ -81,6 +86,15 @@ export default function ModalScreen() {
         >
           {/* Header with enhanced gradient */}
           <View style={[styles.header, { backgroundColor: 'transparent' }]}>
+            {/* Back button */}
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={goBack}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chevron-back" size={24} color="white" />
+            </TouchableOpacity>
+
             <Animated.View
               style={[
                 styles.logoContainer,
@@ -90,12 +104,16 @@ export default function ModalScreen() {
               ]}
             >
               <LinearGradient
-                colors={['#7c28eb', '#9b6dff', '#c084fc']}
+                colors={isDark ? ['#374151', '#6b7280', '#9ca3af'] : ['#e5e7eb', '#d1d5db', '#9ca3af']}
                 style={styles.logoGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-                <Ionicons name="briefcase" size={32} color="white" />
+                <Image 
+                  source={require('@/assets/images/icon.png')} 
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
               </LinearGradient>
             </Animated.View>
             <Text style={[styles.title, { color: 'white' }]}>EmpleaWorks</Text>
@@ -161,10 +179,10 @@ export default function ModalScreen() {
                 </Text>
                 <View style={styles.featuresList}>
                   {[
-                    { icon: 'search', text: 'Buscar ofertas de trabajo' },
-                    { icon: 'heart', text: 'Guardar ofertas favoritas' },
-                    { icon: 'document-text', text: 'Gestionar aplicaciones' },
-                    { icon: 'person-circle', text: 'Editar perfil profesional' }
+                    { icon: 'search', text: 'Buscar ofertas de trabajo', color: '#2196F3' },
+                    { icon: 'heart', text: 'Guardar ofertas favoritas', color: '#E91E63' },
+                    { icon: 'document-text', text: 'Gestionar aplicaciones', color: '#FF9800' },
+                    { icon: 'person-circle', text: 'Editar perfil profesional', color: '#4CAF50' }
                   ].map((feature, index) => (
                     <Animated.View
                       key={index}
@@ -176,8 +194,8 @@ export default function ModalScreen() {
                         }
                       ]}
                     >
-                      <View style={[styles.featureIconContainer, { backgroundColor: '#4CAF50' + '15' }]}>
-                        <Ionicons name={feature.icon as any} size={16} color="#4CAF50" />
+                      <View style={[styles.featureIconContainer, { backgroundColor: feature.color + '15' }]}>
+                        <Ionicons name={feature.icon as any} size={16} color={feature.color} />
                       </View>
                       <Text style={[styles.featureText, { color: isDark ? 'rgba(255,255,255,0.9)' : colors.text }]}>
                         {feature.text}
@@ -211,8 +229,8 @@ export default function ModalScreen() {
                   Plataforma Completa
                 </Text>
                 <Text style={[styles.sectionText, { color: isDark ? 'rgba(255,255,255,0.8)' : colors.text + 'CC' }]}>
-                  EmpleaWorks es una plataforma integral de empleos que conecta candidatos 
-                  con oportunidades laborales en todo tipo de industrias.
+                  EmpleaWorks es una plataforma de empleos que conecta candidatos 
+                  con empresas en todo tipo de industrias.
                 </Text>
                 
                 <TouchableOpacity 
@@ -226,8 +244,8 @@ export default function ModalScreen() {
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                   >
-                    <Ionicons name="open" size={18} color="white" />
-                    <Text style={styles.websiteButtonText}>Visitar emplea.works</Text>
+                    <Text style={styles.websiteButtonText}>Visitar EmpleaWorks</Text>
+                    <Ionicons name="open" size={18} color="white" style={{ marginLeft: 8 }} />
                   </LinearGradient>
                 </TouchableOpacity>
               </LinearGradient>
@@ -299,7 +317,7 @@ export default function ModalScreen() {
               ]}
             >
               <Text style={[styles.footerText, { color: 'rgba(255,255,255,0.7)' }]}>
-                © 2024 EmpleaWorks. Conectando talento con oportunidades.
+                © 2025 EmpleaWorks. {'\n'} Conectando talento con oportunidades.
               </Text>
             </Animated.View>
           </View>
@@ -407,6 +425,7 @@ const styles = StyleSheet.create({
   },
   featuresList: {
     marginTop: 12,
+    backgroundColor: 'transparent',
   },
   featureItem: {
     flexDirection: 'row',
@@ -468,5 +487,21 @@ const styles = StyleSheet.create({
     marginVertical: 30,
     height: 1,
     width: '80%',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  logoImage: {
+    width: 100,
+    height: 100,
   },
 });
