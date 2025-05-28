@@ -76,7 +76,7 @@ export const useEmailVerificationGuard = () => {
       return {
         canProceed: false,
         needsVerification: true,
-        verificationData: verificationState
+        verificationData: verificationState || undefined
       };
     }
     

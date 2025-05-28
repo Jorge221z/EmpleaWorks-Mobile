@@ -588,8 +588,7 @@ export default function TabOneScreen() {
               {dashboardData.offers.map((offer) => (
                 <TouchableOpacity 
                   key={offer.id} 
-                  style={styles.offerCard}
-                  activeOpacity={0.9}
+                  style={styles.offerCard}                  activeOpacity={0.9}
                   onPress={() => {
                     router.push(`/showOffer?id=${offer.id}`);
                   }}
@@ -675,8 +674,7 @@ export default function TabOneScreen() {
                         </View>
                       )}
                     </View>
-                    <TouchableOpacity 
-                      style={styles.offerActionButton}
+                    <TouchableOpacity                      style={styles.offerActionButton}
                       onPress={() => {
                         router.push(`/showOffer?id=${offer.id}`);
                       }}

@@ -77,12 +77,11 @@ export default function GoogleAuthErrorInfo({ error }: GoogleAuthErrorInfoProps)
           </Text>
 
           <Text style={styles.subtitle}>Detalles del Servidor:</Text>
-          <Text style={styles.description}>
-            El controlador GoogleController.php está usando la variable de entorno 
+          <Text style={styles.description}>          El controlador GoogleController.php está usando la variable de entorno 
             GOOGLE_CLIENT_ID_MOBILE para verificar el token:
           </Text>
           <Text style={styles.code}>
-            $client = new Google_Client(['client_id' => env('GOOGLE_CLIENT_ID_MOBILE')]);
+            {`$client = new Google_Client(['client_id' => env('GOOGLE_CLIENT_ID_MOBILE')]);`}
           </Text>
           
           <Text style={styles.subtitle}>Cliente IDs en la App:</Text>

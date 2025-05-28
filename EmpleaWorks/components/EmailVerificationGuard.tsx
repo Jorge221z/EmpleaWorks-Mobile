@@ -143,11 +143,10 @@ export const VerificationRequiredButton: React.FC<VerificationRequiredButtonProp
   };
 
   return (
-    <>
-      {React.cloneElement(children as React.ReactElement, {
+    <>      {React.cloneElement(children as React.ReactElement, {
         ...buttonProps,
         onPress: handlePress
-      })}
+      } as any)}
       
       <Modal
         visible={showVerification}

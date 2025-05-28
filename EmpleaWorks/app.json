@@ -18,7 +18,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/adaptative-icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -36,7 +36,9 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {},
+      "router": {
+        "initialRouteName": "welcome"
+      },
       "googleAndroidClientId": "742678869784-uth91mh69d54p816fm4u2ot38e5s0ahq.apps.googleusercontent.com",
       "googleWebClientId": "742678869784-pgutm764ogf80ipdtrdsor885kt8j0bk.apps.googleusercontent.com",
       "eas": {

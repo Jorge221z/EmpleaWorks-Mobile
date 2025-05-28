@@ -16,7 +16,7 @@ export {
 } from 'expo-router';
 
 export const unstable_settings = {
-  // Start with welcome screen for better UX
+  // Ensure proper initial route handling in production builds
   initialRouteName: 'welcome',
 };
 
@@ -45,36 +45,57 @@ function AuthRedirect() {
     const inTabsGroup = segments[0] === '(tabs)';
     const currentRoute = segments[0];
     
+    // Define screens that authenticated users can access
+    const authenticatedScreens = [
+      'ApplyForm', 'showOffer', 'saved-offers', 'edit-profile', 
+      'change-password', 'my-applications', 'modal'
+    ];
+    
     console.log('inTabsGroup:', inTabsGroup);
+    console.log('Is authenticated screen:', authenticatedScreens.includes(currentRoute || ''));
     console.log('Processing route logic...');
     
-    // If the user is authenticated, redirect to main app
-    if (isAuthenticated) {
-      console.log('✅ Usuario autenticado');
-      if (!inTabsGroup && currentRoute !== 'modal') {
-        console.log('🔄 Redirigiendo usuario autenticado a tabs...');
-        router.replace('/(tabs)');
-      } else {
-        console.log('✅ Usuario autenticado ya en ruta correcta');
+    // Use setTimeout to avoid navigation conflicts during component mounting
+    const navigationTimeout = setTimeout(() => {
+      // If the user is authenticated
+      if (isAuthenticated) {
+        console.log('✅ Usuario autenticado');
+        
+        // Allow access to tabs group and authenticated screens
+        if (inTabsGroup || authenticatedScreens.includes(currentRoute || '')) {
+          console.log('✅ Usuario autenticado en ruta válida:', currentRoute);
+          return;
+        }
+        
+        // Only redirect to tabs if user is on an auth screen (welcome, login, register)
+        const authOnlyScreens = ['welcome', 'login', 'register'];
+        if (!currentRoute || authOnlyScreens.includes(currentRoute)) {
+          console.log('🔄 Redirigiendo usuario autenticado a tabs desde:', currentRoute || 'root');
+          router.replace('/(tabs)');
+        }
+      } 
+      // If the user is not authenticated
+      else {
+        console.log('❌ Usuario NO autenticado');
+        
+        // Only allow access to welcome, login, and register screens
+        const allowedRoutes = ['welcome', 'login', 'register'];
+        console.log('Rutas permitidas:', allowedRoutes);
+        console.log('Ruta actual válida?', currentRoute ? allowedRoutes.includes(currentRoute) : false);
+        
+        // If user is not on an allowed route OR on root route (no segments), redirect to welcome
+        if (!currentRoute || !allowedRoutes.includes(currentRoute)) {
+          console.log('🔄 Redirigiendo usuario no autenticado a welcome desde:', currentRoute || 'root');
+          // Use push instead of replace for better navigation handling
+          router.push('/welcome');
+        } else {
+          console.log('✅ Usuario no autenticado ya en ruta permitida:', currentRoute);
+        }
       }
-    } 
-    // If the user is not authenticated
-    else {
-      console.log('❌ Usuario NO autenticado');
-      // Only allow access to welcome, login, and register screens
-      const allowedRoutes = ['welcome', 'login', 'register'];
-      console.log('Rutas permitidas:', allowedRoutes);
-      console.log('Ruta actual válida?', currentRoute ? allowedRoutes.includes(currentRoute) : false);
-      
-      // If user is not on an allowed route OR on root route (no segments), redirect to welcome
-      if (!currentRoute || !allowedRoutes.includes(currentRoute)) {
-        console.log('🔄 Redirigiendo usuario no autenticado a welcome desde:', currentRoute || 'root');
-        router.replace('/welcome');
-      } else {
-        console.log('✅ Usuario no autenticado ya en ruta permitida:', currentRoute);
-      }
-    }
-    console.log('=== Fin AuthRedirect Debug ===');
+      console.log('=== Fin AuthRedirect Debug ===');
+    }, 100); // Small delay to ensure navigation is ready
+
+    return () => clearTimeout(navigationTimeout);
   }, [isAuthenticated, segments, isLoading, router]);
 
   return <Slot />;

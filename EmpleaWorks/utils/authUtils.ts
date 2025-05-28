@@ -187,8 +187,7 @@ export const signInWithGoogle = async (forceAccountSelection = false) => {
         typeof signInError === 'object' &&
         signInError !== null &&
         'code' in signInError
-      ) {
-        if ((signInError as any).code === statusCodes.DEVELOPER_ERROR) {
+      ) {        if ((signInError as any).code === 'DEVELOPER_ERROR') {
           console.error('DEVELOPER_ERROR detectado - Problema de configuración SHA-1');
           throw new Error('Error de configuración con Google Sign-In. Verifica que el SHA-1 esté registrado en Google Cloud Console.');
         }

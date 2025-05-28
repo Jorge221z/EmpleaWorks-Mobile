@@ -13,6 +13,7 @@ export default {
     fieldBackground: '#f8f8f8',
     tabBarBackground: '#ffffff',
     headerBackground: '#ffffff',
+    tabBarBorder: 'rgba(43, 31, 60, 0.15)',
   },
   dark: {
     text: '#fff',
@@ -25,5 +26,6 @@ export default {
     fieldBackground: '#333333', // Ajustado para un contraste sutil con el fondo de la tarjeta
     tabBarBackground: '#1a1a1a',
     headerBackground: '#1a1a1a',
+    tabBarBorder: 'rgba(128, 128, 128, 0.3)',
   },
 };
