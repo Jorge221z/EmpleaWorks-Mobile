@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
   StatusBar,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { resendEmailVerification } from '../api/axios';
@@ -55,7 +56,6 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       setIsResending(false);
     }
   };
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
@@ -73,8 +73,13 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         <View style={styles.placeholder} />
       </View>
 
-      {/* Content */}
-      <View style={styles.content}>
+      {/* Content with ScrollView */}
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Icon */}
         <View style={styles.iconContainer}>
           <Ionicons name="mail-unread" size={80} color="#4A90E2" />
@@ -147,7 +152,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
             <Text style={styles.backButtonText}>Volver</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -173,18 +178,28 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
-  },
-  placeholder: {
+  },  placeholder: {
     width: 40,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 30,
+    paddingTop: 40,
+    paddingBottom: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '100%',
   },
   content: {
     flex: 1,
     paddingHorizontal: 30,
     paddingTop: 40,
     alignItems: 'center',
-  },
-  iconContainer: {
-    marginBottom: 30,
+  },  iconContainer: {
+    marginBottom: 25,
   },
   title: {
     fontSize: 28,
@@ -197,34 +212,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 15,
     lineHeight: 24,
+    paddingHorizontal: 10,
   },
   emailText: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 30,
+    marginBottom: 25,
     textAlign: 'center',
+    paddingHorizontal: 10,
   },
   emailHighlight: {
     fontWeight: '600',
     color: '#4A90E2',
-  },
-  instructionsContainer: {
+  },  instructionsContainer: {
     width: '100%',
-    marginBottom: 40,
+    marginBottom: 35,
+    paddingHorizontal: 10,
   },
   instructionsTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 20,
+    marginBottom: 15,
     textAlign: 'center',
   },
   instructionItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 15,
+    marginBottom: 12,
   },
   instructionNumber: {
     fontSize: 16,
@@ -238,10 +255,11 @@ const styles = StyleSheet.create({
     color: '#666',
     flex: 1,
     lineHeight: 22,
-  },
-  buttonsContainer: {
+  },  buttonsContainer: {
     width: '100%',
-    gap: 15,
+    gap: 12,
+    paddingHorizontal: 10,
+    marginTop: 20,
   },
   button: {
     flexDirection: 'row',
