@@ -151,9 +151,12 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       borderWidth: 2,
       elevation: 4,
       shadowOpacity: 0.2,
-    },
-    inputIcon: {
+    },    inputIcon: {
       marginRight: 12,
+    },
+    eyeIcon: {
+      marginLeft: 12,
+      padding: 4,
     },
     input: {
       flex: 1,
@@ -291,6 +294,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading, error } = useAuth();
   const { login: googleLogin, isLoading: googleLoading, error: googleError } = useGoogleAuth();
   
@@ -376,8 +380,7 @@ export default function LoginScreen() {
                 autoComplete="email"
               />
             </View>
-            
-            <View style={[
+              <View style={[
               styles.inputWrapper,
               passwordFocused && styles.inputWrapperFocused
             ]}>
@@ -395,9 +398,20 @@ export default function LoginScreen() {
                 onChangeText={setPassword}
                 onFocus={() => setPasswordFocused(true)}
                 onBlur={() => setPasswordFocused(false)}
-                secureTextEntry
+                secureTextEntry={!showPassword}
                 autoComplete="password"
               />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIcon}
+                activeOpacity={0.7}
+              >
+                <FontAwesome
+                  name={showPassword ? "eye-slash" : "eye"}
+                  size={18}
+                  color={COLORS.lightText}
+                />
+              </TouchableOpacity>
             </View>
           </View>
           
