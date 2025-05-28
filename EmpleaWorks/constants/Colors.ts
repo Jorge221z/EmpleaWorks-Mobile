@@ -6,7 +6,7 @@ export default {
     text: '#000',
     background: '#fff',
     tint: tintColorLight,
-    tabIconDefault: '#ccc',
+    tabIconDefault: '#e9d5ff', // Morado extremadamente claro, casi transparente
     tabIconSelected: tintColorLight,
     card: '#ffffff',
     border: 'rgba(43, 31, 60, 0.15)',
@@ -19,7 +19,7 @@ export default {
     text: '#fff',
     background: '#121212',
     tint: tintColorDark,
-    tabIconDefault: '#666',
+    tabIconDefault: '#f3f4f6', // Gris muy claro, casi blanco para modo oscuro
     tabIconSelected: tintColorDark,
     card: '#2d2d2d',
     border: 'rgba(128, 128, 128, 0.3)', // Cambiado a gris en lugar de blanco
