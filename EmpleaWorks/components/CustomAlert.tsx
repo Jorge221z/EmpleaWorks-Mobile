@@ -1,5 +1,5 @@
-import React from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Modal, View, Text, StyleSheet, TouchableOpacity, Animated, TouchableWithoutFeedback } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 export type AlertType = 'success' | 'error' | 'warning' | 'info';
@@ -27,7 +27,7 @@ const alertConfig = {
   },
   warning: {
     icon: 'warning-outline' as keyof typeof Ionicons.glyphMap,
-    color: '#ffc107',
+    color: '#ffc107', // Amarillo más oscuro para mejor contraste
     backgroundColor: '#fff3cd',
     borderColor: '#ffeeba',
   },
@@ -40,68 +40,100 @@ const alertConfig = {
 };
 
 const CustomAlert: React.FC<CustomAlertProps> = ({ isVisible, message, type, onClose, title }) => {
-  const slideAnim = React.useRef(new Animated.Value(0)).current;
-  const [isModalRendered, setIsModalRendered] = React.useState(false);
+  const anim = useRef(new Animated.Value(0)).current; // For opacity and scale
+  const [isModalActuallyVisible, setIsModalActuallyVisible] = useState(false);
+  const timerRef = useRef<number | null>(null); // Changed NodeJS.Timeout to number for React Native compatibility
 
-  // Effect 1: Control presence of Modal in the tree
-  React.useEffect(() => {
+  useEffect(() => {
     if (isVisible) {
-      setIsModalRendered(true); // Render the modal
-    }
-    // For hiding, the animation effect (Effect 2) will set setIsModalRendered to false later
-  }, [isVisible]);
-
-  // Effect 2: Control animation
-  React.useEffect(() => {
-    if (isVisible && isModalRendered) { // Animate in
-      slideAnim.setValue(0); // Ensure animation starts from 0
-      Animated.timing(slideAnim, {
+      setIsModalActuallyVisible(true);
+      Animated.spring(anim, { // Changed to spring animation
         toValue: 1,
-        duration: 300,
+        friction: 7, // Controls "bounciness"
+        tension: 100, // Controls speed
         useNativeDriver: true,
       }).start();
-    } else if (!isVisible && isModalRendered) { // Animate out
-      Animated.timing(slideAnim, {
+
+      // Autoclose timer
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      timerRef.current = setTimeout(() => {
+        handleClose();
+      }, 4000) as unknown as number; // Cast to number
+
+    } else if (!isVisible && isModalActuallyVisible) { // Animate out
+      Animated.timing(anim, {
         toValue: 0,
-        duration: 300,
+        duration: 200, // Faster fade out
         useNativeDriver: true,
       }).start(() => {
-        setIsModalRendered(false); // Un-render the modal after animation
+        setIsModalActuallyVisible(false);
       });
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
     }
-  }, [isVisible, isModalRendered, slideAnim]);
 
-  if (!isModalRendered) {
-    return null; // Don't render Modal if it's not supposed to be in the tree
+    // Cleanup timer on unmount or when isVisible changes
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [isVisible, isModalActuallyVisible]);
+
+
+  const handleClose = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+    onClose();
+  };
+
+  if (!isModalActuallyVisible) {
+    return null;
   }
 
   const config = alertConfig[type];
   const alertTitle = title || type.charAt(0).toUpperCase() + type.slice(1);
 
-  const translateY = slideAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-100, 0], // Slide from top
-  });
+  const animatedStyle = {
+    opacity: anim,
+    transform: [
+      {
+        scale: anim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.9, 1], // Scale from 0.9 to 1
+        }),
+      },
+    ],
+  };
 
   return (
     <Modal
       transparent
-      visible={true} // Modal is always "visible" when rendered; its presence in tree is controlled by isModalRendered
-      animationType="none" // We are using Animated API for custom animation
-      onRequestClose={onClose}
+      visible={isModalActuallyVisible}
+      animationType="none"
+      onRequestClose={handleClose} // For Android back button
     >
-      <View style={styles.modalOverlay}>
-        <Animated.View style={[styles.alertContainer, { backgroundColor: config.backgroundColor, borderColor: config.borderColor, transform: [{ translateY }] }]}>
-          <Ionicons name={config.icon} size={24} color={config.color} style={styles.icon} />
-          <View style={styles.textContainer}>
-            <Text style={[styles.titleText, { color: config.color }]}>{alertTitle}</Text>
-            <Text style={[styles.messageText, { color: config.color }]}>{message}</Text>
-          </View>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close-outline" size={24} color={config.color} />
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
+      <TouchableWithoutFeedback onPress={handleClose}>
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback>
+            {/* This inner TouchableWithoutFeedback prevents the modal from closing when clicking inside the alert box */}
+            <Animated.View style={[styles.alertContainer, { backgroundColor: config.backgroundColor, borderColor: config.borderColor }, animatedStyle]}>
+              <Ionicons name={config.icon} size={28} color={config.color} style={styles.icon} />
+              <View style={styles.textContainer}>
+                <Text style={[styles.titleText, { color: config.color }]}>{alertTitle}</Text>
+                <Text style={[styles.messageText, { color: config.color }]}>{message}</Text>
+              </View>
+              <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+                <Ionicons name="close-outline" size={28} color={config.color} />
+              </TouchableOpacity>
+            </Animated.View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 };
@@ -109,44 +141,48 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ isVisible, message, type, onC
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    paddingTop: 50, 
+    backgroundColor: 'rgba(0, 0, 0, 0.6)', // Darker overlay
+    justifyContent: 'center', // Center vertically
+    alignItems: 'center',    // Center horizontally
+    paddingHorizontal: 20, // Add some padding so alert is not edge-to-edge
   },
   alertContainer: {
-    width: '90%',
-    padding: 15,
-    borderRadius: 10,
+    width: '100%', // Take available width within padding
+    maxWidth: 400, // Max width for larger screens
+    padding: 20,
+    borderRadius: 15, // More rounded corners
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4, // Increased shadow
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.30, // Increased shadow opacity
+    shadowRadius: 4.65,  // Increased shadow radius
+    elevation: 8,        // Increased elevation for Android
   },
   icon: {
-    marginRight: 10,
+    marginRight: 15,
   },
   textContainer: {
     flex: 1,
     marginRight: 10,
   },
   titleText: {
-    fontSize: 16,
+    fontSize: 17, // Slightly larger title
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 5, // More space below title
   },
   messageText: {
-    fontSize: 14,
+    fontSize: 15, // Slightly larger message
+    lineHeight: 20, // Improved line height
   },
   closeButton: {
-    padding: 5,
+    padding: 8, // Larger touch area for close button
+    marginLeft: 5,
+    alignSelf: 'flex-start', // Align to top of text container
   },
 });
 
