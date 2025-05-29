@@ -43,14 +43,37 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ isVisible, message, type, onC
   const anim = useRef(new Animated.Value(0)).current;
   const [isModalActuallyVisible, setIsModalActuallyVisible] = useState(false);
   const timerRef = useRef<number | null>(null);
+  const callbackExecuted = useRef(false); // Add this to track if callback was executed
 
   const handleClose = useCallback(() => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null; // Clear ref after timeout
     }
-    onClose();
-  }, [onClose]); // Dependency: onClose prop
+    
+    // Start exit animation
+    Animated.timing(anim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      // After animation completes, actually hide the modal
+      setIsModalActuallyVisible(false);
+      
+      // Only execute callback if it hasn't been executed yet
+      if (!callbackExecuted.current) {
+        callbackExecuted.current = true;
+        onClose();
+      }
+    });
+  }, [onClose, anim]); // Dependencies: onClose prop and anim
+
+  // Reset the callback executed flag when visibility changes
+  useEffect(() => {
+    if (isVisible) {
+      callbackExecuted.current = false;
+    }
+  }, [isVisible]);
 
   // Effect to handle showing the modal, starting entry animation, and managing autoclose timer
   useEffect(() => {
@@ -79,10 +102,14 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ isVisible, message, type, onC
 
     } else {
       // If isVisible becomes false (e.g., parent component initiated close, not via autoclose/button)
-      // Clear the timer. The exit animation is handled by the next useEffect.
+      // Clear the timer and handle the close properly
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
+      }
+      
+      if (isModalActuallyVisible) {
+        handleClose();
       }
     }
 
@@ -93,21 +120,7 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ isVisible, message, type, onC
         timerRef.current = null;
       }
     };
-  }, [isVisible, anim, handleClose]);
-
-
-  // Effect to handle hiding the modal and starting exit animation
-  useEffect(() => {
-    if (!isVisible && isModalActuallyVisible) {
-      Animated.timing(anim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => {
-        setIsModalActuallyVisible(false); // Fully hide/unmount modal after animation
-      });
-    }
-  }, [isVisible, isModalActuallyVisible, anim]);
+  }, [isVisible, anim, handleClose, isModalActuallyVisible]);
 
   if (!isModalActuallyVisible) {
     return null;
