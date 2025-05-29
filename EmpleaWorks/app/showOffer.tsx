@@ -10,6 +10,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useEmailVerificationGuard } from '@/hooks/useEmailVerification';
 import EmailVerificationScreen from '@/components/EmailVerificationScreen';
 import CustomAlert, { AlertType } from '@/components/CustomAlert'; // Import CustomAlert
+import { useNotificationContext } from '@/context/NotificationContext'; // Added import
+import * as Notifications from 'expo-notifications'; // Added import
 
 // Define interfaces para los tipos de datos
 interface Company {
@@ -517,6 +519,7 @@ export default function ShowOfferScreen() {
   const styles = createStyles(COLORS);
   
   const { isAuthenticated } = useAuth();
+  const { scheduleNotification } = useNotificationContext(); // Get scheduleNotification
   const params = useLocalSearchParams();
   const offerId = params.id as string;  const [offer, setOffer] = useState<OfferDetails | null>(null);
   const [loading, setLoading] = useState(false);
@@ -635,68 +638,87 @@ export default function ShowOfferScreen() {
   const handleSaveOffer = async () => {
     if (!offer || !offerId) return;
     
-    // Si el usuario ya aplicó a esta oferta, no puede guardarla
     if (hasApplied) {
       showAppAlert(
         'warning',
         'No puedes guardar ofertas a las que ya has aplicado.',
-        'No disponible'
+        'Acción no disponible'
       );
       return;
     }
 
-    // 🔒 VERIFICACIÓN DE EMAIL REQUERIDA
-    console.log('🔒 Verificando email antes de guardar oferta...');
-    
-    const verificationResult = await checkBeforeAction('guardar oferta');
-    
+    const verificationResult = await checkBeforeAction('guardar esta oferta');
     if (verificationResult.needsVerification) {
-      console.log('🚫 Email no verificado, mostrando pantalla de verificación');
       setShowEmailVerification(true);
       return;
     }
     
-    console.log('✅ Email verificado, procediendo con guardar oferta');
-    
     try {
       setSavingOffer(true);
-      console.log("Before toggle - saved status:", isSaved);
       const response = await toggleSavedOffer(offerId);
-      console.log("Toggle response:", response);
-      
-      // Determine new state based on server response message
-      // "guardada correctamente" = saved, "eliminada de tus guardados" = removed
       const newSavedState = response.message.includes("guardada correctamente");
-      console.log("Setting saved state to:", newSavedState);
-      
-      // Update state based on server response directly
       setIsSaved(newSavedState);
-      
-      // Skip the checkIfOfferIsSaved call since it's not working correctly
-      // await checkSavedStatus();
-      
-      // Mostrar mensaje de confirmación
-      showAppAlert(
-        'success',
-        response.message || 'Operación completada exitosamente',
-        'Éxito'
-      );
+
+      const offerName = offer?.name || "la oferta seleccionada";
+
+      if (newSavedState) {
+        // Offer was SAVED - schedule a reminder
+        const triggerInSeconds = 3 * 24 * 60 * 60; // 3 days
+        
+        scheduleNotification(
+          {
+            title: "🔔 ¡Es hora de aplicar!",
+            body: `¿Listo para dar el siguiente paso? No olvides aplicar a "${offerName}".`,
+            data: { offerId: offer.id, screen: 'showOffer', offerName: offerName, offerDetails: offer } // Pass offerId and name
+          },
+          { 
+            seconds: triggerInSeconds, 
+            repeats: false, 
+            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL
+          } 
+        ).then(notificationId => {
+          if (notificationId && !notificationId.startsWith('error-')) {
+            const scheduledDate = new Date(Date.now() + triggerInSeconds * 1000);
+            console.log(`⏰ Notificación de recordatorio de aplicación programada (ID: ${notificationId}) para "${offerName}" para: ${scheduledDate.toLocaleString()}`);
+          } else {
+            console.warn(`Falló al programar la notificación de recordatorio para "${offerName}". Estado desde el contexto: ${notificationId}`);
+            // Optionally, inform the user that reminder scheduling failed, though the main save action succeeded.
+            // For now, console warning is sufficient as the main feedback is about saving the offer.
+          }
+        }).catch(scheduleError => {
+          console.error(`Error durante la promesa scheduleNotification en showOffer para "${offerName}":`, scheduleError);
+        });
+
+        showAppAlert(
+          'success',
+          `"${offerName}" ha sido guardada. Te enviaremos un recordatorio en 3 días para que no te olvides de aplicar.`,
+          'Oferta Guardada 📌'
+        );
+
+      } else {
+        // Offer was UNSAVED
+        // Optionally, attempt to cancel any existing reminder for this offer if you store notification IDs.
+        // For now, just confirm un-saving.
+        showAppAlert(
+          'info',
+          `"${offerName}" ha sido eliminada de tus guardados.`,
+          'Oferta Eliminada 🗑️'
+        );
+      }
       
     } catch (error: any) {
       console.error("Error al guardar/eliminar oferta:", error);
-      
-      // 🚨 VERIFICAR SI ES ERROR DE VERIFICACIÓN DE EMAIL
       const emailVerificationError = handleApiError(error);
       if (emailVerificationError.isEmailVerificationError) {
-        console.log('🚨 Error de verificación de email detectado durante guardado de oferta');
         setShowEmailVerification(true);
         return;
       }
       
       let errorMessage = 'Error al procesar la solicitud';
-      
       if (error.error) {
         errorMessage = error.error;
+      } else if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -704,7 +726,7 @@ export default function ShowOfferScreen() {
       showAppAlert(
         'error',
         errorMessage,
-        'Error'
+        'Error al Guardar'
       );
     } finally {
       setSavingOffer(false);
