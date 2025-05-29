@@ -327,6 +327,7 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
   },
   emailVerificationIcon: {
     marginRight: 8,
+    backgroundColor: colors.cardBackground,
   },
   emailVerified: {
     color: colors.success,
@@ -338,6 +339,7 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     color: colors.error,
     fontSize: 15,
     fontWeight: '500',
+    backgroundColor: colors.cardBackground,
   },
   emailVerificationButton: {
     marginLeft: 12,
@@ -429,6 +431,7 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    backgroundColor: colors.cardBackground,
   },
   emailVerifiedIcon: {
     marginRight: 8,
@@ -1054,7 +1057,7 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            <View style={[styles.infoContainer, { height: 1 }]} />
+              <View style={[styles.divider, { backgroundColor: COLORS.cardBackground }]} />
 
             <View style={styles.descriptionContainer}>
               <Text style={styles.descriptionLabel}>Descripción:</Text>
