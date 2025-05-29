@@ -162,17 +162,17 @@ export default function SavedOffersScreen() {
               setSavedOffers(prev => prev.filter(offer => offer.id !== offerId));
 
               // Mostrar CustomAlert de éxito
-              setCustomAlertMessage(`"${offerName}" ha sido removida de tus ofertas guardadas.`);
+              setCustomAlertMessage(`"${offerName}" ha sido eliminada de tus ofertas guardadas.`);
               setCustomAlertType('success');
-              setCustomAlertTitle('Oferta Removida');
+              setCustomAlertTitle('Oferta Eliminada');
               setCustomAlertVisible(true);
               
             } catch (error) {
-              console.error("Error al remover oferta:", error);
+              console.error("Error al eliminar oferta:", error);
               // Mostrar CustomAlert de error
-              setCustomAlertMessage('No se pudo remover la oferta de guardados. Inténtalo de nuevo.');
+              setCustomAlertMessage('No se pudo eliminar la oferta de guardados. Inténtalo de nuevo.');
               setCustomAlertType('error');
-              setCustomAlertTitle('Error al Remover');
+              setCustomAlertTitle('Error al Eliminar');
               setCustomAlertVisible(true);
             } finally {
               setRemovingOfferId(null);

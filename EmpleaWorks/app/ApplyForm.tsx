@@ -26,6 +26,7 @@ import { useEmailVerificationGuard } from '@/hooks/useEmailVerification';
 import EmailVerificationScreen from '@/components/EmailVerificationScreen';
 import { useNotificationContext } from '@/context/NotificationContext';
 import * as Notifications from 'expo-notifications';
+import CustomAlert, { AlertType } from '@/components/CustomAlert'; // Added import
 
 // Theme colors (similar to showOffer.tsx)
 const getThemeColors = (colorScheme: string) => {
@@ -75,23 +76,41 @@ export default function ApplyFormScreen() {
   const colorScheme = useColorScheme();
   const COLORS = getThemeColors(colorScheme || 'light');
   const styles = createStyles(COLORS);
-    const { user } = useAuth();
+  const { user } = useAuth();
   const { sendNotification, scheduleNotification } = useNotificationContext();
   const params = useLocalSearchParams();
   const offerId = params.offerId as string;
   const offerTitle = params.offerTitle as string || 'esta oferta';
-    // Form states
+  // Form states
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [coverLetter, setCoverLetter] = useState('');
   const [dataConsent, setDataConsent] = useState(false);
-  const [loading, setLoading] = useState(false);  const [errors, setErrors] = useState<FormErrors>({
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({
     phone: '',
     email: '',
     cl: '',
     dataConsent: '',
     general: ''
   });
+
+  // Custom Alert State
+  const [customAlertVisible, setCustomAlertVisible] = useState(false);
+  const [customAlertMessage, setCustomAlertMessage] = useState('');
+  const [customAlertType, setCustomAlertType] = useState<AlertType>('info');
+  const [customAlertTitle, setCustomAlertTitle] = useState('');
+
+  const showAppAlert = (type: AlertType, message: string, title: string) => {
+    setCustomAlertType(type);
+    setCustomAlertMessage(message);
+    setCustomAlertTitle(title);
+    setCustomAlertVisible(true);
+  };
+
+  const handleCloseCustomAlert = () => {
+    setCustomAlertVisible(false);
+  };
   
   // Email verification
   const [showEmailVerification, setShowEmailVerification] = useState(false);
@@ -179,6 +198,8 @@ export default function ApplyFormScreen() {
   };
   const handleSubmit = async () => {
     if (!validateForm()) {
+      // Optionally, show a general validation error alert if specific errors aren't enough
+      // showAppAlert('error', 'Por favor corrige los errores en el formulario.', 'Validación Fallida');
       return;
     }
 
@@ -228,6 +249,13 @@ export default function ApplyFormScreen() {
       // Navegar hacia atrás inmediatamente
       router.back();
 
+      // Show success CustomAlert
+      showAppAlert(
+        'success', 
+        `Tu postulación para "${offerTitle}" ha sido enviada con éxito.`, 
+        "¡Solicitud Enviada! 🚀"
+      );
+
       // Notificación de éxito con retraso de 4 segundos
       setTimeout(() => {
         sendNotification({
@@ -253,6 +281,13 @@ export default function ApplyFormScreen() {
       
       setErrors(prev => ({ ...prev, general: errorMessage }));
       
+      // Show error CustomAlert
+      showAppAlert(
+        'error',
+        `No pudimos enviar tu postulación para "${offerTitle}". ${errorMessage}`,
+        "Error en la Solicitud 😥"
+      );
+      
       sendNotification({
         title: "Error en la Solicitud 😥",
         body: `No pudimos enviar tu postulación para "${offerTitle}". Inténtalo de nuevo.`,
@@ -265,21 +300,24 @@ export default function ApplyFormScreen() {
 
   const handleDisabledButtonPress = () => {
     if (!dataConsent) {
-      Alert.alert(
-        'Consentimiento requerido',
+      showAppAlert(
+        'warning',
         'Debes marcar el checkbox para aceptar compartir tus datos con el empleador antes de poder enviar tu aplicación.',
-        [
-          {
-            text: 'Entendido',
-            style: 'default'
-          }
-        ]
+        'Consentimiento Requerido'
       );
     }
+    // Potentially add other checks here if button is disabled for other reasons
   };
 
   return (
     <View style={styles.container}>
+      <CustomAlert
+        isVisible={customAlertVisible}
+        message={customAlertMessage}
+        type={customAlertType}
+        onClose={handleCloseCustomAlert}
+        title={customAlertTitle}
+      />
       <LinearGradient
         colors={[COLORS.primary, COLORS.primaryLight, COLORS.secondary]}
         start={{ x: 0, y: 0 }}
@@ -510,6 +548,15 @@ export default function ApplyFormScreen() {
             onVerificationSent={() => {
               // Opcionalmente puedes cerrar el modal después de enviar
               // setShowEmailVerification(false);
+              // EmailVerificationScreen shows its own alert for this
+            }}
+            onVerified={() => { 
+              setShowEmailVerification(false);
+              showAppAlert(
+                'success',
+                'Email verificado correctamente. Por favor, intenta enviar tu aplicación de nuevo.',
+                'Verificación Exitosa'
+              );
             }}
             showAsModal={true}
           />
