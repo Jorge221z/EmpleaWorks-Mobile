@@ -567,6 +567,18 @@ export const checkEmailVerificationRequired = async () => {
 
 // Manejar errores de verificación de email desde respuestas de API
 export const handleEmailVerificationError = (error) => {
+  // Primero verificar si es un error de CV faltante (NO es error de verificación de email)
+  if (error?.error === 'Debes subir un CV antes de aplicar.' ||
+      error?.message === 'Debes subir un CV antes de aplicar.' ||
+      error?.error?.includes('CV antes de aplicar') ||
+      error?.message?.includes('CV antes de aplicar')) {
+    console.log('🔍 handleEmailVerificationError - Error de CV detectado (no es error de email)');
+    return {
+      isEmailVerificationError: false,
+      isCVError: true
+    };
+  }
+  
   // Verificar si el error es relacionado con verificación de email
   if (error?.error === 'email_not_verified' || 
       error?.message?.includes('verificar tu email') ||

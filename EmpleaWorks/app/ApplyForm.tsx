@@ -280,19 +280,44 @@ export default function ApplyFormScreen() {
         sendNotification({
           title: "¡Solicitud Enviada! 🚀",
           body: `Tu postulación para "${offerTitle}" ha sido enviada con éxito.`,
-        });
-      }, 4000);
-
-    } catch (error: any) {
+        });      }, 4000);    } catch (error: any) {
       console.error('Error al aplicar a la oferta:', error);
+      console.log('🔍 DEBUG - Error object structure:', {
+        error: error?.error,
+        message: error?.message,
+        responseData: error?.response?.data,
+        responseDataError: error?.response?.data?.error,
+        responseDataMessage: error?.response?.data?.message
+      });
       
-      if (handleApiError(error)) {
+      // Verificar si es un error de verificación de email
+      const emailError = handleApiError(error);
+      console.log('🔍 DEBUG - handleApiError result:', emailError);
+      
+      if (emailError.isEmailVerificationError) {
+        console.log('🚨 DEBUG - Showing email verification modal');
         setShowEmailVerification(true);
         return;
-      }
-
-      let errorMessage = 'Ocurrió un error al enviar tu postulación. Por favor, inténtalo de nuevo.';
-      if (error.response && error.response.data && error.response.data.message) {
+      }      let errorMessage = 'Ocurrió un error al enviar tu postulación. Por favor, inténtalo de nuevo.';
+      const isCVError = emailError.isCVError || 
+                       error?.error === 'Debes subir un CV antes de aplicar.' || 
+                       error?.message === 'Debes subir un CV antes de aplicar.' ||
+                       (error.response?.data?.error === 'Debes subir un CV antes de aplicar.') ||
+                       error?.error?.includes('CV antes de aplicar') ||
+                       error?.message?.includes('CV antes de aplicar');
+      
+      console.log('🔍 DEBUG - CV Error Detection:', {
+        isCVError,
+        emailErrorIsCVError: emailError.isCVError,
+        errorError: error?.error,
+        errorMessage: error?.message,
+        responseDataError: error?.response?.data?.error
+      });
+      
+      // Verificar si es un error de CV faltante
+      if (isCVError) {
+        errorMessage = 'Debes subir un CV antes de poder aplicar a esta oferta. Ve a tu perfil para añadir tu CV.';
+      } else if (error.response && error.response.data && error.response.data.message) {
         // If the error from backend is structured like {"error": {"field": ["message"]}}
         // and error.response.data.message is not the primary source.
         // Let's try to extract a more specific message if possible.
@@ -306,16 +331,24 @@ export default function ApplyFormScreen() {
         }
       } else if (error.message) {
         errorMessage = error.message;
-      }
-      
+      }      
       setErrors(prev => ({ ...prev, general: errorMessage }));
       
-      // Show error CustomAlert
-      showAppAlert(
-        'error',
-        `No pudimos enviar tu postulación para "${offerTitle}". ${errorMessage}`,
-        "Error en la Solicitud 😥"
-      );
+      // Mostrar alerta específica para error de CV faltante
+      if (isCVError) {
+        showAppAlert(
+          'warning',
+          'Para aplicar a esta oferta necesitas tener un CV subido en tu perfil. ¿Te gustaría ir a tu perfil para añadirlo ahora?',
+          'CV Requerido',
+        );
+      } else {
+        // Show error CustomAlert for other errors
+        showAppAlert(
+          'error',
+          `No pudimos enviar tu postulación para "${offerTitle}". ${errorMessage}`,
+          "Error en la Solicitud 😥"
+        );
+      }
       
     } finally {
       setLoading(false);
@@ -576,11 +609,7 @@ export default function ApplyFormScreen() {
             }}
             onVerified={() => { 
               setShowEmailVerification(false);
-              showAppAlert(
-                'success',
-                'Email verificado correctamente. Por favor, intenta enviar tu aplicación de nuevo.',
-                'Verificación Exitosa'
-              );
+              
             }}
             showAsModal={true}
           />

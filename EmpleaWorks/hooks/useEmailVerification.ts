@@ -13,7 +13,7 @@ interface UseEmailVerificationReturn {
   verificationState: EmailVerificationState | null;
   isChecking: boolean;
   checkVerification: () => Promise<boolean>;
-  handleApiError: (error: any) => { isEmailVerificationError: boolean; email?: string; message?: string };
+  handleApiError: (error: any) => { isEmailVerificationError: boolean; email?: string; message?: string; isCVError?: boolean };
   resetState: () => void;
 }
 
