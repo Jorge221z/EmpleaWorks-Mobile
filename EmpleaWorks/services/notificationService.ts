@@ -40,10 +40,10 @@ class NotificationService {
     try {
       console.log('🔧 Inicializando servicio de notificaciones...');
 
-      // Primero configurar el canal de Android
+      // Configurar el canal de Android de forma no bloqueante
       if (Platform.OS === 'android') {
         console.log('📱 Configurando canal de Android...');
-        await Notifications.setNotificationChannelAsync('default', {
+        Notifications.setNotificationChannelAsync('default', {
           name: 'EmpleaWorks Notifications',
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
@@ -52,45 +52,56 @@ class NotificationService {
           enableLights: true,
           enableVibrate: true,
           showBadge: true,
+        }).then(() => {
+          console.log('✅ Canal de Android configurado');
+        }).catch((error) => {
+          console.error('❌ Error configurando canal Android:', error);
         });
-        console.log('✅ Canal de Android configurado');
       }
 
-      // Verificar permisos existentes
+      // Verificar permisos de forma más rápida
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       console.log('📋 Estado actual de permisos:', existingStatus);
       
       let finalStatus = existingStatus;
       
       if (existingStatus !== 'granted') {
-        console.log('🔄 Solicitando permisos de notificación...');        const { status } = await Notifications.requestPermissionsAsync({
+        console.log('🔄 Solicitando permisos de notificación...');
+        
+        // Hacer la solicitud de permisos de forma no bloqueante
+        Notifications.requestPermissionsAsync({
           ios: {
             allowAlert: true,
             allowBadge: true,
             allowSound: true,
           },
+        }).then(({ status }) => {
+          finalStatus = status;
+          console.log('📋 Nuevo estado de permisos:', finalStatus);
+          
+          if (finalStatus === 'granted') {
+            this.expoPushToken = 'local-notifications-enabled';
+            console.log('✅ Permisos concedidos para notificaciones locales');
+          } else {
+            console.warn('❌ No se pudieron obtener permisos para notificaciones');
+            this.expoPushToken = null;
+          }
+        }).catch((error) => {
+          console.error('❌ Error solicitando permisos:', error);
+          this.expoPushToken = null;
         });
-        finalStatus = status;
-        console.log('📋 Nuevo estado de permisos:', finalStatus);
-      }
-        if (finalStatus === 'granted') {
-        console.log('✅ Permisos concedidos para notificaciones locales');
-        
-        // Solo usar notificaciones locales - no necesitamos token de push
-        this.expoPushToken = 'local-notifications-enabled';
-        
-        console.log('🎯 Servicio de notificaciones locales inicializado correctamente');
-        console.log('🔑 Token:', this.expoPushToken);
       } else {
-        console.warn('❌ No se pudieron obtener permisos para notificaciones');
-        this.expoPushToken = null;
+        this.expoPushToken = 'local-notifications-enabled';
+        console.log('✅ Permisos ya concedidos para notificaciones locales');
       }
+      
+      console.log('🎯 Servicio de notificaciones inicializado (modo rápido)');
     } catch (error) {
       console.error('💥 Error initializing notification service:', error);
       // Continuamos sin notificaciones si hay error
       this.expoPushToken = null;
     }
-  }  /**
+  }/**
    * Registrar el dispositivo para recibir notificaciones push (no necesario para locales)
    */
   async registerForPushNotificationsAsync(): Promise<string | null> {
@@ -103,17 +114,14 @@ class NotificationService {
    */
   getExpoPushToken(): string | null {
     return this.expoPushToken;
-  }
-  /**
+  }  /**
    * Enviar una notificación local
    */
   async sendLocalNotification(notificationData: NotificationData): Promise<void> {
     try {
-      console.log('📤 Enviando notificación local:', {
-        title: notificationData.title,
-        body: notificationData.body,
-        data: notificationData.data
-      });      const notificationId = await Notifications.scheduleNotificationAsync({
+      console.log('📤 Enviando notificación local:', notificationData.title);
+
+      const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title: notificationData.title,
           body: notificationData.body,
@@ -126,10 +134,9 @@ class NotificationService {
       console.log('✅ Notificación enviada con ID:', notificationId);
     } catch (error) {
       console.error('💥 Error enviando notificación local:', error);
-      throw error;
+      // No lanzar error para no bloquear el flujo principal
     }
-  }
-  /**
+  }  /**
    * Programar una notificación local para un momento específico
    */
   async scheduleLocalNotification(
@@ -137,11 +144,7 @@ class NotificationService {
     trigger: Notifications.NotificationTriggerInput
   ): Promise<string> {
     try {
-      console.log('⏰ Programando notificación local:', {
-        title: notificationData.title,
-        body: notificationData.body,
-        trigger: trigger
-      });
+      console.log('⏰ Programando notificación local:', notificationData.title);
 
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
@@ -157,7 +160,8 @@ class NotificationService {
       return notificationId;
     } catch (error) {
       console.error('💥 Error programando notificación local:', error);
-      throw error;
+      // Retornar un ID dummy en lugar de lanzar error
+      return 'error-' + Date.now();
     }
   }
 

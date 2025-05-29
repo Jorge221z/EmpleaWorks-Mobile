@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 // Configuración de la instancia de axios
 const api = axios.create({
   baseURL: 'https://emplea.works/api', // Cambia esto por la IP local de tu PC
+  timeout: 15000, // 15 segundos de timeout
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',

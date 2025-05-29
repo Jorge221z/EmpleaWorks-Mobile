@@ -204,9 +204,11 @@ export default function ApplyFormScreen() {
         cl: coverLetter.trim(),
         offer_id: parseInt(offerId),
       };      await applyToOffer(applicationData);
-        // 🔔 Enviar notificación de aplicación exitosa
-      try {
-        await sendNotification({
+      
+      // 🔔 Enviar notificaciones en segundo plano (sin bloquear UI)
+      // Ejecutar las notificaciones de forma asíncrona sin esperar
+      Promise.allSettled([
+        sendNotification({
           title: '✅ ¡Aplicación enviada exitosamente!',
           body: `Tu aplicación para "${offerTitle}" ha sido enviada al empleador`,
           data: {
@@ -215,16 +217,8 @@ export default function ApplyFormScreen() {
             offerTitle: offerTitle,
             timestamp: new Date().toISOString(),
           },
-        });
-        console.log('📧 Notificación de aplicación enviada');
-
-        // 📅 Programar recordatorio para revisar el estado en 24 horas
-        const reminderTrigger: Notifications.TimeIntervalTriggerInput = {
-          seconds: 24 * 60 * 60, // 24 horas
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        };
-
-        await scheduleNotification(
+        }),
+        scheduleNotification(
           {
             title: '📋 Recordatorio: Revisa tu aplicación',
             body: `Han pasado 24 horas desde que aplicaste a "${offerTitle}". ¿Ya revisaste el estado?`,
@@ -235,13 +229,22 @@ export default function ApplyFormScreen() {
               screen: '/my-applications',
             },
           },
-          reminderTrigger
-        );
-        console.log('📅 Recordatorio programado para 24 horas');
-      } catch (notificationError) {
-        console.error('❌ Error enviando notificación:', notificationError);
-        // No detener el flujo principal si falla la notificación
-      }
+          {
+            seconds: 24 * 60 * 60, // 24 horas
+            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          } as Notifications.TimeIntervalTriggerInput
+        )
+      ]).then((results) => {
+        results.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            console.log(`📧 Notificación ${index + 1} enviada correctamente`);
+          } else {
+            console.error(`❌ Error en notificación ${index + 1}:`, result.reason);
+          }
+        });
+      }).catch((error) => {
+        console.error('❌ Error general en notificaciones:', error);
+      });
       
       Alert.alert(
         'Aplicación enviada',

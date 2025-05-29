@@ -57,12 +57,12 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       console.error('Error sending token to backend:', error);
     }
   };
-
   const sendNotification = async (data: NotificationData) => {
     try {
       await notificationService.sendLocalNotification(data);
     } catch (error) {
       console.error('Error sending notification:', error);
+      // No lanzar error para no bloquear el flujo principal
     }
   };
 
@@ -74,7 +74,8 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       return await notificationService.scheduleLocalNotification(data, trigger);
     } catch (error) {
       console.error('Error scheduling notification:', error);
-      throw error;
+      // Retornar un ID dummy en lugar de lanzar error
+      return 'error-' + Date.now();
     }
   };
 
