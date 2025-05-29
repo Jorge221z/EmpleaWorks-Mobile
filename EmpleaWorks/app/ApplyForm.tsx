@@ -196,123 +196,68 @@ export default function ApplyFormScreen() {
     console.log('✅ Email verificado, procediendo con aplicación a oferta');
 
     try {
-      setLoading(true);      setErrors(prev => ({ ...prev, general: '' }));
+      setLoading(true);
+      setErrors(prev => ({ ...prev, general: '' }));
 
       const applicationData = {
-        phone: phone.trim(),
-        email: email.trim(),
-        cl: coverLetter.trim(),
-        offer_id: parseInt(offerId),
-      };      await applyToOffer(applicationData);
+        offer_id: offerId,
+        phone,
+        email,
+        cover_letter: coverLetter,
+        data_consent: dataConsent,
+      };
+
+      await applyToOffer(applicationData);
+
+      // Programar recordatorio (ejemplo: en 3 días) - Inmediato
+      try {
+        const triggerInSeconds = 3 * 24 * 60 * 60; // 3 días en segundos
+        // Attempt to schedule with a simple number of seconds if direct object is problematic
+        await scheduleNotification(
+          {
+            title: "Recordatorio de Solicitud 💼",
+            body: `¿Has revisado el estado de tu postulación para "${offerTitle}"?`,
+            data: { offerId, screen: 'my-applications' }
+          },
+          triggerInSeconds as any // Casting as any to bypass strict type checking for now
+        );
+      } catch (scheduleError) {
+        console.warn("Could not schedule reminder notification:", scheduleError);
+      }
       
-      // 🔔 Enviar notificaciones en segundo plano (sin bloquear UI)
-      // Ejecutar las notificaciones de forma asíncrona sin esperar
-      Promise.allSettled([
+      // Navegar hacia atrás inmediatamente
+      router.back();
+
+      // Notificación de éxito con retraso de 4 segundos
+      setTimeout(() => {
         sendNotification({
-          title: '✅ ¡Aplicación enviada exitosamente!',
-          body: `Tu aplicación para "${offerTitle}" ha sido enviada al empleador`,
-          data: {
-            type: 'application_sent',
-            offerId: offerId,
-            offerTitle: offerTitle,
-            timestamp: new Date().toISOString(),
-          },
-        }),
-        scheduleNotification(
-          {
-            title: '📋 Recordatorio: Revisa tu aplicación',
-            body: `Han pasado 24 horas desde que aplicaste a "${offerTitle}". ¿Ya revisaste el estado?`,
-            data: {
-              type: 'application_reminder',
-              offerId: offerId,
-              offerTitle: offerTitle,
-              screen: '/my-applications',
-            },
-          },
-          {
-            seconds: 24 * 60 * 60, // 24 horas
-            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          } as Notifications.TimeIntervalTriggerInput
-        )
-      ]).then((results) => {
-        results.forEach((result, index) => {
-          if (result.status === 'fulfilled') {
-            console.log(`📧 Notificación ${index + 1} enviada correctamente`);
-          } else {
-            console.error(`❌ Error en notificación ${index + 1}:`, result.reason);
-          }
+          title: "¡Solicitud Enviada! 🚀",
+          body: `Tu postulación para "${offerTitle}" ha sido enviada con éxito.`,
         });
-      }).catch((error) => {
-        console.error('❌ Error general en notificaciones:', error);
-      });
-      
-      Alert.alert(
-        'Aplicación enviada',
-        `Tu aplicación a "${offerTitle}" ha sido enviada exitosamente`,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              router.back();
-            }
-          }
-        ]
-      );    } catch (error: any) {
+      }, 4000);
+
+    } catch (error: any) {
       console.error('Error al aplicar a la oferta:', error);
-        // 🚨 VERIFICAR SI ES ERROR DE VERIFICACIÓN DE EMAIL
-      const emailVerificationError = handleEmailVerificationError(error);
-      if (emailVerificationError.isEmailVerificationError) {
-        console.log('🚨 Error de verificación de email detectado durante aplicación');
+      
+      if (handleApiError(error)) {
         setShowEmailVerification(true);
         return;
       }
-      
-      // Check if the error is about missing CV
-      if (error && typeof error === 'object' && error.error === "Debes subir un CV antes de aplicar.") {
-        Alert.alert(
-          'CV Requerido',
-          'Necesitas subir tu CV antes de aplicar a ofertas. Serás redirigido a tu perfil para que puedas subir tu CV.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                router.push('/(tabs)/profile');
-              }
-            }
-          ]
-        );
-        return;
+
+      let errorMessage = 'Ocurrió un error al enviar tu postulación. Por favor, inténtalo de nuevo.';
+      if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       
-      // Handle different types of API errors
-      if (error && typeof error === 'object') {
-        if (error.phone) {
-          setErrors(prev => ({
-            ...prev,
-            phone: Array.isArray(error.phone) ? error.phone[0] : error.phone
-          }));
-        } else if (error.email) {
-          setErrors(prev => ({
-            ...prev,
-            email: Array.isArray(error.email) ? error.email[0] : error.email
-          }));
-        } else if (error.cl) {
-          setErrors(prev => ({
-            ...prev,
-            cl: Array.isArray(error.cl) ? error.cl[0] : error.cl
-          }));
-        } else {
-          setErrors(prev => ({
-            ...prev,
-            general: error.message || 'Hubo un problema al enviar tu aplicación. Por favor, intenta de nuevo.'
-          }));
-        }
-      } else {
-        setErrors(prev => ({
-          ...prev,
-          general: 'Hubo un problema al enviar tu aplicación. Por favor, intenta de nuevo.'
-        }));
-      }
+      setErrors(prev => ({ ...prev, general: errorMessage }));
+      
+      sendNotification({
+        title: "Error en la Solicitud 😥",
+        body: `No pudimos enviar tu postulación para "${offerTitle}". Inténtalo de nuevo.`,
+      });
+
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { login, register, logout, getUser } from '@/api/axios';
+import { useNotificationContext } from './NotificationContext'; // Import NotificationContext
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -28,6 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [user, setUser] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { sendNotification } = useNotificationContext(); // Get sendNotification function
 
   // Comprueba el estado de autenticación al inicio
   useEffect(() => {
@@ -76,6 +78,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await register(userData);
       setUser(response.user);
       setIsAuthenticated(true);
+      // Send notification on successful registration
+      sendNotification({
+        title: "¡Registro Exitoso! 🎉",
+        body: "Revisa el email que te acabamos de enviar para verificar tu correo.",
+      });
     } catch (error: any) {
       setError(error?.message || 'Error al registrarse');
       console.error('Register error:', error);
