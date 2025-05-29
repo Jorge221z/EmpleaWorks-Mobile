@@ -215,11 +215,11 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <AuthProvider>
-          <NotificationProvider>
+        <NotificationProvider> 
+          <AuthProvider>       
             <InitialLayout />
-          </NotificationProvider>
-        </AuthProvider>
+          </AuthProvider>
+        </NotificationProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
