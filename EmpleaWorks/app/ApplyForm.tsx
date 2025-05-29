@@ -100,6 +100,7 @@ export default function ApplyFormScreen() {
   const [customAlertMessage, setCustomAlertMessage] = useState('');
   const [customAlertType, setCustomAlertType] = useState<AlertType>('info');
   const [customAlertTitle, setCustomAlertTitle] = useState('');
+  const [shouldNavigateBackOnSuccessAlertClose, setShouldNavigateBackOnSuccessAlertClose] = useState(false); // Added state for navigation control
 
   const showAppAlert = (type: AlertType, message: string, title: string) => {
     setCustomAlertType(type);
@@ -109,7 +110,15 @@ export default function ApplyFormScreen() {
   };
 
   const handleCloseCustomAlert = () => {
-    setCustomAlertVisible(false);
+    setCustomAlertVisible(false); // This will trigger CustomAlert's fade-out animation
+    if (shouldNavigateBackOnSuccessAlertClose) {
+      // Delay navigation slightly to allow the alert to animate out
+      // The CustomAlert fade-out animation is 200ms.
+      setTimeout(() => {
+        router.back();
+        setShouldNavigateBackOnSuccessAlertClose(false); // Reset the flag
+      }, 300); // Delay slightly longer than the alert's animation
+    }
   };
   
   // Email verification
@@ -230,26 +239,36 @@ export default function ApplyFormScreen() {
 
       await applyToOffer(applicationData);
 
-      // Programar recordatorio (ejemplo: en 3 días) - Inmediato
-      try {
-        const triggerInSeconds = 3 * 24 * 60 * 60; // 3 días en segundos
-        // Attempt to schedule with a simple number of seconds if direct object is problematic
-        await scheduleNotification(
-          {
-            title: "Recordatorio de Solicitud 💼",
-            body: `¿Has revisado el estado de tu postulación para "${offerTitle}"?`,
-            data: { offerId, screen: 'my-applications' }
-          },
-          triggerInSeconds as any // Casting as any to bypass strict type checking for now
-        );
-      } catch (scheduleError) {
-        console.warn("Could not schedule reminder notification:", scheduleError);
-      }
+      // Programar recordatorio (non-blocking for UI)
+      const triggerInSeconds = 3 * 24 * 60 * 60; // 3 días en segundos
+      scheduleNotification(
+        {
+          title: "Recordatorio de Solicitud 💼",
+          body: `¿Has revisado el estado de tu postulación para "${offerTitle}"?`,
+          data: { offerId, screen: 'my-applications' }
+        },
+        { 
+          seconds: triggerInSeconds, 
+          repeats: false, 
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL
+        } 
+      ).then(notificationId => {
+        if (notificationId && !notificationId.startsWith('error-')) {
+          const scheduledDate = new Date(Date.now() + triggerInSeconds * 1000);
+          console.log(`⏰ Notificación de recordatorio programada (ID: ${notificationId}) para aproximadamente: ${scheduledDate.toLocaleString()}`);
+        } else {
+          // Error is likely already logged by notificationService or NotificationContext
+          console.warn(`Failed to schedule reminder notification. Status from context: ${notificationId}`);
+        }
+      }).catch(scheduleError => {
+        // This catch is a fallback for unhandled promise rejections from scheduleNotification itself
+        console.error("Error during scheduleNotification promise chain in ApplyForm:", scheduleError);
+      });
       
-      // Navegar hacia atrás inmediatamente
-      router.back();
+      // Set flag to navigate when success alert is closed
+      setShouldNavigateBackOnSuccessAlertClose(true);
 
-      // Show success CustomAlert
+      // Show success CustomAlert (navigation will occur on close)
       showAppAlert(
         'success', 
         `Tu postulación para "${offerTitle}" ha sido enviada con éxito.`, 

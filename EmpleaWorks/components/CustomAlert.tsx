@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, Animated, TouchableWithoutFeedback } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -40,56 +40,74 @@ const alertConfig = {
 };
 
 const CustomAlert: React.FC<CustomAlertProps> = ({ isVisible, message, type, onClose, title }) => {
-  const anim = useRef(new Animated.Value(0)).current; // For opacity and scale
+  const anim = useRef(new Animated.Value(0)).current;
   const [isModalActuallyVisible, setIsModalActuallyVisible] = useState(false);
-  const timerRef = useRef<number | null>(null); // Changed NodeJS.Timeout to number for React Native compatibility
+  const timerRef = useRef<number | null>(null);
 
+  const handleClose = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null; // Clear ref after timeout
+    }
+    onClose();
+  }, [onClose]); // Dependency: onClose prop
+
+  // Effect to handle showing the modal, starting entry animation, and managing autoclose timer
   useEffect(() => {
     if (isVisible) {
-      setIsModalActuallyVisible(true);
-      Animated.spring(anim, { // Changed to spring animation
-        toValue: 1,
-        friction: 7, // Controls "bounciness"
-        tension: 100, // Controls speed
-        useNativeDriver: true,
-      }).start();
+      anim.setValue(0); // Reset animation value to ensure it starts from 0
+      setIsModalActuallyVisible(true); // Make the modal structure visible
+
+      // Defer animation start to the next frame
+      // This allows React to process the state update and modal mounting first
+      requestAnimationFrame(() => {
+        Animated.spring(anim, {
+          toValue: 1,
+          friction: 7,
+          tension: 100,
+          useNativeDriver: true,
+        }).start();
+      });
 
       // Autoclose timer
-      if (timerRef.current) {
+      if (timerRef.current) { // Clear any existing timer before setting a new one
         clearTimeout(timerRef.current);
       }
       timerRef.current = setTimeout(() => {
         handleClose();
-      }, 4000) as unknown as number; // Cast to number
+      }, 4000) as unknown as number;
 
-    } else if (!isVisible && isModalActuallyVisible) { // Animate out
-      Animated.timing(anim, {
-        toValue: 0,
-        duration: 200, // Faster fade out
-        useNativeDriver: true,
-      }).start(() => {
-        setIsModalActuallyVisible(false);
-      });
+    } else {
+      // If isVisible becomes false (e.g., parent component initiated close, not via autoclose/button)
+      // Clear the timer. The exit animation is handled by the next useEffect.
       if (timerRef.current) {
         clearTimeout(timerRef.current);
+        timerRef.current = null;
       }
     }
 
-    // Cleanup timer on unmount or when isVisible changes
+    // Cleanup timer on unmount or if dependencies change
     return () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
+        timerRef.current = null;
       }
     };
-  }, [isVisible, isModalActuallyVisible]);
+  }, [isVisible, anim, handleClose]);
 
 
-  const handleClose = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
+  // Effect to handle hiding the modal and starting exit animation
+  useEffect(() => {
+    if (!isVisible && isModalActuallyVisible) {
+      Animated.timing(anim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => {
+        setIsModalActuallyVisible(false); // Fully hide/unmount modal after animation
+      });
     }
-    onClose();
-  };
+  }, [isVisible, isModalActuallyVisible, anim]);
 
   if (!isModalActuallyVisible) {
     return null;
