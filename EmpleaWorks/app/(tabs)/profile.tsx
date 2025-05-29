@@ -1147,13 +1147,8 @@ export default function ProfileScreen() {
               >
                 <FontAwesome name="key" size={18} color={COLORS.white === '#ffffff' ? '#ffffff' : '#f0f0f0'} style={styles.buttonIcon} />
                 <Text style={styles.buttonText}>Cambiar Contraseña</Text>
-              </LinearGradient>            </TouchableOpacity>
-
-            <View style={[styles.infoContainer, { height: 1 }]} />
-            {/* Panel de pruebas de notificaciones - Temporal para desarrollo */}
-            {/* <NotificationDebugger /> */}
-            {/* <SimpleNotificationTest /> */}
-            {/* <NotificationTestPanel /> */}
+              </LinearGradient>
+            </TouchableOpacity>
 
             <View style={[styles.infoContainer, { height: 1 }]} />
 
