@@ -24,7 +24,7 @@ import EmailVerificationScreen from '@/components/EmailVerificationScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, Feather } from '@expo/vector-icons';
 import { useColorScheme } from '@/components/useColorScheme';
 import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
 import CustomAlert, { AlertType } from '@/components/CustomAlert'; // Importar CustomAlert
@@ -62,6 +62,10 @@ const getThemeColors = (colorScheme: string) => {
     cancelButtonText: isDark ? '#fca5a5' : '#dc2626', // Texto rojizo
     cancelButtonBorder: isDark ? '#7f1d1d' : '#f87171', // Borde rojizo
     changeImageText: isDark ? '#ffffff' : '#ffffff', // Siempre blanco en dark y light
+    // New colors for remove CV button
+    removeCvButtonBg: isDark ? '#3E3E3E' : '#E0E0E0', // Neutral grey background
+    removeCvButtonBorder: isDark ? '#505050' : '#BDBDBD', // Neutral grey border
+    removeCvButtonIconColor: isDark ? '#4A2976' : '#4A2976', // Neutral grey icon color
   };
 };
 
@@ -264,12 +268,12 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       flexShrink: 0,
     },
     removeCvButton: {
-      backgroundColor: 'rgba(231, 76, 60, 0.1)',
+      backgroundColor: colors.removeCvButtonBg, // Updated background color
       padding: 12,
       borderRadius: 10,
       marginLeft: 10,
       borderWidth: 1,
-      borderColor: 'rgba(231, 76, 60, 0.3)',
+      borderColor: colors.removeCvButtonBorder, // Updated border color
       height: 48,
       width: 48,
       alignItems: 'center',
@@ -681,9 +685,11 @@ export default function EditProfileScreen() {
       
       // Añadir campos de texto básicos
       if (name) formData.append('name', name);
-      if (surname) formData.append('surname', surname);
+      // Permitir enviar surname vacío si el usuario lo deja en blanco
+      formData.append('surname', surname);
       if (email) formData.append('email', email);
-      if (description) formData.append('description', description);
+      // Permitir enviar description vacía si el usuario la deja en blanco
+      formData.append('description', description);
       
       // Procesar la imagen si se seleccionó una nueva o se eliminó
       if (newImageSelected) {
@@ -816,18 +822,18 @@ export default function EditProfileScreen() {
               <Animated.View style={[styles.profileImageWrapper, { transform: [{ scale: imageScale }] }]}>
                 <TouchableOpacity onPress={pickImage} style={styles.profileImageTouchable}>
                   <Image 
-                    source={profileImage ? { uri: profileImage } : require("@/assets/images/default-avatar.png")} 
+                    source={profileImage ? { uri: profileImage } : require('@/assets/images/default-avatar.png')} 
                     style={styles.profileImage} 
                   />
                   <View style={styles.imageOverlay}>
-                    <FontAwesome name="camera" size={16} color={COLORS.changeImageText} />
+                    <Feather name="camera" size={18} color={COLORS.changeImageText} />
                     <Text style={styles.changeImageText}>Cambiar</Text>
                   </View>
                 </TouchableOpacity>
               </Animated.View>
               {profileImage && (
                 <TouchableOpacity onPress={removeProfileImage} style={styles.removeImageButton}>
-                  <FontAwesome name="trash" size={16} color={COLORS.white} />
+                  <Feather name="trash-2" size={16} color={COLORS.white} />
                   <Text style={styles.removeImageText}>Eliminar Imagen</Text>
                 </TouchableOpacity>
               )}
@@ -837,7 +843,7 @@ export default function EditProfileScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Nombre</Text>
               <View style={styles.inputWrapper}>
-                <FontAwesome name="user" size={18} color={COLORS.primary} style={styles.inputIcon} />
+                <Feather name="user" size={20} color={COLORS.primary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Tu nombre"
@@ -849,12 +855,12 @@ export default function EditProfileScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Apellidos</Text>
+              <Text style={styles.inputLabel}>Apellido</Text>
               <View style={styles.inputWrapper}>
-                <FontAwesome name="users" size={18} color={COLORS.primary} style={styles.inputIcon} />
+                <Feather name="users" size={20} color={COLORS.primary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Tus apellidos"
+                  placeholder="Tu apellido"
                   value={surname}
                   onChangeText={setSurname}
                   placeholderTextColor={COLORS.lightText}
@@ -865,10 +871,10 @@ export default function EditProfileScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Email</Text>
               <View style={styles.inputWrapper}>
-                <FontAwesome name="envelope" size={18} color={COLORS.primary} style={styles.inputIcon} />
+                <Feather name="mail" size={20} color={COLORS.primary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Tu correo electrónico"
+                  placeholder="Tu email"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -878,8 +884,34 @@ export default function EditProfileScreen() {
               </View>
             </View>
 
+            {/* Sección de CV */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Descripción (Opcional)</Text>
+              <Text style={styles.inputLabel}>Currículum Vitae</Text>
+              {cvName ? (
+                <View style={styles.cvContainer}>
+                  <TouchableOpacity style={styles.cvButton} onPress={pickCV}>
+                    <Feather name="file-text" size={20} color={COLORS.cvText} style={styles.cvIcon} />
+                    <Text style={styles.cvButtonText} numberOfLines={1} ellipsizeMode="middle">
+                      {cvName || 'Seleccionar CV'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={removeCV} style={styles.removeCvButton}>
+                    <Feather name="trash-2" size={22} color={COLORS.removeCvButtonIconColor} />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity style={styles.cvButton} onPress={pickCV}>
+                  <Feather name="upload-cloud" size={20} color={COLORS.cvText} style={styles.cvIcon} />
+                  <Text style={styles.cvButtonText}>Subir CV</Text>
+                </TouchableOpacity>
+              )}
+              <Text style={{ fontSize: 12, color: COLORS.lightText, marginTop: 5 }}>
+                Sube tu CV en formato PDF, DOC o DOCX. Máximo 2MB.
+              </Text>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Descripción</Text>
               <View style={styles.textAreaWrapper}>
                 <TextInput
                   style={styles.textArea}
@@ -892,57 +924,33 @@ export default function EditProfileScreen() {
                 />
               </View>
             </View>
-
-            {/* Sección de CV */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Currículum Vitae (PDF, DOC, DOCX)</Text>
-              <View style={styles.cvContainer}>
-                <TouchableOpacity onPress={pickCV} style={styles.cvButton}>
-                  <FontAwesome name="file-text" size={20} color={COLORS.iconColor} style={styles.cvIcon} />
-                  <Text style={styles.cvButtonText} numberOfLines={1} ellipsizeMode="middle">
-                    {uploadingCV ? 'Subiendo CV...' : (cvName || 'Seleccionar o arrastrar CV')}
-                  </Text>
-                </TouchableOpacity>
-                {cvName && !uploadingCV && (
-                  <TouchableOpacity onPress={removeCV} style={styles.removeCvButton}>
-                    <FontAwesome name="times" size={20} color={COLORS.error} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
             
-            {/* Nota informativa */}
             <View style={styles.noteContainer}>
-              <FontAwesome name="info-circle" size={20} color={COLORS.primary} />
+              <Feather name="info" size={20} color={COLORS.primary} />
               <Text style={styles.noteText}>
-                Asegúrate de que tu información de contacto (email y nombre) esté actualizada. 
-                Tu CV y foto de perfil son importantes para los reclutadores.
+                Solo se actualizarán los campos que modifiques, los demás permanecerán sin cambios.
               </Text>
             </View>
 
-            {/* Botón de Guardar */}
+            {/* Botones de acción */}
             <TouchableOpacity 
-              style={[styles.saveButton, (loading || initialLoading) && styles.buttonDisabled]} 
+              style={[styles.saveButton, (loading || uploadingImage || uploadingCV) && styles.buttonDisabled]} 
               onPress={handleSave}
-              disabled={loading || initialLoading}
+              disabled={loading || uploadingImage || uploadingCV}
             >
-              {loading ? (
-                <ActivityIndicator size="small" color={COLORS.saveButtonText} style={styles.buttonIcon} />
+              {(loading || uploadingImage || uploadingCV) ? (
+                <ActivityIndicator size="small" color={COLORS.buttonText} style={styles.buttonIcon} />
               ) : (
-                <FontAwesome name="save" size={18} color={COLORS.saveButtonText} style={styles.buttonIcon} />
+                <Feather name="save" size={20} color={COLORS.buttonText} style={styles.buttonIcon} />
               )}
-              <Text style={styles.saveButtonText}>{loading ? 'Guardando...' : 'Guardar Cambios'}</Text>
+              <Text style={styles.saveButtonText}>Guardar Cambios</Text>
             </TouchableOpacity>
 
-            {/* Botón de Cancelar */}
-            <TouchableOpacity 
-              style={styles.cancelButton} 
-              onPress={() => router.back()}
-              disabled={loading}
-            >
-              <FontAwesome name="times" size={18} color={COLORS.cancelButtonText} style={styles.buttonIcon} />
+            <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
+              <Feather name="x" size={20} color={COLORS.cancelButtonText} style={styles.buttonIcon} />
               <Text style={styles.cancelButtonText}>Cancelar</Text>
             </TouchableOpacity>
+            
           </Animated.View>
         )}
       </ScrollView>
