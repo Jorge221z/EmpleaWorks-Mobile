@@ -62,6 +62,12 @@ const getThemeColors = (colorScheme: string) => {
     shadowColor: isDark ? '#000' : '#000',
     cardBackground: isDark ? '#2d2d2d' : '#ffffff',
     golden: '#fac030',
+    // Colores mejorados para el tema dark
+    buttonSecondary: isDark ? '#3a3a3a' : '#f5f5f5',
+    buttonSecondaryText: isDark ? '#e0e0e0' : '#666666',
+    buttonSecondaryBorder: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(43, 31, 60, 0.15)',
+    infoBoxBackground: isDark ? 'rgba(139, 95, 200, 0.15)' : 'rgba(74, 41, 118, 0.05)',
+    infoBoxBorder: isDark ? 'rgba(139, 95, 200, 0.4)' : 'rgba(74, 41, 118, 0.3)',
   };
 };
 
@@ -77,6 +83,7 @@ export default function TabTwoScreen() {
   const [loadingSavedOffers, setLoadingSavedOffers] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [isNotCandidate, setIsNotCandidate] = useState(false);
 
   // Animación para el indicador de recarga
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -101,9 +108,17 @@ export default function TabTwoScreen() {
       }
       
       setLoading(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed while trying to fetch candidateDashboard data: ", error);
-      setError(error instanceof Error ? error.message : String(error)); 
+      
+      // Verificar si el error es específicamente que el usuario no es candidato
+      const errorMessage = error?.error || error?.message || (error instanceof Error ? error.message : String(error));
+      if (errorMessage === "Usuario no es candidato." || errorMessage.includes("no es candidato")) {
+        setIsNotCandidate(true);
+      } else {
+        setError(errorMessage);
+      }
+      
       setLoading(false);
     }
   };
@@ -126,6 +141,8 @@ export default function TabTwoScreen() {
   // Función para refrescar los datos
   const onRefresh = async () => {
     setRefreshing(true);
+    setIsNotCandidate(false); // Reiniciar el estado de "no candidato"
+    setError(null); // Limpiar errores anteriores
     await Promise.all([
       fetchDashboardData(),
       fetchSavedOffersCount()
@@ -161,6 +178,137 @@ export default function TabTwoScreen() {
       }).start();
     }
   }, [refreshing]);
+
+  // Componente para mostrar cuando el usuario no es candidato
+  const NotCandidateScreen = () => (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Header gradient */}
+      <LinearGradient
+        colors={
+          colorScheme === 'dark' 
+            ? ['#2a2a2a', '#1e1e1e', '#151515'] 
+            : ['#f8f9fa', '#e9ecef', '#dee2e6']
+        }
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      />
+      
+      <ScrollView 
+        style={styles.notCandidateScrollView}
+        contentContainerStyle={styles.notCandidateContainer}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+      >
+        <View style={[styles.notCandidateCard, { backgroundColor: colors.card }]}>
+          {/* Icono principal */}
+          <View style={[styles.notCandidateIconContainer, { backgroundColor: colors.primary + '15' }]}>
+            <FontAwesome 
+              name="user-times" 
+              size={48} 
+              color={colors.primary} 
+            />
+          </View>
+          
+          {/* Título principal */}
+          <Text style={[styles.notCandidateTitle, { color: colors.text }]}>
+            Acceso Restringido
+          </Text>
+          
+          {/* Descripción */}
+          <Text style={[styles.notCandidateDescription, { color: colors.lightText }]}>
+            Esta sección está disponible únicamente para candidatos que buscan empleo.
+          </Text>
+          
+          {/* Mensaje adicional */}
+          <View style={[styles.notCandidateInfoBox, { 
+            backgroundColor: colors.infoBoxBackground, 
+            borderColor: colors.infoBoxBorder 
+          }]}>
+            <FontAwesome 
+              name="info-circle" 
+              size={16} 
+              color={colors.primary} 
+              style={{ marginRight: 8 }}
+            />
+            <Text style={[styles.notCandidateInfoText, { color: colors.primary }]}>
+              La App de EmpleaWorks esta diseñada unicamente para candidatos que buscan empleo. Si eres una empresa o reclutador, por favor accede desde la web de EmpleaWorks.
+            </Text>
+          </View>
+          
+          {/* Botones de acción */}
+          <View style={styles.notCandidateButtonsContainer}>
+            <TouchableOpacity 
+              style={[
+                styles.notCandidateButton, 
+                styles.secondaryButton, 
+                { 
+                  borderColor: colors.buttonSecondaryBorder,
+                  backgroundColor: colors.buttonSecondary
+                }
+              ]}
+              onPress={() => {
+                setIsNotCandidate(false);
+                setError(null);
+                fetchDashboardData();
+              }}
+              activeOpacity={0.7}
+            >
+              <FontAwesome name="refresh" size={16} color={colors.buttonSecondaryText} style={{ marginRight: 8 }} />
+              <Text style={[styles.notCandidateButtonText, { color: colors.buttonSecondaryText }]}>
+                Intentar de Nuevo
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[
+                styles.notCandidateButton, 
+                styles.secondaryButton, 
+                { 
+                  borderColor: colors.buttonSecondaryBorder,
+                  backgroundColor: colors.buttonSecondary
+                }
+              ]}
+              onPress={() => router.back()}
+              activeOpacity={0.7}
+            >
+              <FontAwesome name="arrow-left" size={16} color={colors.buttonSecondaryText} style={{ marginRight: 8 }} />
+              <Text style={[styles.notCandidateButtonText, { color: colors.buttonSecondaryText }]}>
+                Volver Atrás
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.notCandidateButton, styles.primaryButton]}
+              onPress={logout}
+              activeOpacity={0.7}
+            >
+              <LinearGradient
+                colors={[colors.primary, colors.secondary]}
+                style={styles.buttonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <FontAwesome name="sign-out" size={16} color="#ffffff" style={{ marginRight: 8 }} />
+                <Text style={[styles.notCandidateButtonText, { color: '#ffffff' }]}>
+                  Cerrar Sesión
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+    </View>
+  );
+
+  // Si el usuario no es candidato, mostrar la pantalla especial
+  if (isNotCandidate) {
+    return (
+      <TabContentTransition isActive={isTabActive()}>
+        <NotCandidateScreen />
+      </TabContentTransition>
+    );
+  }
 
   return (
     <TabContentTransition isActive={isTabActive()}>
@@ -545,5 +693,103 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontSize: 14,
     fontWeight: '500',
+  },
+  // Estilos para la pantalla "No es candidato"
+  notCandidateScrollView: {
+    flex: 1,
+  },
+  notCandidateContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    paddingTop: 10,
+    paddingBottom: 40,
+    minHeight: '100%',
+  },
+  notCandidateCard: {
+    borderRadius: 20,
+    padding: 32,
+    alignItems: 'center',
+    maxWidth: 360,
+    width: '100%',
+    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    marginVertical: 20,
+  },
+  notCandidateIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  notCandidateTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  notCandidateDescription: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 20,
+  },
+  notCandidateInfoBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 32,
+    width: '100%',
+  },
+  notCandidateInfoText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '500',
+  },
+  notCandidateButtonsContainer: {
+    flexDirection: 'column',
+    width: '100%',
+    gap: 12,
+  },
+  notCandidateButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    minHeight: 50,
+  },
+  secondaryButton: {
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  primaryButton: {
+    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  buttonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    minHeight: 50,
+  },
+  notCandidateButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
