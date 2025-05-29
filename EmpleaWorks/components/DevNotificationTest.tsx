@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, AppState } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, AppState, Platform } from 'react-native';
 import { useNotificationContext } from '../context/NotificationContext';
 import * as Notifications from 'expo-notifications';
 
@@ -76,7 +76,6 @@ export default function DevNotificationTest() {
             timestamp: Date.now()
           },
           sound: 'default',
-          priority: Notifications.AndroidImportance.HIGH,
           categoryIdentifier: 'test',
         },
         trigger: null, // Inmediata
@@ -115,7 +114,6 @@ export default function DevNotificationTest() {
           body: 'Notificación con canal de máxima prioridad',
           data: { channel: 'dev-test' },
           sound: 'default',
-          priority: Notifications.AndroidImportance.MAX,
           ...(Platform.OS === 'android' && { channelId: 'dev-test' }),
         },
         trigger: null,
@@ -137,8 +135,6 @@ export default function DevNotificationTest() {
       addTestResult(`📋 Permisos: ${permissions.status} (granted: ${permissions.granted})`);
       
       if (Platform.OS === 'android') {
-        addTestResult(`🔊 Sonido: ${permissions.android?.sound}`);
-        addTestResult(`📳 Vibración: ${permissions.android?.vibrate}`);
         addTestResult(`📱 Importancia: ${permissions.android?.importance}`);
       }
 
