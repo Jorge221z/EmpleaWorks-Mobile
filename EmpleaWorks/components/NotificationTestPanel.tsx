@@ -282,22 +282,24 @@ export default function NotificationTestPanel() {
     
     setIsRunningTests(true);
     addTestResult('🚀 Iniciando batería completa de tests...');
+    const delay = 200; // Reduced delay to 200ms
     
     try {
       await testBasicNotification();
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, delay));
       
       await testJobOfferNotification();
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, delay));
       
       await testApplicationStatusNotification();
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, delay));
       
-      await testScheduledNotification();
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // For scheduled notification, keep a slightly longer delay to ensure it can be observed if needed
+      await testScheduledNotification(); 
+      await new Promise(resolve => setTimeout(resolve, 500)); // Kept 500ms for scheduled
       
       await testBadgeNotifications();
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, delay)); // Reduced delay
       
       await testNotificationUtils();
       
