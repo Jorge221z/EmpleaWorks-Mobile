@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Modal } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Modal, Linking } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { useEffect, useState, useCallback } from 'react';
 import { getOfferDetails, applyToOffer, checkIfUserAppliedToOffer, toggleSavedOffer, checkIfOfferIsSaved } from '@/api/axios';
@@ -73,11 +73,17 @@ const getThemeColors = (colorScheme: string) => {
     goldenAlt: '#ffb700', // Alternative gold for effects
     cardBackground: isDark ? '#2d2d2d' : '#ffffff',
     fieldBackground: isDark ? '#333333' : '#f8f8f8',
-    sectionHeaderBg: isDark ? '#242424' : '#f4f4f4',    saveButtonBackground: '#ffffff',
+    sectionHeaderBg: isDark ? '#242424' : '#f4f4f4',
+    saveButtonBackground: '#ffffff',
     saveButtonText: '#000000',
     saveButtonBorder: '#e0e0e0',
     saveButtonIcon: '#9b6dff',
     sectionIcon: isDark ? '#ffffff' : '#000000',
+    buttonSecondary: isDark ? '#3a3a3a' : '#ffffff',
+    buttonSecondaryText: isDark ? '#f0f0f0' : '#4A2976',
+    buttonSecondaryBorder: isDark ? '#555555' : '#e9ecef',
+    infoBoxBackground: isDark ? 'rgba(155, 109, 255, 0.1)' : 'rgba(74, 41, 118, 0.05)',
+    infoBoxBorder: isDark ? 'rgba(155, 109, 255, 0.3)' : 'rgba(74, 41, 118, 0.15)',
   };
 };
 
@@ -384,7 +390,8 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
     paddingVertical: 18, // Increased from 16 to 18 to match save button height
     paddingHorizontal: 8, // Reducir padding horizontal para mejor ajuste
     minHeight: 54,
-    width: '100%',  },simpleButtonContainer: {
+    width: '100%',
+  },simpleButtonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -515,19 +522,20 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => StyleSheet.c
 
 export default function ShowOfferScreen() {
   const colorScheme = useColorScheme();
-  const COLORS = getThemeColors(colorScheme || 'light');
-  const styles = createStyles(COLORS);
+  const COLORS = getThemeColors(colorScheme || 'light');  const styles = createStyles(COLORS);
   
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   const { scheduleNotification } = useNotificationContext(); // Get scheduleNotification
   const params = useLocalSearchParams();
-  const offerId = params.id as string;  const [offer, setOffer] = useState<OfferDetails | null>(null);
+  const offerId = params.id as string;  
+  const [offer, setOffer] = useState<OfferDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasApplied, setHasApplied] = useState(false);
   const [checkingApplication, setCheckingApplication] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [savingOffer, setSavingOffer] = useState(false);
+  const [isProfileNotFound, setIsProfileNotFound] = useState(false);
 
   // Email verification
   const [showEmailVerification, setShowEmailVerification] = useState(false);
@@ -549,6 +557,29 @@ export default function ShowOfferScreen() {
 
   const handleCloseCustomAlert = () => {
     setCustomAlertVisible(false);
+  };
+
+  // Funciones para manejar ProfileNotFoundScreen
+  const handleProfileNotFoundTryAgain = async () => {
+    setIsProfileNotFound(false);
+    await fetchOfferDetails();
+  };
+
+  const handleProfileNotFoundGoBack = () => {
+    setIsProfileNotFound(false);
+    router.back();
+  };
+  const handleProfileNotFoundLogout = async () => {
+    try {
+      await logout(); // Llamar a la función de logout del contexto
+      setIsProfileNotFound(false);
+      router.replace('/login');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      // Aún así navegar al login en caso de error
+      setIsProfileNotFound(false);
+      router.replace('/login');
+    }
   };
 
   // Función para determinar si una oferta es nueva (4 días o menos)
@@ -596,6 +627,7 @@ export default function ShowOfferScreen() {
     }    try {
       setLoading(true);
       setError(null);
+      setIsProfileNotFound(false); // Reset profile not found state
       const response = await getOfferDetails(offerId);
       setOffer(response);
       
@@ -604,9 +636,17 @@ export default function ShowOfferScreen() {
       
       // Verificar si la oferta está guardada
       await checkSavedStatus();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error al obtener detalles de la oferta:", error);
-      setError(error instanceof Error ? error.message : String(error));
+      
+      // Check for specific "Perfil de candidato no encontrado" error
+      const errorMessage = error?.error || error?.message || String(error);
+      if (errorMessage.includes("Perfil de candidato no encontrado")) {
+        setIsProfileNotFound(true);
+        setError(null); // Clear generic error since we're showing specific screen
+      } else {
+        setError(error instanceof Error ? error.message : String(error));
+      }
     } finally {
       setLoading(false);
     }
@@ -806,7 +846,6 @@ const SaveButton = ({ isSaved, isLoading, onPress }: { isSaved: boolean; isLoadi
             style={{ marginRight: 8 }} 
           />
         ) : (
-          // Only the icon changes between saved/unsaved states
           isSaved ? (
             <FontAwesome
               name="bookmark"
@@ -835,278 +874,536 @@ const SaveButton = ({ isSaved, isLoading, onPress }: { isSaved: boolean; isLoadi
   );
 };
 
+// ProfileNotFoundScreen Component - Fixed version
+const ProfileNotFoundScreen = ({ colors, onTryAgain, onGoBack, onLogout }: { 
+  colors: ReturnType<typeof getThemeColors>; 
+  onTryAgain: () => void; 
+  onGoBack: () => void; 
+  onLogout: () => void; 
+}) => {
+  const handleContactSupport = async () => {
+    const url = 'https://emplea.works/contact';
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Error', 'No se pudo abrir el enlace de contacto');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo abrir el enlace de contacto');
+    }
+  };
+  
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContainer: {
+      flex: 1,
+      paddingTop: 40,
+      paddingHorizontal: 20,
+    },
+    card: {
+      backgroundColor: colors.cardBackground,
+      borderRadius: 24,
+      padding: 32,
+      elevation: 8,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.15,
+      shadowRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+    },
+    iconContainer: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: colors.infoBoxBackground,
+      borderWidth: 2,
+      borderColor: colors.infoBoxBorder,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 24,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: colors.text,
+      textAlign: 'center',
+      marginBottom: 16,
+      lineHeight: 34,
+    },
+    description: {
+      fontSize: 16,
+      color: colors.lightText,
+      textAlign: 'center',
+      lineHeight: 24,
+      marginBottom: 28,
+    },
+    infoBox: {
+      backgroundColor: colors.infoBoxBackground,
+      borderWidth: 1,
+      borderColor: colors.infoBoxBorder,
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: 32,
+      width: '100%',
+    },
+    infoTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    infoText: {
+      fontSize: 14,
+      color: colors.lightText,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    linkText: {
+      fontSize: 14,
+      color: colors.secondary,
+      textAlign: 'center',
+      lineHeight: 20,
+      textDecorationLine: 'underline',
+      fontWeight: '500',
+    },
+    buttonContainer: {
+      width: '100%',
+      backgroundColor: 'transparent', // Changed from cardBackground to transparent
+    },
+    buttonMargin: {
+      marginBottom: 12, // Use marginBottom instead of gap for better compatibility
+    },
+    primaryButton: {
+      borderRadius: 16,
+      overflow: 'hidden',
+      elevation: 3,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      marginBottom: 12, // Added explicit margin
+    },
+    primaryButtonGradient: {
+      paddingVertical: 16,
+      paddingHorizontal: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'row',
+    },
+    primaryButtonText: {
+      color: '#ffffff',
+      fontSize: 16,
+      fontWeight: 'bold',
+      marginLeft: 8,
+    },
+    secondaryButton: {
+      backgroundColor: colors.buttonSecondary,
+      borderWidth: 2,
+      borderColor: colors.buttonSecondaryBorder,
+      borderRadius: 16,
+      paddingVertical: 16,
+      paddingHorizontal: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'row',
+      marginBottom: 12, // Added explicit margin
+    },
+    secondaryButtonText: {
+      color: colors.buttonSecondaryText,
+      fontSize: 16,
+      fontWeight: 'bold',
+      marginLeft: 8,
+    },
+    logoutButton: {
+      backgroundColor: 'transparent', // Changed from cardBackground to transparent
+      borderWidth: 2,
+      borderColor: colors.error,
+      borderRadius: 16,
+      paddingVertical: 16,
+      paddingHorizontal: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'row',
+    },
+    logoutButtonText: {
+      color: colors.error,
+      fontSize: 16,
+      fontWeight: 'bold',
+      marginLeft: 8,
+    },
+    bottomSpace: {
+      height: 50,
+    }
+  });
+
   return (
     <View style={styles.container}>
-      <CustomAlert
-        isVisible={customAlertVisible}
-        message={customAlertMessage}
-        type={customAlertType}
-        onClose={handleCloseCustomAlert}
-        title={customAlertTitle}
-      />
-      <LinearGradient
-        colors={[COLORS.primary, COLORS.primaryLight, COLORS.secondary]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerGradient}
-      />
-      
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={[styles.headerSection, { paddingTop: 20 }]} />
-        {/* Header Section */}
-        <View style={styles.headerSection}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Icon name="arrow-left" size={20} color="#ffffff" />
-          </TouchableOpacity>
-          
-          <Text style={styles.title}>Detalles de la oferta</Text>
-          <Text style={styles.subtitle}>Información completa de la posición</Text>
-        </View>
-
-        {/* Loading State */}
-        {loading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.loadingText}>Cargando detalles...</Text>
-          </View>
-        )}
-          {/* Checking Application Status */}
-        {!loading && offer && (checkingApplication || savingOffer) && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color={COLORS.secondary} />
-            <Text style={styles.loadingText}>
-              {checkingApplication ? 'Verificando estado...' : 'Procesando...'}
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <View style={styles.scrollContainer}>
+          <View style={styles.card}>
+            <View style={styles.iconContainer}>
+              <FontAwesome name="user-times" size={32} color={colors.secondary} />
+            </View>
+            
+            <Text style={styles.title}>
+              Perfil de candidato no encontrado
             </Text>
-          </View>
-        )}
-        
-        {/* Error State */}
-        {error && (
-          <View style={styles.errorContainer}>
-            <Icon name="exclamation-triangle" size={20} color={COLORS.error} />
-            <Text style={styles.errorText}>Error: {error}</Text>
-          </View>
-        )}
-
-        {/* Offer Details */}
-        {offer && (
-          <View style={styles.offerCard}>
-            {/* Header de la oferta */}
-            <View style={styles.offerHeader}>
-              <Text style={styles.offerTitle}>{offer.name}</Text>
-              
-              {/* Información de la empresa */}
-              <View style={styles.companySection}>
-                <Icon name="building" size={16} color={COLORS.sectionIcon} />
-                <Text style={styles.companyName}>{offer.company?.name || 'Empresa no especificada'}</Text>
-              </View>
-              
-              {/* Email de contacto */}
-              <View style={styles.emailSection}>
-                <Icon name="envelope" size={14} color={COLORS.sectionIcon} />
-                <Text style={styles.emailText}>{offer.email}</Text>
-              </View>
-                {/* Información de fechas organizadas */}
-              <View style={styles.datesHeaderContainer}>
-                <View style={styles.dateItem}>
-                  <View style={styles.dateLabelContainer}>
-                    <Icon name="calendar-plus-o" size={12} color="#2196F3" />
-                    <Text style={styles.dateLabel}>Publicada</Text>
-                  </View>
-                  <Text style={styles.dateValue}>
-                    {new Date(offer.created_at).toLocaleDateString('es-ES', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric'
-                    })}
-                  </Text>
-                </View>
-                  {offer.closing_date && (
-                  <View style={styles.dateItem}>
-                    <View style={styles.dateLabelContainer}>
-                      <Icon name="clock-o" size={12} color={COLORS.error} />
-                      <Text style={styles.dateLabel}>Cierra</Text>
-                    </View>
-                    <Text style={styles.dateValue}>
-                      {new Date(offer.closing_date).toLocaleDateString('es-ES', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric'
-                      })}
-                    </Text>
-                  </View>
-                )}
-              </View>
-              
-              {/* Información adicional de la empresa (solo si hay datos adicionales) */}
-              {offer.company && (offer.company.address || offer.company.web_link) && (
-                <View style={styles.companyContactSection}>
-                  {offer.company.address && (
-                    <View style={styles.contactItem}>
-                      <Icon name="map-marker" size={14} color={COLORS.secondary} />
-                      <Text style={styles.contactText}>{offer.company.address}</Text>
-                    </View>
-                  )}
-                  {offer.company.web_link && (
-                    <View style={[styles.contactItem, { marginBottom: 0 }]}>
-                      <Icon name="globe" size={14} color={COLORS.secondary} />
-                      <Text style={styles.contactText}>{offer.company.web_link}</Text>
-                    </View>
-                  )}
-                </View>
-              )}
-            </View>
-
-            {/* Descripción */}
-            <View style={styles.descriptionSection}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, backgroundColor: 'transparent' }}>
-                <Icon name="file-text-o" size={18} color={COLORS.sectionIcon} style={{ marginRight: 8 }} />
-                <Text style={styles.sectionTitle}>Descripción del puesto</Text>
-              </View>
-              <Text style={styles.description}>{offer.description}</Text>
-            </View>
-
-            {/* Detalles técnicos */}
-            <View style={styles.detailsSection}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, backgroundColor: 'transparent' }}>
-                <Icon name="list-ul" size={18} color={COLORS.sectionIcon} style={{ marginRight: 8 }} />
-                <Text style={styles.sectionTitle}>Detalles de la posición</Text>
-              </View>
-              <View style={styles.detailsGrid}>
-                <View style={styles.detailItem}>
-                  <View style={styles.detailIcon}>
-                    <Icon name="tag" size={16} color={COLORS.secondary} />
-                  </View>
-                  <View style={styles.detailContent}>
-                    <Text style={styles.detailLabel}>Categoría</Text>
-                    <Text style={styles.detailValue}>{offer.category}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.detailItem}>
-                  <View style={styles.detailIcon}>
-                    <Icon name="map-marker" size={16} color={COLORS.secondary} />
-                  </View>
-                  <View style={styles.detailContent}>
-                    <Text style={styles.detailLabel}>Ubicación</Text>
-                    <Text style={styles.detailValue}>{offer.job_location}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.detailItem}>
-                  <View style={styles.detailIcon}>
-                    <Icon name="file-text" size={16} color={COLORS.secondary} />
-                  </View>
-                  <View style={styles.detailContent}>
-                    <Text style={styles.detailLabel}>Tipo de contrato</Text>
-                    <Text style={styles.detailValue}>{offer.contract_type}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.detailItem}>
-                  <View style={styles.detailIcon}>
-                    <Icon name="graduation-cap" size={16} color={COLORS.secondary} />
-                  </View>
-                  <View style={styles.detailContent}>
-                    <Text style={styles.detailLabel}>Titulación requerida</Text>
-                    <Text style={styles.detailValue}>{offer.degree}</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Botones de acción */}
-        {offer && (
-          <View style={styles.actionButtonsContainer}>
-            <View style={styles.actionButtonsRow}>
-              {hasApplied ? (
-                // Disabled button for users who already applied
-                <TouchableOpacity 
-                  style={[styles.actionButton, styles.saveButton]}
-                  disabled={true}
-                >
-                  <View style={styles.disabledButtonContainer}>
-                    <Icon 
-                      name="bookmark-o" 
-                      size={16} 
-                      color={COLORS.lightText}
-                      style={styles.buttonIcon}
-                    />
-                    <Text style={styles.disabledButtonText} numberOfLines={1} ellipsizeMode="tail">
-                      No disponible
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ) : (
-                // Completely new save button implementation
-                <SaveButton 
-                  isSaved={isSaved} 
-                  isLoading={savingOffer} 
-                  onPress={handleSaveOffer} 
-                />
-              )}
-
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.applyButton]}
-                onPress={handleApplyToOffer}
-                disabled={checkingApplication}
-              >
-                {hasApplied ? (
-                  // Botón para usuarios que ya aplicaron
-                  <View style={styles.appliedButtonContainer}>
-                    <Icon 
-                      name="check-circle" 
-                      size={16} 
-                      color={COLORS.success} 
-                      style={styles.buttonIcon}
-                    />
-                    <Text style={styles.appliedButtonText} numberOfLines={1} ellipsizeMode="tail">
-                      Inscrito
-                    </Text>
-                  </View>
-                ) : (
-                  // Botón normal para aplicar
-                  <LinearGradient
-                    colors={[COLORS.primary, COLORS.secondary]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.buttonGradient}
-                  >
-                    <Icon 
-                      name="paper-plane" 
-                      size={16} 
-                      color="#ffffff" 
-                      style={styles.buttonIcon}
-                    />
-                    <Text style={styles.buttonText} numberOfLines={1} ellipsizeMode="tail">
-                      Inscribirse
-                    </Text>
-                  </LinearGradient>
-                )}
+            
+            <Text style={styles.description}>
+              Sospechamos que estás usando una cuenta de empresa o que ha habido un problema al crear tu perfil. Por favor, verifica tu cuenta o contacta al soporte si crees que esto es un error.
+            </Text>
+            
+            <View style={styles.infoBox}>
+              <Text style={styles.infoTitle}>¿Qué puedes hacer?</Text>
+              <Text style={styles.infoText}>
+                • Registrarte como candidato{'\n'}
+                • Verifica tu información personal{'\n'}
+                • Intenta nuevamente más tarde{'\n'}{'\n'}
+                Si el problema persiste, contacta con el soporte técnico:
+              </Text>
+              <TouchableOpacity onPress={handleContactSupport}>
+                <Text style={styles.linkText}>
+                  https://emplea.works/contact
+                </Text>
               </TouchableOpacity>
             </View>
-          </View>        )}
-        <View style={[styles.container, { height: 50 }]} />
+            
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity 
+                style={styles.primaryButton} 
+                onPress={onTryAgain}
+              >
+                <LinearGradient
+                  colors={[colors.primary, colors.secondary]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.primaryButtonGradient}
+                >
+                  <FontAwesome name="refresh" size={16} color="#ffffff" />
+                  <Text style={styles.primaryButtonText}>Intentar de Nuevo</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.secondaryButton} 
+                onPress={onGoBack}
+              >
+                <FontAwesome name="arrow-left" size={16} color={colors.buttonSecondaryText} />
+                <Text style={styles.secondaryButtonText}>Volver Atrás</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.logoutButton} 
+                onPress={onLogout}
+              >
+                <FontAwesome name="sign-out" size={16} color={colors.error} />
+                <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+        
+        <View style={styles.bottomSpace} />
       </ScrollView>
-      
-      {/* Email Verification Modal */}
-      <Modal
-        visible={showEmailVerification}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <EmailVerificationScreen 
-          onGoBack={() => setShowEmailVerification(false)}
+    </View>
+  );
+};
+
+  return (
+    <View style={styles.container}>
+      {/* Mostrar ProfileNotFoundScreen si el estado isProfileNotFound es true */}
+      {isProfileNotFound && (
+        <ProfileNotFoundScreen
+          colors={COLORS}
+          onTryAgain={handleProfileNotFoundTryAgain}
+          onGoBack={handleProfileNotFoundGoBack}
+          onLogout={handleProfileNotFoundLogout}
         />
-      </Modal>
+      )}
+      
+      {!isProfileNotFound && (
+        <>
+          <CustomAlert
+            isVisible={customAlertVisible}
+            message={customAlertMessage}
+            type={customAlertType}
+            onClose={handleCloseCustomAlert}
+            title={customAlertTitle}
+          />
+          <LinearGradient
+            colors={[COLORS.primary, COLORS.primaryLight, COLORS.secondary]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.headerGradient}
+          />
+          
+          <ScrollView 
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+          >
+            <View style={[styles.headerSection, { paddingTop: 20 }]} />
+
+            {/* Header Section */}
+            <View style={styles.headerSection}>
+              <TouchableOpacity 
+                style={styles.backButton}
+                onPress={() => router.back()}
+              >
+                <Icon name="arrow-left" size={20} color="#ffffff" />
+              </TouchableOpacity>
+              
+              <Text style={styles.title}>Detalles de la oferta</Text>
+              <Text style={styles.subtitle}>Información completa de la posición</Text>
+            </View>
+
+            {/* Loading State */}
+            {loading && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+                <Text style={styles.loadingText}>Cargando detalles...</Text>
+              </View>
+            )}
+            
+            {/* Checking Application Status */}
+            {!loading && offer && (checkingApplication || savingOffer) && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color={COLORS.secondary} />
+                <Text style={styles.loadingText}>
+                  {checkingApplication ? 'Verificando estado...' : 'Procesando...'}
+                </Text>
+              </View>
+            )}
+            
+            {/* Error State */}
+            {error && (
+              <View style={styles.errorContainer}>
+                <Icon name="exclamation-triangle" size={20} color={COLORS.error} />
+                <Text style={styles.errorText}>Error: {error}</Text>
+              </View>
+            )}
+
+            {/* Offer Details */}
+            {offer && (
+              <View style={styles.offerCard}>
+
+                {/* Header de la oferta */}
+                <View style={styles.offerHeader}>
+                  <Text style={styles.offerTitle}>{offer.name}</Text>
+                  
+                  {/* Información de la empresa */}
+                  <View style={styles.companySection}>
+                    <Icon name="building" size={16} color={COLORS.sectionIcon} />
+                    <Text style={styles.companyName}>{offer.company?.name || 'Empresa no especificada'}</Text>
+                  </View>
+                  
+                  {/* Email de contacto */}
+                  <View style={styles.emailSection}>
+                    <Icon name="envelope" size={14} color={COLORS.sectionIcon} />
+                    <Text style={styles.emailText}>{offer.email}</Text>
+                  </View>
+                  
+                  {/* Información de fechas organizadas */}
+                  <View style={styles.datesHeaderContainer}>
+                    <View style={styles.dateItem}>
+                      <View style={styles.dateLabelContainer}>
+                        <Icon name="calendar-plus-o" size={12} color="#2196F3" />
+                        <Text style={styles.dateLabel}>Publicada</Text>
+                      </View>
+                      <Text style={styles.dateValue}>
+                        {new Date(offer.created_at).toLocaleDateString('es-ES', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        })}
+                      </Text>
+                    </View>
+                    
+                    {offer.closing_date && (
+                      <View style={styles.dateItem}>
+                        <View style={styles.dateLabelContainer}>
+                          <Icon name="clock-o" size={12} color={COLORS.error} />
+                          <Text style={styles.dateLabel}>Cierra</Text>
+                        </View>
+                        <Text style={styles.dateValue}>
+                          {new Date(offer.closing_date).toLocaleDateString('es-ES', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          })}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  
+                  {/* Información adicional de la empresa (solo si hay datos adicionales) */}
+                  {offer.company && (offer.company.address || offer.company.web_link) && (
+                    <View style={styles.companyContactSection}>
+                      {offer.company.address && (
+                        <View style={styles.contactItem}>
+                          <Icon name="map-marker" size={14} color={COLORS.secondary} />
+                          <Text style={styles.contactText}>{offer.company.address}</Text>
+                        </View>
+                      )}
+                      {offer.company.web_link && (
+                        <View style={[styles.contactItem, { marginBottom: 0 }]}>
+                          <Icon name="globe" size={14} color={COLORS.secondary} />
+                          <Text style={styles.contactText}>{offer.company.web_link}</Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
+
+                {/* Descripción */}
+                <View style={styles.descriptionSection}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, backgroundColor: 'transparent' }}>
+                    <Icon name="file-text-o" size={18} color={COLORS.sectionIcon} style={{ marginRight: 8 }} />
+                    <Text style={styles.sectionTitle}>Descripción del puesto</Text>
+                  </View>
+                  <Text style={styles.description}>{offer.description}</Text>
+                </View>
+
+                {/* Detalles técnicos */}
+                <View style={styles.detailsSection}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, backgroundColor: 'transparent' }}>
+                    <Icon name="list-ul" size={18} color={COLORS.sectionIcon} style={{ marginRight: 8 }} />
+                    <Text style={styles.sectionTitle}>Detalles de la posición</Text>
+                  </View>
+                  <View style={styles.detailsGrid}>
+                    <View style={styles.detailItem}>
+                      <View style={styles.detailIcon}>
+                        <Icon name="tag" size={16} color={COLORS.secondary} />
+                      </View>
+                      <View style={styles.detailContent}>
+                        <Text style={styles.detailLabel}>Categoría</Text>
+                        <Text style={styles.detailValue}>{offer.category}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.detailItem}>
+                      <View style={styles.detailIcon}>
+                        <Icon name="map-marker" size={16} color={COLORS.secondary} />
+                      </View>
+                      <View style={styles.detailContent}>
+                        <Text style={styles.detailLabel}>Ubicación</Text>
+                        <Text style={styles.detailValue}>{offer.job_location}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.detailItem}>
+                      <View style={styles.detailIcon}>
+                        <Icon name="file-text" size={16} color={COLORS.secondary} />
+                      </View>
+                      <View style={styles.detailContent}>
+                        <Text style={styles.detailLabel}>Tipo de contrato</Text>
+                        <Text style={styles.detailValue}>{offer.contract_type}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.detailItem}>
+                      <View style={styles.detailIcon}>
+                        <Icon name="graduation-cap" size={16} color={COLORS.secondary} />
+                      </View>
+                      <View style={styles.detailContent}>
+                        <Text style={styles.detailLabel}>Titulación requerida</Text>
+                        <Text style={styles.detailValue}>{offer.degree}</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* Botones de acción */}
+            {offer && (
+              <View style={styles.actionButtonsContainer}>
+                <View style={styles.actionButtonsRow}>
+                  {hasApplied ? (
+                    
+                    <TouchableOpacity 
+                      style={[styles.actionButton, styles.saveButton]}
+                      disabled={true}
+                    >
+                      <View style={styles.disabledButtonContainer}>
+                        <Icon 
+                          name="bookmark-o" 
+                          size={16} 
+                          color={COLORS.lightText}
+                          style={styles.buttonIcon}
+                        />
+                        <Text style={styles.disabledButtonText} numberOfLines={1} ellipsizeMode="tail">
+                          No disponible
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ) : (
+                    // Completely new save button implementation
+                    <SaveButton 
+                      isSaved={isSaved} 
+                      isLoading={savingOffer} 
+                      onPress={handleSaveOffer} 
+                    />
+                  )}
+
+                  <TouchableOpacity 
+                    style={[styles.actionButton, styles.applyButton]}
+                    onPress={handleApplyToOffer}
+                    disabled={checkingApplication}
+                  >
+                    {hasApplied ? (
+                      // Botón para usuarios que ya aplicaron
+                      <View style={styles.appliedButtonContainer}>
+                        <Icon 
+                          name="check-circle" 
+                          size={16} 
+                          color={COLORS.success} 
+                          style={styles.buttonIcon}
+                        />
+                        <Text style={styles.appliedButtonText} numberOfLines={1} ellipsizeMode="tail">
+                          Inscrito
+                        </Text>
+                      </View>
+                    ) : (
+                      // Botón normal para aplicar
+                      <LinearGradient
+                        colors={[COLORS.primary, COLORS.secondary]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.buttonGradient}
+                      >
+                        <Icon name="paper-plane" size={16} color="#ffffff" style={styles.buttonIcon} />
+                        <Text style={styles.buttonText} numberOfLines={1} ellipsizeMode="tail">
+                          Inscribirse
+                        </Text>
+                      </LinearGradient>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+            <View style={[styles.container, { height: 50 }]} />
+          </ScrollView>
+          
+          {/* Email Verification Modal */}
+          <Modal
+            visible={showEmailVerification}
+            animationType="slide"
+            presentationStyle="pageSheet"
+          >
+            <EmailVerificationScreen 
+              onGoBack={() => setShowEmailVerification(false)}
+            />
+          </Modal>
+        </>
+      )}
     </View>
   );
 }
