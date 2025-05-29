@@ -224,7 +224,7 @@ export default function ApplyFormScreen() {
         offer_id: offerId,
         phone,
         email,
-        cover_letter: coverLetter,
+        cl: coverLetter, // Changed from cover_letter to cl
         data_consent: dataConsent,
       };
 
@@ -274,7 +274,17 @@ export default function ApplyFormScreen() {
 
       let errorMessage = 'Ocurrió un error al enviar tu postulación. Por favor, inténtalo de nuevo.';
       if (error.response && error.response.data && error.response.data.message) {
-        errorMessage = error.response.data.message;
+        // If the error from backend is structured like {"error": {"field": ["message"]}}
+        // and error.response.data.message is not the primary source.
+        // Let's try to extract a more specific message if possible.
+        if (typeof error.response.data.error === 'object' && error.response.data.error !== null) {
+            const fieldErrors = Object.values(error.response.data.error).flat();
+            if (fieldErrors.length > 0) {
+                errorMessage = fieldErrors.join(' ');
+            }
+        } else if (error.response.data.message) {
+             errorMessage = error.response.data.message;
+        }
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -288,11 +298,6 @@ export default function ApplyFormScreen() {
         "Error en la Solicitud 😥"
       );
       
-      sendNotification({
-        title: "Error en la Solicitud 😥",
-        body: `No pudimos enviar tu postulación para "${offerTitle}". Inténtalo de nuevo.`,
-      });
-
     } finally {
       setLoading(false);
     }
