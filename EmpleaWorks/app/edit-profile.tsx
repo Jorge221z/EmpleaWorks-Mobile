@@ -530,19 +530,21 @@ export default function EditProfileScreen() {
     setCustomAlertType(type);
     setCustomAlertMessage(message);
     setCustomAlertTitle(title);
+    // Directly store the callback, or null if not provided
+    setCustomAlertOnCloseCallback(() => onCloseCallback || null);
     setCustomAlertVisible(true);
-    if (onCloseCallback) {
-      setCustomAlertOnCloseCallback(() => onCloseCallback);
-    } else {
-      setCustomAlertOnCloseCallback(null);
-    }
   };
 
   const handleCloseCustomAlert = () => {
-    setCustomAlertVisible(false);
-    if (customAlertOnCloseCallback) {
-      customAlertOnCloseCallback();
-      setCustomAlertOnCloseCallback(null); 
+    const callback = customAlertOnCloseCallback; // Capture the callback
+
+    setCustomAlertVisible(false); // Trigger alert close animation
+    setCustomAlertOnCloseCallback(null); // Clear the callback immediately
+
+    if (callback) {
+      // Avoid using setTimeout here as it can cause issues
+      // Execute the callback directly - CustomAlert will handle its own animations
+      callback();
     }
   };
 
@@ -657,7 +659,7 @@ export default function EditProfileScreen() {
   };
   const handleSave = async () => {
     // 🔒 VERIFICACIÓN DE EMAIL REQUERIDA
-    console.log('🔒 Verificando email antes de actualizar perfil...');
+    console.log('🔒 Verificando email antes de actualizar perfil');
     
     const verificationResult = await checkBeforeAction('actualizar perfil');
     
@@ -686,25 +688,18 @@ export default function EditProfileScreen() {
       // Procesar la imagen si se seleccionó una nueva o se eliminó
       if (newImageSelected) {
         if (imageRemoved || !profileImage) {
-          // Enfoque corregido: no enviamos 'null' al campo image, sino un campo separado
-          // que indique la eliminación
           formData.append('delete_image', '1');
           console.log('Solicitando eliminación de imagen de perfil con delete_image=1');
         } else if (profileImage) {
           console.log('Preparando imagen para subir...');
-          
-          // Obtenemos datos del archivo
           const uri = profileImage;
           const uriParts = uri.split('.');
           const fileExtension = uriParts[uriParts.length - 1];
-          
-          // Creamos el objeto para la imagen que el servidor puede procesar
           formData.append('image', {
             uri,
             name: `photo.${fileExtension}`,
             type: `image/${fileExtension === 'jpg' ? 'jpeg' : fileExtension}`
           } as any);
-          
           console.log('Imagen preparada para envío');
         }
       }
@@ -713,16 +708,13 @@ export default function EditProfileScreen() {
       if (newCvSelected) {
         if (cv && cv.uri) {
           console.log('Preparando CV para subir...');
-          
           formData.append('cv', {
             uri: cv.uri,
             name: cv.name || 'document.pdf',
             type: cv.mimeType || 'application/pdf'
           } as any);
-          
           console.log('CV preparado para envío');
         } else {
-          // Si se quitó el CV (está a null), usamos un campo específico para indicar la eliminación
           formData.append('delete_cv', '1');
           console.log('Solicitando eliminación de CV con delete_cv=1');
         }
@@ -733,14 +725,11 @@ export default function EditProfileScreen() {
       const updated = await updateProfile(formData);
       console.log('Perfil actualizado correctamente');
       
-      // Actualizamos el usuario en el contexto si está disponible
       if (setUser) {
         console.log('Actualizando usuario en el contexto');
         setUser(updated.user || updated);
         
-        // Forzar limpieza de imágenes en cache si la imagen fue eliminada
         if (imageRemoved) {
-          // Intentar limpiar cualquier referencia a la imagen anterior en el contexto
           if (updated.user) {
             updated.user.image = null;
             if (updated.user.candidate) {
@@ -755,33 +744,36 @@ export default function EditProfileScreen() {
         }
       }
       
-      // Limpiar cualquier dato en caché del perfil
       try {
         await AsyncStorage.removeItem('edit_profile_data');
-        // Opcionalmente, borrar otros datos en caché relacionados con el perfil
       } catch (e) {
         console.error('Error limpiando caché:', e);
       }
       
+      // Show success alert - REMOVED setTimeout to prevent setState during render
       showAppAlert('success', 'Tus datos han sido guardados.', 'Perfil actualizado', () => {
+        // Navigation is now handled directly in the callback
         router.replace({
           pathname: '/(tabs)/profile',
           params: { refresh: 'true', timestamp: Date.now().toString() }
         });
       });
+
     } catch (error: any) {
       console.error('Error en actualización de perfil:', error);
-      
+      let finalErrorMessage = 'No se pudo actualizar el perfil';
       if (error?.errors) {
-        const errorMessages = Object.entries(error.errors)
+        finalErrorMessage = Object.entries(error.errors)
           .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(' ') : msgs}`)
           .join('\n');
-        
-        showAppAlert('error', errorMessages, 'Error al guardar');
-      } else {
-        showAppAlert('error', error?.message || 'No se pudo actualizar el perfil', 'Error');
+      } else if (error?.message) {
+        finalErrorMessage = error.message;
       }
+      
+      // Show error alert - REMOVED setTimeout
+      showAppAlert('error', finalErrorMessage, 'Error al guardar');
     } finally {
+      // Update loading state - REMOVED setTimeout
       setLoading(false);
     }
   };

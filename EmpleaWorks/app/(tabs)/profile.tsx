@@ -9,15 +9,9 @@ import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'react-native';
 import Colors from '@/constants/Colors';
-import NotificationTestPanel from '@/components/NotificationTestPanel';
-import SimpleNotificationTest from '@/components/SimpleNotificationTest';
-import NotificationDebugger from '@/components/NotificationDebugger';
-import ScreenTransition from '@/components/ScreenTransition';
-import SmoothPressable from '@/components/SmoothPressable';
-import TabContentTransition from '@/components/TabContentTransition';
-import { useActiveTab } from '@/hooks/useActiveTab';
-import TabScreenWrapper from '@/components/TabScreenWrapper';
 import CustomAlert, { AlertType } from '@/components/CustomAlert'; // Import CustomAlert
+import { useActiveTab } from '@/hooks/useActiveTab';
+import TabContentTransition from '@/components/TabContentTransition'; // Added import
 
 // Constantes de diseño
 const getThemeColors = (colorScheme: string) => {
@@ -1155,10 +1149,11 @@ export default function ProfileScreen() {
                 <Text style={styles.buttonText}>Cambiar Contraseña</Text>
               </LinearGradient>            </TouchableOpacity>
 
-            <View style={[styles.infoContainer, { height: 1 }]} />            {/* Panel de pruebas de notificaciones - Temporal para desarrollo */}
-            <NotificationDebugger />
-            <SimpleNotificationTest />
-            <NotificationTestPanel />
+            <View style={[styles.infoContainer, { height: 1 }]} />
+            {/* Panel de pruebas de notificaciones - Temporal para desarrollo */}
+            {/* <NotificationDebugger /> */}
+            {/* <SimpleNotificationTest /> */}
+            {/* <NotificationTestPanel /> */}
 
             <View style={[styles.infoContainer, { height: 1 }]} />
 
