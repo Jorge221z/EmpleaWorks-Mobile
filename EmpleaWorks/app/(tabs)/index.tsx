@@ -13,6 +13,7 @@ import { getScreenTransitionConfig, getUIElementConfig } from '@/constants/Trans
 import TabContentTransition from '@/components/TabContentTransition';
 import { useActiveTab } from '@/hooks/useActiveTab';
 import TabScreenWrapper from '@/components/TabScreenWrapper';
+import Logger from '../../utils/logger';
 
 // Define interfaces para los tipos de datos
 interface Company {
@@ -469,7 +470,7 @@ export default function TabOneScreen() {
       
       setLoading(false); //dejamos de cargar ya que se ha producido éxito
     } catch (error) {
-      console.error("Failed while trying to fetch dashboard data: ", error);
+      Logger.error("Failed while trying to fetch dashboard data: ", error);
       setError(error instanceof Error ? error.message : String(error)); 
       
       setLoading(false);

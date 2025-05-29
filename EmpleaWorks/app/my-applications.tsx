@@ -7,6 +7,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'react-native';
+import Logger from '../utils/logger';
 
 // Interface para la información de la empresa
 interface Company {
@@ -84,12 +85,12 @@ export default function MyApplicationsScreen() {
       } else if (response && response.applications) {
         setApplications(response.applications);
       } else {
-        console.warn("Formato de respuesta inesperado:", response);
+        Logger.warn("Formato de respuesta inesperado:", response);
         setApplications([]);
       }
       
     } catch (error) {
-      console.error("Error al obtener solicitudes:", error);
+      Logger.error("Error al obtener solicitudes:", error);
       setError(error instanceof Error ? error.message : String(error));
       setApplications([]);
     } finally {

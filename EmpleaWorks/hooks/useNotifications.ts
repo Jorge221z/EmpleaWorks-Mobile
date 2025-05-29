@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import { notificationService, NotificationData } from '../services/notificationService';
+import Logger from '../utils/logger';
 
 export interface UseNotificationsReturn {
   expoPushToken: string | null;
@@ -22,12 +23,12 @@ export function useNotifications(): UseNotificationsReturn {
 
     // Configurar listeners para notificaciones recibidas
     notificationListener.current = notificationService.addNotificationReceivedListener(notification => {
-      console.log('Notificación recibida:', notification);
+      Logger.log('Notificación recibida:', notification);
     });
 
     // Configurar listener para respuestas a notificaciones (cuando el usuario toca la notificación)
     responseListener.current = notificationService.addNotificationResponseReceivedListener(response => {
-      console.log('Respuesta a notificación:', response);
+      Logger.log('Respuesta a notificación:', response);
       // Aquí puedes manejar la navegación basada en los datos de la notificación
       handleNotificationResponse(response);
     });    return () => {
@@ -46,13 +47,13 @@ export function useNotifications(): UseNotificationsReturn {
     // Aquí puedes agregar lógica de navegación basada en el tipo de notificación
     if (data?.screen) {
       // Ejemplo: navegar a una pantalla específica
-      console.log('Navegar a:', data.screen);
+      Logger.log('Navegar a:', data.screen);
       // router.push(data.screen); // Si usas expo-router
     }
     
     if (data?.offerId) {
       // Ejemplo: abrir una oferta específica
-      console.log('Abrir oferta:', data.offerId);
+      Logger.log('Abrir oferta:', data.offerId);
       // router.push(`/showOffer?id=${data.offerId}`);
     }
   };

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { notificationService, NotificationData } from '../services/notificationService';
 import * as Notifications from 'expo-notifications';
+import Logger from '../utils/logger';
 
 interface NotificationContextType {
   expoPushToken: string | null;
@@ -38,7 +39,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         await sendTokenToBackend(token);
       }
     } catch (error) {
-      console.error('Error initializing notifications:', error);
+      Logger.error('Error initializing notifications:', error);
       setIsInitialized(true); // Marcar como inicializado incluso si hay error
     }
   };
@@ -47,21 +48,21 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       // Aquí deberías enviar el token a tu backend
       // Ejemplo:
       // await axios.post('/api/notifications/register-token', { token });
-      console.log('Token to send to backend:', token);
+      Logger.log('Token to send to backend:', token);
       
       // Por ahora solo registramos que tenemos un token válido
       if (token && (token === 'local-notifications-only' || token === 'development-mode' || token.startsWith('ExponentPushToken'))) {
-        console.log('Token registrado exitosamente:', token.substring(0, 20) + '...');
+        Logger.log('Token registrado exitosamente:', token.substring(0, 20) + '...');
       }
     } catch (error) {
-      console.error('Error sending token to backend:', error);
+      Logger.error('Error sending token to backend:', error);
     }
   };
   const sendNotification = async (data: NotificationData) => {
     try {
       await notificationService.sendLocalNotification(data);
     } catch (error) {
-      console.error('Error sending notification:', error);
+      Logger.error('Error sending notification:', error);
       // No lanzar error para no bloquear el flujo principal
     }
   };
@@ -73,7 +74,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     try {
       return await notificationService.scheduleLocalNotification(data, trigger);
     } catch (error) {
-      console.error('Error scheduling notification:', error);
+      Logger.error('Error scheduling notification:', error);
       // Retornar un ID dummy en lugar de lanzar error
       return 'error-' + Date.now();
     }
@@ -83,7 +84,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     try {
       await notificationService.cancelNotification(id);
     } catch (error) {
-      console.error('Error canceling notification:', error);
+      Logger.error('Error canceling notification:', error);
     }
   };
 
@@ -91,7 +92,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     try {
       await notificationService.clearBadgeCount();
     } catch (error) {
-      console.error('Error clearing badge count:', error);
+      Logger.error('Error clearing badge count:', error);
     }
   };
 
@@ -99,7 +100,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     try {
       await notificationService.setBadgeCount(count);
     } catch (error) {
-      console.error('Error setting badge count:', error);
+      Logger.error('Error setting badge count:', error);
     }
   };
 

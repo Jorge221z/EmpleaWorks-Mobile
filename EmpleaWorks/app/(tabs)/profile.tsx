@@ -12,6 +12,7 @@ import Colors from '@/constants/Colors';
 import CustomAlert, { AlertType } from '@/components/CustomAlert'; // Import CustomAlert
 import { useActiveTab } from '@/hooks/useActiveTab';
 import TabContentTransition from '@/components/TabContentTransition'; // Added import
+import Logger from '../../utils/logger';
 
 // Constantes de diseño
 const getThemeColors = (colorScheme: string) => {
@@ -463,13 +464,13 @@ const getFullUserData = async () => {  try {
           user.candidate = JSON.parse(storedCandidate);
         }
       } catch (e) {
-        console.warn('Error al recuperar datos del candidato del almacenamiento local:', e);
+        Logger.warn('Error al recuperar datos del candidato del almacenamiento local:', e);
       }
     }
 
     return user;
   } catch (error) {
-    console.error('Error al obtener datos completos del usuario:', error);
+    Logger.error('Error al obtener datos completos del usuario:', error);
     throw error;
   }
 };
@@ -570,7 +571,7 @@ export default function ProfileScreen() {
             localStorage.setItem('userCandidate', JSON.stringify(contextUser.candidate));
           }
         } catch (e) {
-          console.warn('Error al guardar datos del candidato en localStorage:', e);
+          Logger.warn('Error al guardar datos del candidato en localStorage:', e);
         }
       }
     }
@@ -582,7 +583,7 @@ export default function ProfileScreen() {
       const response = await getEmailVerificationStatus();
       setEmailVerificationStatus(response.data);
     } catch (error) {
-      console.error('Error al obtener estado de verificación de email:', error);
+      Logger.error('Error al obtener estado de verificación de email:', error);
       // No mostrar error al usuario por este estado opcional
     }
   }, []);
@@ -600,7 +601,7 @@ export default function ProfileScreen() {
       // Recargar el estado después de enviar
       await loadEmailVerificationStatus();
     } catch (error) {
-      console.error('Error al reenviar email de verificación:', error);
+      Logger.error('Error al reenviar email de verificación:', error);
       showAppAlert(
         'error',
         'No se pudo enviar el email de verificación. Inténtalo de nuevo.',
@@ -614,7 +615,7 @@ export default function ProfileScreen() {
     // Verificar si ha pasado suficiente tiempo desde la última carga
     const now = Date.now();
     if (now - lastLoadTime.current < loadCooldown) {
-      console.log('Carga ignorada por cooldown, espere por favor...');
+      Logger.log('Carga ignorada por cooldown, espere por favor...');
       return;
     }
 
@@ -624,19 +625,19 @@ export default function ProfileScreen() {
       setRefreshing(true);
       setError(null);
 
-      console.log('Obteniendo datos del perfil...');
+      Logger.log('Obteniendo datos del perfil...');
 
       // Limpiar cualquier dato en caché antes de cargar
       setLocalUser(null);
       setCandidateData(null);      // Añadir un parámetro aleatorio para evitar caché
       const timestamp = Date.now();
       const profileData = await getProfile();
-      console.log('Datos de perfil recibidos, candidate:',
+      Logger.log('Datos de perfil recibidos, candidate:',
         profileData?.candidate ? 'presente' : 'ausente');
 
       // Verificar explícitamente si la imagen se ha eliminado
       if (!profileData.image && !profileData?.candidate?.profileImage) {
-        console.log('No profile image found in response, confirming deletion');
+        Logger.log('No profile image found in response, confirming deletion');
         // Asegurar que no haya referencias a imágenes anteriores
         profileData.image = null;
         if (profileData.candidate) {
@@ -647,7 +648,7 @@ export default function ProfileScreen() {
       // Actualizar los datos del candidato si existen
       if (profileData?.candidate) {
         setCandidateData(profileData.candidate);
-        console.log('Datos del candidato actualizados:', profileData.candidate);
+        Logger.log('Datos del candidato actualizados:', profileData.candidate);
       }
 
       // Actualizar usuario local siempre
@@ -659,7 +660,7 @@ export default function ProfileScreen() {
       // Cargar también el estado de verificación de email
       await loadEmailVerificationStatus();
     } catch (e) {
-      console.error('Error al recargar datos del usuario:', e);
+      Logger.error('Error al recargar datos del usuario:', e);
       setError('No se pudieron cargar los datos actualizados');
     } finally {
       setRefreshing(false);
@@ -669,23 +670,23 @@ export default function ProfileScreen() {
   // Recargar datos cuando se navega a esta pantalla con el parámetro refresh
   useEffect(() => {
     if (params.refresh) {
-      console.log('Forcing complete reload of profile data due to refresh parameter');
+      Logger.log('Forcing complete reload of profile data due to refresh parameter');
 
       // Limpiar la caché de imágenes si hay un timestamp (indica actualización con posible eliminación de imagen)
       if (params.timestamp) {
-        console.log('Profile update detected with timestamp, clearing data cache');
+        Logger.log('Profile update detected with timestamp, clearing data cache');
         // Limpiar cualquier caché de usuario o imagen
         try {
           if (localStorage) {
             localStorage.removeItem('userCandidate');
           }
         } catch (e) {
-          console.warn('Error al limpiar localStorage:', e);
+          Logger.warn('Error al limpiar localStorage:', e);
         }
 
         // Forzar limpieza de caché de AsyncStorage relacionada con el perfil
         AsyncStorage.removeItem('user_profile_cache').catch(err =>
-          console.warn('Error al limpiar caché de perfil:', err)
+          Logger.warn('Error al limpiar caché de perfil:', err)
         );
       }
 
@@ -702,7 +703,7 @@ export default function ProfileScreen() {
     if (isAuthenticated) {
       // Solo en el montaje inicial o si no hay usuario local
       if (isInitialLoad.current || !localUser) {
-        console.log('Realizando carga inicial de datos de perfil...');
+        Logger.log('Realizando carga inicial de datos de perfil...');
         isInitialLoad.current = false;
         loadUserData();
       }
@@ -711,7 +712,7 @@ export default function ProfileScreen() {
   // Mantener el candidateData actualizado si viene del contexto
   useEffect(() => {
     if (contextUser?.candidate && !candidateData) {
-      console.log('Actualizando datos del candidato desde el contexto...');
+      Logger.log('Actualizando datos del candidato desde el contexto...');
       setCandidateData(contextUser.candidate);
     }
   }, [contextUser, candidateData]);
@@ -736,7 +737,7 @@ export default function ProfileScreen() {
       // Después de cerrar sesión, redirige al usuario a la página de welcome
       router.replace('/welcome');
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
+      Logger.error('Error al cerrar sesión:', error);
       setError('Error al cerrar sesión');
     } finally {
       setLoading(false);
@@ -775,7 +776,7 @@ export default function ProfileScreen() {
 
     // Si no hay apellido, mostramos un mensaje de depuración
     if (__DEV__) {
-      console.log('Apellido no encontrado. Datos actuales:', {
+      Logger.log('Apellido no encontrado. Datos actuales:', {
         userCandidate: userData?.candidate,
         candidateDataState: candidateData
       });
@@ -817,7 +818,7 @@ export default function ProfileScreen() {
 
     // Si no hay ruta de imagen, devolver null explícitamente
     if (!imagePath) {
-      console.log('No image path found, returning null');
+      Logger.log('No image path found, returning null');
       return null;
     }
 
@@ -828,7 +829,7 @@ export default function ProfileScreen() {
       // Try a simpler direct URL format
       // Don't modify the path that comes from the API
       const imageUrl = `https://emplea.works/storage/${imagePath}`;
-      console.log('Constructed image URL:', imageUrl);
+      Logger.log('Constructed image URL:', imageUrl);
       return imageUrl;
     }
   };
@@ -869,7 +870,7 @@ export default function ProfileScreen() {
         cv: getUserCV(user) || null
       }));
     } catch (e) {
-      console.error('Error guardando datos para edición:', e);
+      Logger.error('Error guardando datos para edición:', e);
     }
 
     router.push('/edit-profile');
@@ -954,7 +955,7 @@ export default function ProfileScreen() {
                         style={styles.avatar}
                         defaultSource={require('@/assets/images/default-avatar.png')}
                         onError={(error) => {
-                          console.log('Error cargando imagen de perfil:', error.nativeEvent.error);
+                          Logger.log('Error cargando imagen de perfil:', error.nativeEvent.error);
                         }}
                       />
                     ) : (

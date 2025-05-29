@@ -8,6 +8,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'react-native';
 import CustomAlert, { AlertType } from '@/components/CustomAlert'; // Importar CustomAlert
+import Logger from '../utils/logger';
 
 // Interface para la información de la empresa
 interface Company {
@@ -92,12 +93,12 @@ export default function SavedOffersScreen() {
       } else if (response && response.savedOffers) {
         setSavedOffers(response.savedOffers);
       } else {
-        console.warn("Formato de respuesta inesperado:", response);
+        Logger.warn("Formato de respuesta inesperado:", response);
         setSavedOffers([]);
       }
       
     } catch (error) {
-      console.error("Error al obtener ofertas guardadas:", error);
+      Logger.error("Error al obtener ofertas guardadas:", error);
       setError(error instanceof Error ? error.message : String(error));
       setSavedOffers([]);
     } finally {
@@ -168,7 +169,7 @@ export default function SavedOffersScreen() {
               setCustomAlertVisible(true);
               
             } catch (error) {
-              console.error("Error al eliminar oferta:", error);
+              Logger.error("Error al eliminar oferta:", error);
               // Mostrar CustomAlert de error
               setCustomAlertMessage('No se pudo eliminar la oferta de guardados. Inténtalo de nuevo.');
               setCustomAlertType('error');

@@ -8,6 +8,8 @@ import { useColorScheme } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEmailVerificationGuard } from '@/hooks/useEmailVerification';
+import Logger from '../utils/logger';
+
 import EmailVerificationScreen from '@/components/EmailVerificationScreen';
 import CustomAlert, { AlertType } from '@/components/CustomAlert'; // Import CustomAlert
 import { useNotificationContext } from '@/context/NotificationContext'; // Added import
@@ -575,7 +577,7 @@ export default function ShowOfferScreen() {
       setIsProfileNotFound(false);
       router.replace('/login');
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
+      Logger.error('Error al cerrar sesión:', error);
       // Aún así navegar al login en caso de error
       setIsProfileNotFound(false);
       router.replace('/login');
@@ -594,10 +596,10 @@ export default function ShowOfferScreen() {
     
     try {
       const result = await checkIfOfferIsSaved(offerId);
-      console.log("Is saved result:", result); // Debug log
+      Logger.log("Is saved result:", result); // Debug log
       setIsSaved(result.isSaved || false);
     } catch (error) {
-      console.error("Error al verificar estado de oferta guardada:", error);
+      Logger.error("Error al verificar estado de oferta guardada:", error);
       setIsSaved(false);
     }
   };
@@ -611,7 +613,7 @@ export default function ShowOfferScreen() {
       const applied = await checkIfUserAppliedToOffer(offerId);
       setHasApplied(applied);
     } catch (error) {
-      console.error("Error al verificar estado de aplicación:", error);
+      Logger.error("Error al verificar estado de aplicación:", error);
       // En caso de error, asumir que no aplicó
       setHasApplied(false);
     } finally {
@@ -637,7 +639,7 @@ export default function ShowOfferScreen() {
       // Verificar si la oferta está guardada
       await checkSavedStatus();
     } catch (error: any) {
-      console.error("Error al obtener detalles de la oferta:", error);
+      Logger.error("Error al obtener detalles de la oferta:", error);
       
       // Check for specific "Perfil de candidato no encontrado" error
       const errorMessage = error?.error || error?.message || String(error);
@@ -719,14 +721,14 @@ export default function ShowOfferScreen() {
         ).then(notificationId => {
           if (notificationId && !notificationId.startsWith('error-')) {
             const scheduledDate = new Date(Date.now() + triggerInSeconds * 1000);
-            console.log(`⏰ Notificación de recordatorio de aplicación programada (ID: ${notificationId}) para "${offerName}" para: ${scheduledDate.toLocaleString()}`);
+            Logger.log(`⏰ Notificación de recordatorio de aplicación programada (ID: ${notificationId}) para "${offerName}" para: ${scheduledDate.toLocaleString()}`);
           } else {
-            console.warn(`Falló al programar la notificación de recordatorio para "${offerName}". Estado desde el contexto: ${notificationId}`);
+            Logger.warn(`Falló al programar la notificación de recordatorio para "${offerName}". Estado desde el contexto: ${notificationId}`);
             // Optionally, inform the user that reminder scheduling failed, though the main save action succeeded.
             // For now, console warning is sufficient as the main feedback is about saving the offer.
           }
         }).catch(scheduleError => {
-          console.error(`Error durante la promesa scheduleNotification en showOffer para "${offerName}":`, scheduleError);
+          Logger.error(`Error durante la promesa scheduleNotification en showOffer para "${offerName}":`, scheduleError);
         });
 
         showAppAlert(
@@ -747,7 +749,7 @@ export default function ShowOfferScreen() {
       }
       
     } catch (error: any) {
-      console.error("Error al guardar/eliminar oferta:", error);
+      Logger.error("Error al guardar/eliminar oferta:", error);
       const emailVerificationError = handleApiError(error);
       if (emailVerificationError.isEmailVerificationError) {
         setShowEmailVerification(true);

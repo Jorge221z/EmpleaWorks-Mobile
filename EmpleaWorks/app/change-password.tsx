@@ -18,6 +18,7 @@ import { Text } from '@/components/Themed';
 import { router } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { updatePassword, getPasswordSettings } from '@/api/axios';
+import Logger from '../utils/logger';
 import { useEmailVerificationGuard } from '@/hooks/useEmailVerification';
 import EmailVerificationScreen from '@/components/EmailVerificationScreen';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -118,7 +119,7 @@ export default function ChangePasswordScreen() {
         const settings = await getPasswordSettings();
         setIsGoogleUser(settings.isGoogleUser || false);
       } catch (error) {
-        console.error('Error al cargar configuración de contraseña:', error);
+        Logger.error('Error al cargar configuración de contraseña:', error);
         setErrors(prev => ({
           ...prev,
           general: 'No se pudo cargar la configuración de contraseña'
@@ -197,17 +198,17 @@ export default function ChangePasswordScreen() {
     }
 
     // 🔒 VERIFICACIÓN DE EMAIL REQUERIDA
-    console.log('🔒 Verificando email antes de cambiar contraseña...');
+    Logger.log('🔒 Verificando email antes de cambiar contraseña...');
     
     const verificationResult = await checkBeforeAction('cambiar contraseña');
     
     if (verificationResult.needsVerification) {
-      console.log('🚫 Email no verificado, mostrando pantalla de verificación');
+      Logger.log('🚫 Email no verificado, mostrando pantalla de verificación');
       setShowEmailVerification(true);
       return;
     }
     
-    console.log('✅ Email verificado, procediendo con cambio de contraseña');
+    Logger.log('✅ Email verificado, procediendo con cambio de contraseña');
 
     if (!validateForm()) {
       // Los errores de validación se muestran en el formulario, no se necesita alerta aquí
@@ -227,7 +228,7 @@ export default function ChangePasswordScreen() {
       });
 
     } catch (error: any) {
-      console.error('Error al actualizar contraseña:', error);
+      Logger.error('Error al actualizar contraseña:', error);
 
       let errorMessage = 'Error al actualizar la contraseña';
       if (error && typeof error === 'object') {

@@ -1,5 +1,6 @@
 import { Platform, Linking } from 'react-native';
 import Constants from 'expo-constants';
+import Logger from './logger';
 
 // Interfaz para resultados de diagnóstico
 interface DiagnosticResult {
@@ -30,13 +31,12 @@ export const diagnoseGoogleSignIn = async (): Promise<DiagnosticResult> => {
   const isEmulator = await checkIfEmulator();
   
   // Verificar Play Services
-  let hasPlayServices = false;
-  try {
+  let hasPlayServices = false;  try {
     const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
     hasPlayServices = true;
   } catch (error) {
-    console.error('Error verificando Play Services:', error);
+    Logger.error('Error verificando Play Services:', error);
   }
   
   return {
@@ -140,50 +140,49 @@ export const getInstructionsForSHA1 = async (): Promise<string[]> => {
  * Analiza y muestra la estructura de respuesta de Google Sign-In
  */
 export const analyzeGoogleSignInResponse = (response: any) => {
-  console.log('=== ANÁLISIS DE RESPUESTA DE GOOGLE SIGN-IN ===');
+  Logger.log('=== ANÁLISIS DE RESPUESTA DE GOOGLE SIGN-IN ===');
   
   // Mostrar estructura general
-  console.log('Propiedades de nivel superior:', Object.keys(response));
+  Logger.log('Propiedades de nivel superior:', Object.keys(response));
   
   // Verificar si tiene estructura { type, data }
   if (response.type && response.data) {
-    console.log('Estructura detectada: { type, data }');
-    console.log('Type:', response.type);
-    console.log('Propiedades en data:', Object.keys(response.data));
+    Logger.log('Estructura detectada: { type, data }');
+    Logger.log('Type:', response.type);
+    Logger.log('Propiedades en data:', Object.keys(response.data));
     
     // Verificar si data tiene idToken
     if (response.data.idToken) {
-      console.log('✅ idToken encontrado en data.idToken');
+      Logger.log('✅ idToken encontrado en data.idToken');
     } else {
-      console.log('❌ No se encontró idToken en data');
+      Logger.log('❌ No se encontró idToken en data');
     }
     
     // Verificar si data tiene serverAuthCode
     if (response.data.serverAuthCode) {
-      console.log('⚠️ serverAuthCode encontrado en data');
+      Logger.log('⚠️ serverAuthCode encontrado en data');
     }
-  } 
-  // Verificar estructura tradicional
+  }   // Verificar estructura tradicional
   else {
-    console.log('Estructura tradicional (sin type/data)');
+    Logger.log('Estructura tradicional (sin type/data)');
     
     // Verificar si tiene idToken directamente
     if (response.idToken) {
-      console.log('✅ idToken encontrado en raíz del objeto');
+      Logger.log('✅ idToken encontrado en raíz del objeto');
     } 
     // Verificar si tiene user con idToken
     else if (response.user && response.user.idToken) {
-      console.log('✅ idToken encontrado en user.idToken');
+      Logger.log('✅ idToken encontrado en user.idToken');
     } 
     // Verificar si tiene serverAuthCode
     else if (response.serverAuthCode) {
-      console.log('⚠️ serverAuthCode encontrado, pero no idToken');
+      Logger.log('⚠️ serverAuthCode encontrado, pero no idToken');
     } else {
-      console.log('❌ No se encontró idToken ni serverAuthCode');
+      Logger.log('❌ No se encontró idToken ni serverAuthCode');
     }
   }
   
-  console.log('=== FIN DE ANÁLISIS ===');
+  Logger.log('=== FIN DE ANÁLISIS ===');
   
   return {
     hasIdToken: !!(

@@ -8,6 +8,8 @@ import TestApi from '@/components/src/TestApi';
 import { getCandidateDashboard, getSavedOffers } from '@/api/axios';
 import { useAuth } from '@/context/AuthContext';
 import { router } from 'expo-router';
+import Logger from '../../utils/logger';
+
 import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'react-native';
@@ -102,14 +104,14 @@ export default function TabTwoScreen() {
         setDashboardData(response.applications);
       } else {
         // Si la respuesta no tiene la estructura esperada por fallos del backend
-        console.error("Unexpected API response format:", response);
+        Logger.error("Unexpected API response format:", response);
         setError("Formato de respuesta inesperado");
         setDashboardData(null);
       }
       
       setLoading(false);
     } catch (error: any) {
-      console.error("Failed while trying to fetch candidateDashboard data: ", error);
+      Logger.error("Failed while trying to fetch candidateDashboard data: ", error);
       
       // Verificar si el error es específicamente que el usuario no es candidato
       const errorMessage = error?.error || error?.message || (error instanceof Error ? error.message : String(error));
@@ -131,7 +133,7 @@ export default function TabTwoScreen() {
       const savedOffers = response.savedOffers || response || [];
       setSavedOffersCount(Array.isArray(savedOffers) ? savedOffers.length : 0);
     } catch (error) {
-      console.error("Error al obtener ofertas guardadas:", error);
+      Logger.error("Error al obtener ofertas guardadas:", error);
       setSavedOffersCount(0);
     } finally {
       setLoadingSavedOffers(false);

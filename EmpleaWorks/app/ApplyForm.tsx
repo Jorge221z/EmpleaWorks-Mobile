@@ -18,6 +18,7 @@ import {
 import { Text, View } from '@/components/Themed';
 import { router, useLocalSearchParams } from 'expo-router';
 import { applyToOffer, handleEmailVerificationError } from '@/api/axios';
+import Logger from '../utils/logger';
 import { useAuth } from '@/context/AuthContext';
 import { FontAwesome } from '@expo/vector-icons';
 import { useColorScheme } from 'react-native';
@@ -213,17 +214,17 @@ export default function ApplyFormScreen() {
     }
 
     // 🔒 VERIFICACIÓN DE EMAIL REQUERIDA
-    console.log('🔒 Verificando email antes de aplicar a oferta...');
+    Logger.log('🔒 Verificando email antes de aplicar a oferta...');
     
     const verificationResult = await checkBeforeAction('aplicar a esta oferta');
     
     if (verificationResult.needsVerification) {
-      console.log('🚫 Email no verificado, mostrando pantalla de verificación');
+      Logger.log('🚫 Email no verificado, mostrando pantalla de verificación');
       setShowEmailVerification(true);
       return;
     }
     
-    console.log('✅ Email verificado, procediendo con aplicación a oferta');
+    Logger.log('✅ Email verificado, procediendo con aplicación a oferta');
 
     try {
       setLoading(true);
@@ -255,14 +256,14 @@ export default function ApplyFormScreen() {
       ).then(notificationId => {
         if (notificationId && !notificationId.startsWith('error-')) {
           const scheduledDate = new Date(Date.now() + triggerInSeconds * 1000);
-          console.log(`⏰ Notificación de recordatorio programada (ID: ${notificationId}) para aproximadamente: ${scheduledDate.toLocaleString()}`);
+          Logger.log(`⏰ Notificación de recordatorio programada (ID: ${notificationId}) para aproximadamente: ${scheduledDate.toLocaleString()}`);
         } else {
           // Error is likely already logged by notificationService or NotificationContext
-          console.warn(`Failed to schedule reminder notification. Status from context: ${notificationId}`);
+          Logger.warn(`Failed to schedule reminder notification. Status from context: ${notificationId}`);
         }
       }).catch(scheduleError => {
         // This catch is a fallback for unhandled promise rejections from scheduleNotification itself
-        console.error("Error during scheduleNotification promise chain in ApplyForm:", scheduleError);
+        Logger.error("Error during scheduleNotification promise chain in ApplyForm:", scheduleError);
       });
       
       // Set flag to navigate when success alert is closed
@@ -281,8 +282,8 @@ export default function ApplyFormScreen() {
           title: "¡Solicitud Enviada! 🚀",
           body: `Tu postulación para "${offerTitle}" ha sido enviada con éxito.`,
         });      }, 4000);    } catch (error: any) {
-      console.error('Error al aplicar a la oferta:', error);
-      console.log('🔍 DEBUG - Error object structure:', {
+      Logger.error('Error al aplicar a la oferta:', error);
+      Logger.log('🔍 DEBUG - Error object structure:', {
         error: error?.error,
         message: error?.message,
         responseData: error?.response?.data,
@@ -292,10 +293,10 @@ export default function ApplyFormScreen() {
       
       // Verificar si es un error de verificación de email
       const emailError = handleApiError(error);
-      console.log('🔍 DEBUG - handleApiError result:', emailError);
+      Logger.log('🔍 DEBUG - handleApiError result:', emailError);
       
       if (emailError.isEmailVerificationError) {
-        console.log('🚨 DEBUG - Showing email verification modal');
+        Logger.log('🚨 DEBUG - Showing email verification modal');
         setShowEmailVerification(true);
         return;
       }      let errorMessage = 'Ocurrió un error al enviar tu postulación. Por favor, inténtalo de nuevo.';
@@ -306,7 +307,7 @@ export default function ApplyFormScreen() {
                        error?.error?.includes('CV antes de aplicar') ||
                        error?.message?.includes('CV antes de aplicar');
       
-      console.log('🔍 DEBUG - CV Error Detection:', {
+      Logger.log('🔍 DEBUG - CV Error Detection:', {
         isCVError,
         emailErrorIsCVError: emailError.isCVError,
         errorError: error?.error,

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, AppState, Platform } from 're
 import { useNotificationContext } from '../context/NotificationContext';
 import * as Notifications from 'expo-notifications';
 import CustomAlert, { AlertType } from './CustomAlert'; // Import CustomAlert
+import Logger from '../utils/logger';
 
 export default function DevNotificationTest() {
   const { sendNotification, scheduleNotification } = useNotificationContext();
@@ -76,7 +77,7 @@ export default function DevNotificationTest() {
       );
 
     } catch (error) {
-      console.error('Error in background test:', error);
+      Logger.error('Error in background test:', error);
       addTestResult('❌ Error en test de background');
       showAppAlert('error', 'Ocurrió un error durante el test de background.', 'Error en Test');
     }
@@ -104,7 +105,7 @@ export default function DevNotificationTest() {
       addTestResult(`✅ Notificación forzada enviada: ${notificationId.substring(0, 8)}`);
 
     } catch (error) {
-      console.error('Error in forced notification:', error);
+      Logger.error('Error in forced notification:', error);
       addTestResult('❌ Error en notificación forzada');
     }
   };
@@ -142,7 +143,7 @@ export default function DevNotificationTest() {
       addTestResult('✅ Notificación con canal enviada');
 
     } catch (error) {
-      console.error('Error in channel notification:', error);
+      Logger.error('Error in channel notification:', error);
       addTestResult('❌ Error en notificación de canal');
     }
   };
@@ -169,7 +170,7 @@ export default function DevNotificationTest() {
       addTestResult(`⏰ Programadas: ${scheduled.length}`);
 
     } catch (error) {
-      console.error('Error checking settings:', error);
+      Logger.error('Error checking settings:', error);
       addTestResult('❌ Error verificando configuración');
     }
   };

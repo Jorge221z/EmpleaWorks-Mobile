@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { handleGoogleCallback } from '@/api/axios';
 import Constants from 'expo-constants';
+import Logger from './logger';
 
 // Define interfaces
 interface GoogleCallbackResponse {
@@ -19,11 +20,11 @@ interface User {
 // Función para procesar el callback de Google con el idToken
 export const handleGoogleLogin = async (idToken: string): Promise<{ user: User; token: string }> => {
   try {
-    console.log('Llamando a handleGoogleCallback con idToken válido');
+    Logger.log('Llamando a handleGoogleCallback con idToken válido');
     const response = await handleGoogleCallback(idToken);
     
     if (!response || !response.token || !response.user) {
-      console.error('Respuesta inválida del backend:', response);
+      Logger.error('Respuesta inválida del backend:', response);
       throw new Error('Respuesta inválida del servidor');
     }
     
@@ -31,7 +32,7 @@ export const handleGoogleLogin = async (idToken: string): Promise<{ user: User; 
     await AsyncStorage.setItem('auth_token', authToken); // Almacena el token
     return { user, token: authToken };
   } catch (error: any) {
-    console.error('Error en handleGoogleLogin:', error);
+    Logger.error('Error en handleGoogleLogin:', error);
     
     // Check for specific backend errors
     if (error.message && (
@@ -67,13 +68,12 @@ export const signOutFromGoogle = async (): Promise<void> => {
   if (Platform.OS === 'web') {
     return;
   }
-  
-  try {
+    try {
     const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
     await GoogleSignin.signOut();
-    console.log('Usuario desconectado de Google correctamente');
+    Logger.log('Usuario desconectado de Google correctamente');
   } catch (error) {
-    console.warn('Error al cerrar sesión de Google:', error);
+    Logger.warn('Error al cerrar sesión de Google:', error);
   }
 };
 
@@ -93,7 +93,7 @@ export const signInWithGoogle = async (forceAccountSelection = false) => {
       throw new Error('No se encontró configuración de Google Web Client ID');
     }
 
-    console.log('Configurando GoogleSignin con Web Client ID:', webClientId);
+    Logger.log('Configurando GoogleSignin con Web Client ID:', webClientId);
 
     // Configura GoogleSignin con webClientId (sin androidClientId, que causa error)
     GoogleSignin.configure({
@@ -105,16 +105,16 @@ export const signInWithGoogle = async (forceAccountSelection = false) => {
 
     // If forceAccountSelection is true, sign out first to force account picker
     if (forceAccountSelection) {
-      console.log('Forzando selección de cuenta: cerrando sesión previa de Google...');
+      Logger.log('Forzando selección de cuenta: cerrando sesión previa de Google...');
       await GoogleSignin.signOut();
     }
 
     // Verifica Google Play Services
     try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      console.log('✅ Google Play Services disponibles');
+      Logger.log('✅ Google Play Services disponibles');
     } catch (playError) {
-      console.error('Error con Google Play Services:', playError);
+      Logger.error('Error con Google Play Services:', playError);
       if (
         typeof playError === 'object' &&
         playError !== null &&
@@ -128,36 +128,36 @@ export const signInWithGoogle = async (forceAccountSelection = false) => {
 
     // Realiza el inicio de sesión
     try {
-      console.log('Iniciando Google Sign-In...');
+      Logger.log('Iniciando Google Sign-In...');
       const userInfo = await GoogleSignin.signIn();
       
       // Mostrar la estructura completa (sin datos sensibles)
-      console.log('Estructura completa de respuesta:', JSON.stringify(userInfo, null, 2));
+      Logger.log('Estructura completa de respuesta:', JSON.stringify(userInfo, null, 2));
       
       // Analizar la estructura real recibida
-      console.log('Propiedades de nivel superior:', Object.keys(userInfo));
+      Logger.log('Propiedades de nivel superior:', Object.keys(userInfo));
       
       // Obtener idToken según la estructura detectada
       let idToken = null;
       
       // Según el log anterior, la estructura tiene type y data
       if (userInfo.type === 'success' && userInfo.data) {
-        console.log('Estructura identificada: { type, data }');
+        Logger.log('Estructura identificada: { type, data }');
         const { data } = userInfo;
-        console.log('Propiedades en data:', Object.keys(data));
+        Logger.log('Propiedades en data:', Object.keys(data));
         
         // Buscar idToken en data
         if (data.idToken) {
-          console.log('idToken encontrado en data.idToken');
+          Logger.log('idToken encontrado en data.idToken');
           idToken = data.idToken;
         } else if (data.serverAuthCode) {
-          console.log('serverAuthCode encontrado, pero no idToken');
+          Logger.log('serverAuthCode encontrado, pero no idToken');
           throw new Error('Se obtuvo serverAuthCode pero no idToken. El backend debe implementar intercambio de código.');
         }
       } 
       // Verificación de estructura tradicional (en caso de cambio en la biblioteca)
       else if ((userInfo as { idToken?: string }).idToken) {
-        console.log('idToken encontrado en raíz del objeto');
+        Logger.log('idToken encontrado en raíz del objeto');
         idToken = (userInfo as { idToken?: string }).idToken;
       } else if (
         typeof userInfo === 'object' &&
@@ -166,19 +166,19 @@ export const signInWithGoogle = async (forceAccountSelection = false) => {
         (userInfo as any).user &&
         (userInfo as any).user.idToken
       ) {
-        console.log('idToken encontrado en user.idToken');
+        Logger.log('idToken encontrado en user.idToken');
         idToken = (userInfo as any).user.idToken;
       } else if ('serverAuthCode' in userInfo && (userInfo as any).serverAuthCode) {
-        console.log('serverAuthCode encontrado, pero no idToken');
+        Logger.log('serverAuthCode encontrado, pero no idToken');
         throw new Error('Se obtuvo serverAuthCode pero no idToken. El backend debe implementar intercambio de código.');
       }
 
       if (!idToken) {
-        console.error('No se pudo obtener idToken de la respuesta de Google Sign-In');
+        Logger.error('No se pudo obtener idToken de la respuesta de Google Sign-In');
         throw new Error('No se obtuvo el idToken. Comprueba la configuración de Google Cloud Console.');
       }
 
-      console.log('✅ idToken obtenido correctamente');
+      Logger.log('✅ idToken obtenido correctamente');
       
       // Envía el idToken al backend
       return await handleGoogleLogin(idToken);
@@ -188,7 +188,7 @@ export const signInWithGoogle = async (forceAccountSelection = false) => {
         signInError !== null &&
         'code' in signInError
       ) {        if ((signInError as any).code === 'DEVELOPER_ERROR') {
-          console.error('DEVELOPER_ERROR detectado - Problema de configuración SHA-1');
+          Logger.error('DEVELOPER_ERROR detectado - Problema de configuración SHA-1');
           throw new Error('Error de configuración con Google Sign-In. Verifica que el SHA-1 esté registrado en Google Cloud Console.');
         }
         if ((signInError as any).code === statusCodes.SIGN_IN_CANCELLED) {
@@ -198,7 +198,7 @@ export const signInWithGoogle = async (forceAccountSelection = false) => {
       throw signInError;
     }
   } catch (error) {
-    console.error('Error en sign-in con Google:', error);
+    Logger.error('Error en sign-in con Google:', error);
     throw error instanceof Error ? error : new Error('Error al autenticarse con Google');
   }
 };

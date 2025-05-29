@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { login, register, logout, getUser } from '@/api/axios';
 import { useNotificationContext } from './NotificationContext'; // Import NotificationContext
+import Logger from '../utils/logger';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -43,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsAuthenticated(true);
         }
       } catch (error) {
-        console.error('Error verificando autenticación:', error);
+        Logger.error('Error verificando autenticación:', error);
         // Si hay error, limpiar token
         await AsyncStorage.removeItem('auth_token');
       } finally {
@@ -64,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(true);
     } catch (error: any) {
       setError(error?.message || 'Error al iniciar sesión');
-      console.error('Login error:', error);
+      Logger.error('Login error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (error: any) {
       setError(error?.message || 'Error al registrarse');
-      console.error('Register error:', error);
+      Logger.error('Register error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -99,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setIsAuthenticated(false);
     } catch (error) {
-      console.error('Logout error:', error);
+      Logger.error('Logout error:', error);
     } finally {
       setIsLoading(false);
     }

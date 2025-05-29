@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, View, StyleSheet, BackHandler } from 'react-native';
 import EmailVerificationScreen from './EmailVerificationScreen';
 import { useEmailVerificationGuard } from '../hooks/useEmailVerification';
+import Logger from '../utils/logger';
 
 interface EmailVerificationGuardProps {
   children: React.ReactNode;
@@ -54,7 +55,7 @@ const EmailVerificationGuard: React.FC<EmailVerificationGuardProps> = ({
         onVerificationComplete?.();
       }
     } catch (error) {
-      console.error('Error checking verification:', error);
+      Logger.error('Error checking verification:', error);
       const errorResult = handleApiError(error);
       if (errorResult.isEmailVerificationError) {
         setShowVerificationScreen(true);

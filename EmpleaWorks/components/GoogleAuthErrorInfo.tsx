@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Linking, TouchableOpacity } from 'react-native';
 import Constants from 'expo-constants';
+import Logger from '../utils/logger';
 
 interface GoogleAuthErrorInfoProps {
   error: string;

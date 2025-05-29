@@ -4,6 +4,7 @@ import { signInWithGoogle, signOutFromGoogle } from '@/utils/authUtils';
 import { useAuth } from '@/context/AuthContext';
 import Constants from 'expo-constants';
 import { Alert } from 'react-native';
+import Logger from '../utils/logger';
 
 export function useGoogleAuth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -19,10 +20,10 @@ export function useGoogleAuth() {
       setIsLoading(true);
       setError(null);
       
-      console.log('Iniciando login con Google...');
-      console.log('Android Client ID:', ANDROID_CLIENT_ID);
-      console.log('Web Client ID:', WEB_CLIENT_ID);
-      console.log('Forzar selección de cuenta:', forceAccountSelection ? 'Sí' : 'No');
+      Logger.log('Iniciando login con Google...');
+      Logger.log('Android Client ID:', ANDROID_CLIENT_ID);
+      Logger.log('Web Client ID:', WEB_CLIENT_ID);
+      Logger.log('Forzar selección de cuenta:', forceAccountSelection ? 'Sí' : 'No');
 
       if (!WEB_CLIENT_ID) {
         throw new Error('Falta configuración Web Client ID');
@@ -31,8 +32,8 @@ export function useGoogleAuth() {
       // Intentar la autenticación con Google, forzando la selección de cuenta
       const { user, token } = await signInWithGoogle(forceAccountSelection);
       
-      console.log('Login con Google exitoso!');
-      console.log('Usuario autenticado:', user?.name || 'Desconocido');
+      Logger.log('Login con Google exitoso!');
+      Logger.log('Usuario autenticado:', user?.name || 'Desconocido');
       
       // Update auth context with the user info
       if (setUser) {
@@ -46,18 +47,18 @@ export function useGoogleAuth() {
       
       // Add a slight delay before navigation to ensure state updates are processed
       setTimeout(() => {
-        console.log('Redirigiendo a pantalla principal...');
+        Logger.log('Redirigiendo a pantalla principal...');
         try {
           router.replace('/(tabs)');
-          console.log('Redirección ejecutada');
+          Logger.log('Redirección ejecutada');
         } catch (navError) {
-          console.error('Error en navegación:', navError);
+          Logger.error('Error en navegación:', navError);
           // Fallback navigation if the first attempt fails
           try {
             router.push('/(tabs)');
-            console.log('Navegación alternativa ejecutada');
+            Logger.log('Navegación alternativa ejecutada');
           } catch (fallbackError) {
-            console.error('Error en navegación alternativa:', fallbackError);
+            Logger.error('Error en navegación alternativa:', fallbackError);
           }
         }
       }, 300);
@@ -69,7 +70,7 @@ export function useGoogleAuth() {
         : err.message || 'Error al iniciar sesión con Google';
       
       setError(errorMessage);
-      console.error('Google auth error:', err);
+      Logger.error('Google auth error:', err);
       
       // Mostrar mensaje específico basado en el tipo de error
       if (errorMessage.includes('conexión') || errorMessage.includes('network')) {
@@ -100,7 +101,7 @@ export function useGoogleAuth() {
     try {
       await signOutFromGoogle();
     } catch (error) {
-      console.warn('Error signing out from Google:', error);
+      Logger.warn('Error signing out from Google:', error);
     }
   };
 

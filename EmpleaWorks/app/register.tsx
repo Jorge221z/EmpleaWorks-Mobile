@@ -7,6 +7,8 @@ import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoogleAuthErrorInfo from '@/components/GoogleAuthErrorInfo';
+import Logger from '../utils/logger';
+
 
 // Constantes de diseño para temas
 const getThemeColors = (colorScheme: string) => {
@@ -334,11 +336,11 @@ export default function RegisterScreen() {
 
   const handleGoogleRegister = async () => {
     try {
-      console.log('Iniciando registro/login con Google...');
+      Logger.log('Iniciando registro/login con Google...');
       await googleLogin(); // Utiliza la misma función que para login
-      console.log('Registro/login con Google completado exitosamente');
+      Logger.log('Registro/login con Google completado exitosamente');
     } catch (error) {
-      console.log('Google auth failed:', error instanceof Error ? error.message : error);
+      Logger.log('Google auth failed:', error instanceof Error ? error.message : error);
       // El manejo de errores se realiza en el hook
     }
   };

@@ -16,6 +16,7 @@ export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary,
 } from 'expo-router';
+import Logger from '../utils/logger';
 
 export const unstable_settings = {
   // Ensure proper initial route handling in production builds
@@ -32,15 +33,15 @@ function InitialLayout() {
   const router = useRouter();
 
   useEffect(() => {
-    console.log('=== AuthRedirect Debug ===');
-    console.log('Auth state:', isAuthenticated ? 'Autenticado' : 'No autenticado');
-    console.log('isLoading:', isLoading);
-    console.log('Current path segments:', segments);
-    console.log('Current route:', segments[0] || 'root/undefined');
+    Logger.log('=== AuthRedirect Debug ===');
+    Logger.log('Auth state:', isAuthenticated ? 'Autenticado' : 'No autenticado');
+    Logger.log('isLoading:', isLoading);
+    Logger.log('Current path segments:', segments);
+    Logger.log('Current route:', segments[0] || 'root/undefined');
     
     // Skip redirections during loading state
     if (isLoading) {
-      console.log('⏳ Cargando estado de autenticación...');
+      Logger.log('⏳ Cargando estado de autenticación...');
       return;
     }
 
@@ -53,47 +54,47 @@ function InitialLayout() {
       'change-password', 'my-applications', 'modal'
     ];
     
-    console.log('inTabsGroup:', inTabsGroup);
-    console.log('Is authenticated screen:', authenticatedScreens.includes(currentRoute || ''));
-    console.log('Processing route logic...');
+    Logger.log('inTabsGroup:', inTabsGroup);
+    Logger.log('Is authenticated screen:', authenticatedScreens.includes(currentRoute || ''));
+    Logger.log('Processing route logic...');
     
     // Use setTimeout to avoid navigation conflicts during component mounting
     const navigationTimeout = setTimeout(() => {
       // If the user is authenticated
       if (isAuthenticated) {
-        console.log('✅ Usuario autenticado');
+        Logger.log('✅ Usuario autenticado');
         
         // Allow access to tabs group and authenticated screens
         if (inTabsGroup || authenticatedScreens.includes(currentRoute || '')) {
-          console.log('✅ Usuario autenticado en ruta válida:', currentRoute);
+          Logger.log('✅ Usuario autenticado en ruta válida:', currentRoute);
           return;
         }
         
         // Only redirect to tabs if user is on an auth screen (welcome, login, register)
         const authOnlyScreens = ['welcome', 'login', 'register'];
         if (!currentRoute || authOnlyScreens.includes(currentRoute)) {
-          console.log('🔄 Redirigiendo usuario autenticado a tabs desde:', currentRoute || 'root');
+          Logger.log('🔄 Redirigiendo usuario autenticado a tabs desde:', currentRoute || 'root');
           router.replace('/(tabs)' as any);
         }
       } 
       // If the user is not authenticated
       else {
-        console.log('❌ Usuario NO autenticado');
+        Logger.log('❌ Usuario NO autenticado');
         
         // Only allow access to welcome, login, and register screens
         const allowedRoutes = ['welcome', 'login', 'register'];
-        console.log('Rutas permitidas:', allowedRoutes);
-        console.log('Ruta actual válida?', currentRoute ? allowedRoutes.includes(currentRoute) : false);
+        Logger.log('Rutas permitidas:', allowedRoutes);
+        Logger.log('Ruta actual válida?', currentRoute ? allowedRoutes.includes(currentRoute) : false);
         
         // If user is not on an allowed route OR on root route (no segments), redirect to welcome
         if (!currentRoute || !allowedRoutes.includes(currentRoute)) {
-          console.log('🔄 Redirigiendo usuario no autenticado a welcome desde:', currentRoute || 'root');
+          Logger.log('🔄 Redirigiendo usuario no autenticado a welcome desde:', currentRoute || 'root');
           router.replace('/welcome' as any);
         } else {
-          console.log('✅ Usuario no autenticado ya en ruta permitida:', currentRoute);
+          Logger.log('✅ Usuario no autenticado ya en ruta permitida:', currentRoute);
         }
       }
-      console.log('=== Fin AuthRedirect Debug ===');
+      Logger.log('=== Fin AuthRedirect Debug ===');
     }, 100); // Small delay to ensure navigation is ready
 
     return () => clearTimeout(navigationTimeout);

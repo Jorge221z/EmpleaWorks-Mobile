@@ -8,6 +8,8 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoogleAuthErrorInfo from '@/components/GoogleAuthErrorInfo';
 import ScreenTransition from '@/components/ScreenTransition';
+import Logger from '../utils/logger';
+
 import SmoothPressable from '@/components/SmoothPressable';
 import { getScreenTransitionConfig, getUIElementConfig } from '@/constants/TransitionConfig';
 
@@ -360,11 +362,11 @@ export default function LoginScreen() {
 
   const handleGoogleLogin = async () => {
     try {
-      console.log('Iniciando proceso de login con Google...');
+      Logger.log('Iniciando proceso de login con Google...');
       await googleLogin();
-      console.log('Login con Google completado exitosamente');
+      Logger.log('Login con Google completado exitosamente');
     } catch (error) {
-      console.log('Google login failed:', error instanceof Error ? error.message : error);
+      Logger.log('Google login failed:', error instanceof Error ? error.message : error);
       // Error handling is done in the hook
     }
   };  return (

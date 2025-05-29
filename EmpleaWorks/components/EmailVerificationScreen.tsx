@@ -13,6 +13,7 @@ import { Alert } from 'react-native'; // Mantener para confirmaciones
 import { Ionicons } from '@expo/vector-icons';
 import { resendEmailVerification } from '../api/axios';
 import CustomAlert, { AlertType } from './CustomAlert'; // Importar CustomAlert
+import Logger from '../utils/logger';
 
 interface EmailVerificationScreenProps {
   email?: string;
@@ -55,7 +56,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       showAppAlert('success', 'Se ha enviado un nuevo email de verificación. Por favor revisa tu bandeja de entrada y spam.', 'Email Enviado');
       onVerificationSent?.();
     } catch (error) {
-      console.error('Error al reenviar email:', error);
+      Logger.error('Error al reenviar email:', error);
       const errorMessage = (error instanceof Error && error.message) ? error.message : 'No se pudo enviar el email de verificación. Inténtalo de nuevo.';
       showAppAlert('error', errorMessage, 'Error');
     } finally {

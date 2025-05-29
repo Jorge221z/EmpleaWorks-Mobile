@@ -1,6 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import Logger from '../utils/logger';
 
 // Configuración de la instancia de axios
 const api = axios.create({
@@ -34,9 +35,8 @@ export const register = async (userData) => {
     const response = await api.post('/register', userData);
     const { token, user } = response.data;
     await AsyncStorage.setItem('auth_token', token);
-    return { user, token };
-  } catch (error) {
-    console.error('Register error:', error?.response?.data || error); // <-- Added for debugging
+    return { user, token };  } catch (error) {
+    Logger.error('Register error:', error?.response?.data || error); // <-- Added for debugging
     throw error.response?.data || { message: 'Error en el registro' };
   }
 };
@@ -58,51 +58,48 @@ export const login = async (credentials) => {
 // Función para procesar el callback de Google con idToken
 export const handleGoogleCallback = async (idToken) => {
   try {
-    console.log('Enviando idToken al backend (primeros 20 caracteres):', idToken.substring(0, 20) + '...');
-    console.log('Longitud del idToken:', idToken.length);
+    Logger.log('Enviando idToken al backend (primeros 20 caracteres):', idToken.substring(0, 20) + '...');
+    Logger.log('Longitud del idToken:', idToken.length);
     
     // Add detailed information about the idToken
     try {
       // Decode JWT segments for debugging (without exposing all contents)
       const tokenParts = idToken.split('.');
       if (tokenParts.length === 3) {
-        // Look at header only (safe to display)
-        const headerJson = atob(tokenParts[0]);
+        // Look at header only (safe to display)        const headerJson = atob(tokenParts[0]);
         const header = JSON.parse(headerJson);
-        console.log('Token header:', header);
+        Logger.log('Token header:', header);
         
         // For payload, just show key names to help debugging without exposing sensitive data
         const payloadJson = atob(tokenParts[1]);
         const payload = JSON.parse(payloadJson);
-        console.log('Token payload contains these fields:', Object.keys(payload).join(', '));
+        Logger.log('Token payload contains these fields:', Object.keys(payload).join(', '));
         
         // Show critical values for debugging without exposing all data
-        console.log('Token info - iss:', payload.iss);
-        console.log('Token info - aud:', payload.aud?.substring(0, 10) + '...');
-        console.log('Token info - exp:', new Date(payload.exp * 1000).toISOString());
-        console.log('Token info - iat:', new Date(payload.iat * 1000).toISOString());
-      }
-    } catch (decodeError) {
-      console.log('No se pudo decodificar el token para debugging:', decodeError);
+        Logger.log('Token info - iss:', payload.iss);
+        Logger.log('Token info - aud:', payload.aud?.substring(0, 10) + '...');
+        Logger.log('Token info - exp:', new Date(payload.exp * 1000).toISOString());
+        Logger.log('Token info - iat:', new Date(payload.iat * 1000).toISOString());
+      }    } catch (decodeError) {
+      Logger.log('No se pudo decodificar el token para debugging:', decodeError);
     }
     
     const response = await api.post('/auth/google/callback', { id_token: idToken });
     
-    console.log('Respuesta del backend recibida:', 
+    Logger.log('Respuesta del backend recibida:', 
       response.status === 200 ? '✅ Éxito (status 200)' : `⚠️ Status: ${response.status}`);
     
     if (!response.data || !response.data.token) {
-      console.error('Respuesta sin token:', response.data);
+      Logger.error('Respuesta sin token:', response.data);
       throw new Error('La respuesta del servidor no incluye un token de autenticación');
     }
     
     const { token: authToken, user } = response.data;
-    console.log('Usuario autenticado:', user?.name || 'Desconocido');
+    Logger.log('Usuario autenticado:', user?.name || 'Desconocido');
     
     await AsyncStorage.setItem('auth_token', authToken);
-    return { user, token: authToken };
-  } catch (error) {
-    console.error('Error detallado en handleGoogleCallback:', 
+    return { user, token: authToken };  } catch (error) {
+    Logger.error('Error detallado en handleGoogleCallback:', 
       error.response?.status || 'Sin status', 
       error.response?.data || error.message || error);
     
@@ -113,7 +110,7 @@ export const handleGoogleCallback = async (idToken) => {
     
     // Si es un error de red o timeout
     if (error.request) {
-      console.error('No se recibió respuesta del servidor. Verifica la conectividad.');
+      Logger.error('No se recibió respuesta del servidor. Verifica la conectividad.');
       throw { message: 'Error de conexión al servidor. Verifica tu conexión a internet.' };
     }
     
@@ -169,10 +166,10 @@ export const getUser = async () => {
 export const getProfile = async () => {
   try {
     const response = await api.get('/profile');
-    console.log('Respuesta completa de getProfile:', response.data);
+    Logger.log('Respuesta completa de getProfile:', response.data);
     return response.data;
   } catch (error) {
-    console.error('getProfile error:', error?.response?.data || error);
+    Logger.error('getProfile error:', error?.response?.data || error);
     throw error.response?.data || { message: 'Error al obtener perfil' };
   }
 };
@@ -186,9 +183,8 @@ export const updateProfile = async (profileData, isFormData = false) => {
     if (isFormData || profileData instanceof FormData) {
       config.headers = {
         'Content-Type': 'multipart/form-data',
-        'Accept': 'application/json'
-      };
-      console.log('Enviando datos como FormData con headers adecuados');
+        'Accept': 'application/json'      };
+      Logger.log('Enviando datos como FormData con headers adecuados');
     }
     
     // Verificamos si estamos enviando una solicitud para eliminar la imagen
@@ -199,7 +195,7 @@ export const updateProfile = async (profileData, isFormData = false) => {
     const isRemovingCV = profileData.get && profileData.get('delete_cv') === '1';
     
     if (isRemovingImage) {
-      console.log('Se ha solicitado eliminar la imagen de perfil');
+      Logger.log('Se ha solicitado eliminar la imagen de perfil');
       
       // IMPORTANTE: NO añadir 'image' si estamos eliminando para evitar errores de validación
       // Si el backend espera un campo específico para eliminar, solo usamos ese
@@ -213,15 +209,14 @@ export const updateProfile = async (profileData, isFormData = false) => {
           // FormData interno puede ser una matriz de pares clave-valor
           profileData._parts = profileData._parts.filter(part => 
             part[0] !== 'image' && part[0] !== 'image[0]' && part[1] !== 'null'
-          );
-        }
+          );        }
       } catch (e) {
-        console.log('No se pudo limpiar _parts:', e);
+        Logger.log('No se pudo limpiar _parts:', e);
       }
     }
     
     if (isRemovingCV) {
-      console.log('Se ha solicitado eliminar el CV');
+      Logger.log('Se ha solicitado eliminar el CV');
       
       // Si el backend espera un campo específico para eliminar, aseguramos que esté presente
       if (!profileData.get('delete_cv')) {
@@ -237,33 +232,33 @@ export const updateProfile = async (profileData, isFormData = false) => {
           );
         }
       } catch (e) {
-        console.log('No se pudo limpiar _parts para CV:', e);
+        Logger.log('No se pudo limpiar _parts para CV:', e);
       }
     }
     
-    console.log('Enviando solicitud de actualización de perfil...');
-    console.log('FormData contiene estos campos:', 
+    Logger.log('Enviando solicitud de actualización de perfil...');
+    Logger.log('FormData contiene estos campos:', 
       profileData._parts ? profileData._parts.map(p => p[0]).join(', ') : 'No disponible');
     
     const response = await api.post('/profile', profileData, config);
-    console.log('Respuesta de actualización recibida:', response.status);
+    Logger.log('Respuesta de actualización recibida:', response.status);
     
     // Depurar la respuesta para identificar posibles problemas
     if (isRemovingImage && response.data) {
-      console.log('Respuesta al eliminar imagen:', 
+      Logger.log('Respuesta al eliminar imagen:', 
         response.data.image ? 'Imagen presente en respuesta' : 'Imagen eliminada correctamente');
     }
     
     if (isRemovingCV && response.data) {
-      console.log('Respuesta al eliminar CV:', 
+      Logger.log('Respuesta al eliminar CV:', 
         response.data.candidate?.cv ? 'CV presente en respuesta' : 'CV eliminado correctamente');
     }
     
     return response.data;
   } catch (error) {
-    console.error('updateProfile error:', error?.response?.data || error);
+    Logger.error('updateProfile error:', error?.response?.data || error);
     if (error?.response?.data?.errors?.image) {
-      console.error('Error específico de imagen:', error.response.data.errors.image);
+      Logger.error('Error específico de imagen:', error.response.data.errors.image);
     }
     throw error.response?.data || { message: 'Error al actualizar perfil' };
   }
@@ -312,17 +307,17 @@ export const logout = async () => {
       if (Platform.OS !== 'web') {
         const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
         if (GoogleSignin) {
-          console.log('Cerrando sesión de Google...');
+          Logger.log('Cerrando sesión de Google...');
           await GoogleSignin.signOut();
-          console.log('Sesión de Google cerrada correctamente');
+          Logger.log('Sesión de Google cerrada correctamente');
         }
       }
     } catch (googleError) {
       // Don't fail the main logout if Google sign out fails
-      console.warn('Error al cerrar sesión de Google:', googleError);
+      Logger.warn('Error al cerrar sesión de Google:', googleError);
     }
   } catch (error) {
-    console.error('Error al cerrar sesión:', error);
+    Logger.error('Error al cerrar sesión:', error);
   }
 };
 
@@ -360,32 +355,32 @@ export const createOffer = async (offerData) => {
 export const applyToOffer = async (applicationData) => {
   try {
     // 🔍 Verificar si la oferta está en guardados antes de aplicar
-    console.log('🔍 Verificando si la oferta está guardada antes de aplicar...');
+    Logger.log('🔍 Verificando si la oferta está guardada antes de aplicar...');
     const savedStatus = await checkIfOfferIsSaved(applicationData.offer_id);
     
     if (savedStatus.isSaved) {
-      console.log('📌 La oferta está guardada, quitándola de guardados antes de aplicar...');
+      Logger.log('📌 La oferta está guardada, quitándola de guardados antes de aplicar...');
       try {
         await toggleSavedOffer(applicationData.offer_id);
-        console.log('✅ Oferta removida de guardados exitosamente');
+        Logger.log('✅ Oferta removida de guardados exitosamente');
       } catch (savedError) {
-        console.warn('⚠️ No se pudo quitar la oferta de guardados, pero continuando con la aplicación:', savedError);
+        Logger.warn('⚠️ No se pudo quitar la oferta de guardados, pero continuando con la aplicación:', savedError);
         // No detenemos el proceso de aplicación si falla el quitar de guardados
       }
     } else {
-      console.log('✅ La oferta no está guardada, continuando con la aplicación');
+      Logger.log('✅ La oferta no está guardada, continuando con la aplicación');
     }
     
     // Proceder con la aplicación normal
     const response = await api.post(`/offers/${applicationData.offer_id}/apply`, applicationData);
     return response.data;
   } catch (error) {
-    console.error('❌ applyToOffer - Error:', error?.response?.data || error);
+    Logger.error('❌ applyToOffer - Error:', error?.response?.data || error);
     
     // Verificar si es un error de verificación de email usando la función helper
     const verificationError = handleEmailVerificationError(error?.response?.data || error);
     if (verificationError.isEmailVerificationError) {
-      console.log('🚨 applyToOffer - Error de verificación de email detectado');
+      Logger.log('🚨 applyToOffer - Error de verificación de email detectado');
       throw {
         ...error?.response?.data,
         isEmailVerificationError: true,
@@ -461,7 +456,7 @@ export const checkIfUserAppliedToOffer = async (offerId) => {
     
     return hasApplied;
   } catch (error) {
-    console.error('Error al verificar si el usuario aplicó a la oferta:', error);
+    Logger.error('Error al verificar si el usuario aplicó a la oferta:', error);
     // En caso de error, asumir que no aplicó para no bloquear la funcionalidad
     return false;
   }
@@ -474,7 +469,7 @@ export const toggleSavedOffer = async (offerId) => {
     const response = await api.post(`/saved-offers/${offerId}`);
     return response.data;
   } catch (error) {
-    console.error('Toggle saved offer error:', error?.response?.data || error);
+    Logger.error('Toggle saved offer error:', error?.response?.data || error);
     throw error.response?.data || { message: 'Error al guardar/eliminar oferta' };
   }
 };
@@ -484,7 +479,7 @@ export const getSavedOffers = async () => {
     const response = await api.get('/saved-offers');
     return response.data;
   } catch (error) {
-    console.error('Get saved offers error:', error?.response?.data || error);
+    Logger.error('Get saved offers error:', error?.response?.data || error);
     throw error.response?.data || { message: 'Error al obtener ofertas guardadas' };
   }
 };
@@ -496,7 +491,7 @@ export const checkIfOfferIsSaved = async (offerId) => {
     const isSaved = savedOffers.some(offer => offer.id.toString() === offerId.toString());
     return { isSaved };
   } catch (error) {
-    console.error('Check if offer is saved error:', error?.response?.data || error);
+    Logger.error('Check if offer is saved error:', error?.response?.data || error);
     return { isSaved: false }; // Return false by default if error
   }
 };
@@ -509,10 +504,10 @@ export const checkIfOfferIsSaved = async (offerId) => {
 export const getEmailVerificationStatus = async () => {
   try {
     const response = await api.get('/email/verification-status');
-    console.log('🔍 getEmailVerificationStatus - Respuesta:', response.data);
+    Logger.log('🔍 getEmailVerificationStatus - Respuesta:', response.data);
     return response.data;
   } catch (error) {
-    console.error('❌ getEmailVerificationStatus - Error:', error?.response?.data || error);
+    Logger.error('❌ getEmailVerificationStatus - Error:', error?.response?.data || error);
     throw error.response?.data || { message: 'Error al verificar estado del email' };
   }
 };
@@ -521,10 +516,10 @@ export const getEmailVerificationStatus = async () => {
 export const resendEmailVerification = async () => {
   try {
     const response = await api.post('/email/verification-notification');
-    console.log('🔍 resendEmailVerification - Respuesta:', response.data);
+    Logger.log('🔍 resendEmailVerification - Respuesta:', response.data);
     return response.data;
   } catch (error) {
-    console.error('❌ resendEmailVerification - Error:', error?.response?.data || error);
+    Logger.error('❌ resendEmailVerification - Error:', error?.response?.data || error);
     throw error.response?.data || { message: 'Error al reenviar email de verificación' };
   }
 };
@@ -533,10 +528,10 @@ export const resendEmailVerification = async () => {
 export const getEmailVerificationNotice = async () => {
   try {
     const response = await api.get('/email/verification-notice');
-    console.log('🔍 getEmailVerificationNotice - Respuesta:', response.data);
+    Logger.log('🔍 getEmailVerificationNotice - Respuesta:', response.data);
     return response.data;
   } catch (error) {
-    console.error('❌ getEmailVerificationNotice - Error:', error?.response?.data || error);
+    Logger.error('❌ getEmailVerificationNotice - Error:', error?.response?.data || error);
     throw error.response?.data || { message: 'Error al obtener información de verificación' };
   }
 };
@@ -547,7 +542,7 @@ export const checkEmailVerificationRequired = async () => {
     const statusResponse = await getEmailVerificationStatus();
     const isVerified = statusResponse.data?.email_verified || false;
     
-    console.log('🔍 checkEmailVerificationRequired - Email verificado:', isVerified);
+    Logger.log('🔍 checkEmailVerificationRequired - Email verificado:', isVerified);
     return {
       isRequired: !isVerified,
       isVerified: isVerified,
@@ -555,7 +550,7 @@ export const checkEmailVerificationRequired = async () => {
       userId: statusResponse.data?.user_id
     };
   } catch (error) {
-    console.error('❌ checkEmailVerificationRequired - Error:', error);
+    Logger.error('❌ checkEmailVerificationRequired - Error:', error);
     // En caso de error, asumir que se requiere verificación por seguridad
     return {
       isRequired: true,
@@ -572,7 +567,7 @@ export const handleEmailVerificationError = (error) => {
       error?.message === 'Debes subir un CV antes de aplicar.' ||
       error?.error?.includes('CV antes de aplicar') ||
       error?.message?.includes('CV antes de aplicar')) {
-    console.log('🔍 handleEmailVerificationError - Error de CV detectado (no es error de email)');
+    Logger.log('🔍 handleEmailVerificationError - Error de CV detectado (no es error de email)');
     return {
       isEmailVerificationError: false,
       isCVError: true
@@ -584,7 +579,7 @@ export const handleEmailVerificationError = (error) => {
       error?.message?.includes('verificar tu email') ||
       error?.message?.includes('email_verified_at') ||
       error?.action_required === 'email_verification') {
-    console.log('🚨 handleEmailVerificationError - Error de verificación de email detectado');
+    Logger.log('🚨 handleEmailVerificationError - Error de verificación de email detectado');
     return {
       isEmailVerificationError: true,
       email: error?.data?.email,
@@ -597,7 +592,7 @@ export const handleEmailVerificationError = (error) => {
   if (error?.message?.includes('Target class [verified') ||
       error?.exception?.includes('BindingResolutionException') ||
       error?.message?.includes('does not exist')) {
-    console.log('🚨 handleEmailVerificationError - Error de configuración del servidor detectado');
+    Logger.log('🚨 handleEmailVerificationError - Error de configuración del servidor detectado');
     return {
       isEmailVerificationError: true,
       isBackendError: true,

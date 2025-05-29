@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { checkEmailVerificationRequired, handleEmailVerificationError } from '../api/axios';
+import Logger from '../utils/logger';
 
 interface EmailVerificationState {
   isRequired: boolean;
@@ -26,10 +27,10 @@ export const useEmailVerification = (): UseEmailVerificationReturn => {
     try {
       const result = await checkEmailVerificationRequired();
       setVerificationState(result);
-      console.log('🔍 useEmailVerification - Estado verificación:', result);
+      Logger.log('🔍 useEmailVerification - Estado verificación:', result);
       return result.isVerified;
     } catch (error) {
-      console.error('❌ useEmailVerification - Error:', error);
+      Logger.error('❌ useEmailVerification - Error:', error);
       setVerificationState({
         isRequired: true,
         isVerified: false,
@@ -67,12 +68,12 @@ export const useEmailVerificationGuard = () => {
     needsVerification: boolean;
     verificationData?: EmailVerificationState;
   }> => {
-    console.log(`🔒 Verificando email antes de: ${actionName}`);
+    Logger.log(`🔒 Verificando email antes de: ${actionName}`);
     
     const isVerified = await checkVerification();
     
     if (!isVerified) {
-      console.log(`🚫 Email no verificado para: ${actionName}`);
+      Logger.log(`🚫 Email no verificado para: ${actionName}`);
       return {
         canProceed: false,
         needsVerification: true,
@@ -80,7 +81,7 @@ export const useEmailVerificationGuard = () => {
       };
     }
     
-    console.log(`✅ Email verificado para: ${actionName}`);
+    Logger.log(`✅ Email verificado para: ${actionName}`);
     return {
       canProceed: true,
       needsVerification: false

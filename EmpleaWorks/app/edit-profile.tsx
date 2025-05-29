@@ -18,6 +18,7 @@ import { Alert } from 'react-native'; // Mantener Alert para confirmaciones
 import { Text } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
 import { updateProfile, getProfile } from '@/api/axios';
+import Logger from '../utils/logger';
 import { router } from 'expo-router';
 import { useEmailVerificationGuard } from '@/hooks/useEmailVerification';
 import EmailVerificationScreen from '@/components/EmailVerificationScreen';
@@ -353,7 +354,7 @@ const formatImageUrl = (imagePath: string | null): string | null => {
   } else {
     // Using the same direct format as profile page
     const imageUrl = `https://emplea.works/storage/${imagePath}`;
-    console.log('Edit profile - formatted image URL:', imageUrl);
+    Logger.log('Edit profile - formatted image URL:', imageUrl);
     return imageUrl;
   }
 };
@@ -363,7 +364,7 @@ const LinearGradient = (props: any) => {
   try {
     return <ExpoLinearGradient {...props} />;
   } catch (error) {
-    console.warn('LinearGradient error, using fallback View:', error);
+    Logger.warn('LinearGradient error, using fallback View:', error);
     const { style, children } = props;
     return <RNView style={[style, { backgroundColor: '#4A2976' }]}>{children}</RNView>;
   }
@@ -465,7 +466,7 @@ export default function EditProfileScreen() {
         
         // Si no hay datos en AsyncStorage, obtener de la API
         const profileData = await getProfile();
-        console.log('Datos de perfil para edición obtenidos:', profileData);
+        Logger.log('Datos de perfil para edición obtenidos:', profileData);
         
         setName(profileData.name || '');
         setEmail(profileData.email || '');
@@ -481,7 +482,7 @@ export default function EditProfileScreen() {
         // Obtener la imagen de perfil - verificar tanto image como profileImage y formatear URL
         const profileImagePath = profileData.image || profileData.candidate?.profileImage || profileData.profileImage || null;
         setProfileImage(profileImagePath ? formatImageUrl(profileImagePath) : null);
-        console.log('URL de imagen formateada:', formatImageUrl(profileImagePath));
+        Logger.log('URL de imagen formateada:', formatImageUrl(profileImagePath));
 
         // Obtener el CV
         if (profileData.candidate?.cv) {
@@ -489,9 +490,9 @@ export default function EditProfileScreen() {
           setCvName(extractFileName(profileData.candidate.cv.uri || profileData.candidate.cv) || 'CV subido');
         }
         
-        console.log('Formulario inicializado con datos completos del perfil');
+        Logger.log('Formulario inicializado con datos completos del perfil');
       } catch (error) {
-        console.error('Error cargando datos de perfil:', error);
+        Logger.error('Error cargando datos de perfil:', error);
         // Cargar desde el contexto como fallback si la API falla
         setName(user?.name || '');
         setSurname(user?.candidate?.surname || user?.surname || '');
@@ -585,10 +586,10 @@ export default function EditProfileScreen() {
         }
         
         setNewImageSelected(true);
-        console.log('Imagen seleccionada:', selectedImage.uri, 'tipo:', selectedImage.type || 'desconocido');
+        Logger.log('Imagen seleccionada:', selectedImage.uri, 'tipo:', selectedImage.type || 'desconocido');
       }
     } catch (error) {
-      console.error('Error seleccionando imagen:', error);
+      Logger.error('Error seleccionando imagen:', error);
       showAppAlert('error', 'No se pudo cargar la imagen', 'Error');
     } finally {
       setUploadingImage(false);
@@ -611,10 +612,10 @@ export default function EditProfileScreen() {
         setCv(selectedFile);
         setCvName(selectedFile.name || extractFileName(selectedFile.uri));
         setNewCvSelected(true); 
-        console.log('Documento seleccionado:', selectedFile.uri);
+        Logger.log('Documento seleccionado:', selectedFile.uri);
       }
     } catch (error) {
-      console.error('Error seleccionando CV:', error);
+      Logger.error('Error seleccionando CV:', error);
       showAppAlert('error', 'No se pudo cargar el documento', 'Error');
     } finally {
       setUploadingCV(false);
@@ -630,7 +631,7 @@ export default function EditProfileScreen() {
 
   // Función para depuración
   const logUserData = () => {
-    console.log('Datos actuales del usuario:', {
+    Logger.log('Datos actuales del usuario:', {
       name: user?.name,
       email: user?.email,
       surname: user?.surname,
@@ -655,7 +656,7 @@ export default function EditProfileScreen() {
             setProfileImage(null);
             setImageRemoved(true); 
             setNewImageSelected(true); 
-            console.log('Imagen de perfil eliminada');
+            Logger.log('Imagen de perfil eliminada');
           }
         }
       ]
@@ -663,23 +664,23 @@ export default function EditProfileScreen() {
   };
   const handleSave = async () => {
     // 🔒 VERIFICACIÓN DE EMAIL REQUERIDA
-    console.log('🔒 Verificando email antes de actualizar perfil');
+    Logger.log('🔒 Verificando email antes de actualizar perfil');
     
     const verificationResult = await checkBeforeAction('actualizar perfil');
     
     if (verificationResult.needsVerification) {
-      console.log('🚫 Email no verificado, mostrando pantalla de verificación');
+      Logger.log('🚫 Email no verificado, mostrando pantalla de verificación');
       setShowEmailVerification(true);
       return;
     }
     
-    console.log('✅ Email verificado, procediendo con actualización de perfil');
+    Logger.log('✅ Email verificado, procediendo con actualización de perfil');
     
     setLoading(true);
     logUserData(); // Imprimir datos actuales para depuración
     
     try {
-      console.log('Preparando datos para actualización de perfil');
+      Logger.log('Preparando datos para actualización de perfil');
       
       const formData = new FormData();
       
@@ -695,9 +696,9 @@ export default function EditProfileScreen() {
       if (newImageSelected) {
         if (imageRemoved || !profileImage) {
           formData.append('delete_image', '1');
-          console.log('Solicitando eliminación de imagen de perfil con delete_image=1');
+          Logger.log('Solicitando eliminación de imagen de perfil con delete_image=1');
         } else if (profileImage) {
-          console.log('Preparando imagen para subir...');
+          Logger.log('Preparando imagen para subir...');
           const uri = profileImage;
           const uriParts = uri.split('.');
           const fileExtension = uriParts[uriParts.length - 1];
@@ -706,33 +707,33 @@ export default function EditProfileScreen() {
             name: `photo.${fileExtension}`,
             type: `image/${fileExtension === 'jpg' ? 'jpeg' : fileExtension}`
           } as any);
-          console.log('Imagen preparada para envío');
+          Logger.log('Imagen preparada para envío');
         }
       }
       
       // Procesar el CV si se seleccionó uno nuevo o se eliminó
       if (newCvSelected) {
         if (cv && cv.uri) {
-          console.log('Preparando CV para subir...');
+          Logger.log('Preparando CV para subir...');
           formData.append('cv', {
             uri: cv.uri,
             name: cv.name || 'document.pdf',
             type: cv.mimeType || 'application/pdf'
           } as any);
-          console.log('CV preparado para envío');
+          Logger.log('CV preparado para envío');
         } else {
           formData.append('delete_cv', '1');
-          console.log('Solicitando eliminación de CV con delete_cv=1');
+          Logger.log('Solicitando eliminación de CV con delete_cv=1');
         }
       }
       
-      console.log('Enviando datos de actualización con FormData');
+      Logger.log('Enviando datos de actualización con FormData');
       
       const updated = await updateProfile(formData);
-      console.log('Perfil actualizado correctamente');
+      Logger.log('Perfil actualizado correctamente');
       
       if (setUser) {
-        console.log('Actualizando usuario en el contexto');
+        Logger.log('Actualizando usuario en el contexto');
         setUser(updated.user || updated);
         
         if (imageRemoved) {
@@ -753,7 +754,7 @@ export default function EditProfileScreen() {
       try {
         await AsyncStorage.removeItem('edit_profile_data');
       } catch (e) {
-        console.error('Error limpiando caché:', e);
+        Logger.error('Error limpiando caché:', e);
       }
       
       // Show success alert - REMOVED setTimeout to prevent setState during render
@@ -766,7 +767,7 @@ export default function EditProfileScreen() {
       });
 
     } catch (error: any) {
-      console.error('Error en actualización de perfil:', error);
+      Logger.error('Error en actualización de perfil:', error);
       let finalErrorMessage = 'No se pudo actualizar el perfil';
       if (error?.errors) {
         finalErrorMessage = Object.entries(error.errors)
