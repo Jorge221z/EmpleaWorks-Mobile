@@ -359,6 +359,24 @@ export const createOffer = async (offerData) => {
 // Aplicar a una oferta
 export const applyToOffer = async (applicationData) => {
   try {
+    // 🔍 Verificar si la oferta está en guardados antes de aplicar
+    console.log('🔍 Verificando si la oferta está guardada antes de aplicar...');
+    const savedStatus = await checkIfOfferIsSaved(applicationData.offer_id);
+    
+    if (savedStatus.isSaved) {
+      console.log('📌 La oferta está guardada, quitándola de guardados antes de aplicar...');
+      try {
+        await toggleSavedOffer(applicationData.offer_id);
+        console.log('✅ Oferta removida de guardados exitosamente');
+      } catch (savedError) {
+        console.warn('⚠️ No se pudo quitar la oferta de guardados, pero continuando con la aplicación:', savedError);
+        // No detenemos el proceso de aplicación si falla el quitar de guardados
+      }
+    } else {
+      console.log('✅ La oferta no está guardada, continuando con la aplicación');
+    }
+    
+    // Proceder con la aplicación normal
     const response = await api.post(`/offers/${applicationData.offer_id}/apply`, applicationData);
     return response.data;
   } catch (error) {
