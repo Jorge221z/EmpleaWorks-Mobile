@@ -223,7 +223,7 @@ export default function WelcomeScreen() {
   }, []);
 
   const features = [
-    { icon: 'search', text: 'Explora miles de ofertas de trabajo' },
+    { icon: 'search', text: 'Explora ofertas de trabajo' },
     { icon: 'bookmark', text: 'Guarda las ofertas que te interesan' },
     { icon: 'user', text: 'Crea tu perfil profesional' },
     { icon: 'paper-plane', text: 'Aplica a empleos con un click' },
@@ -288,7 +288,7 @@ export default function WelcomeScreen() {
               <View style={styles.titleSection}>
                 <Text style={styles.title}>EmpleaWorks</Text>
                 <Text style={styles.subtitle}>
-                  Tu plataforma ideal para encontrar{'\n'}trabajo en la zona de Yecla y alrededores
+                  Tu plataforma ideal para conectar talento y oportunidades laborales
                 </Text>
               </View>
             </View>

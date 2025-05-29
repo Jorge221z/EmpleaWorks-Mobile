@@ -451,7 +451,7 @@ export default function LoginScreen() {
                 />
                 <SmoothPressable onPress={() => setShowPassword(!showPassword)} scaleValue={0.9}>
                   <FontAwesome 
-                    name={showPassword ? "eye" : "eye-slash"} 
+                    name={showPassword ? "eye-slash" : "eye"} 
                     size={20} 
                     color={COLORS.lightText} 
                   />
@@ -500,7 +500,7 @@ export default function LoginScreen() {
             {/* Divider */}
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>o continúa con</Text>
+              <Text style={styles.dividerText}>O continúa con</Text>
               <View style={styles.dividerLine} />
             </View>
 
