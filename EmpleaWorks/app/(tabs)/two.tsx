@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Animated } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Animated, Alert, Linking } from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 
 import EditScreenInfo from '@/components/EditScreenInfo';
@@ -239,14 +239,7 @@ export default function TabTwoScreen() {
           {/* Botones de acción */}
           <View style={styles.notCandidateButtonsContainer}>
             <TouchableOpacity 
-              style={[
-                styles.notCandidateButton, 
-                styles.secondaryButton, 
-                { 
-                  borderColor: colors.buttonSecondaryBorder,
-                  backgroundColor: colors.buttonSecondary
-                }
-              ]}
+              style={styles.notCandidatePrimaryButton}
               onPress={() => {
                 setIsNotCandidate(false);
                 setError(null);
@@ -254,46 +247,43 @@ export default function TabTwoScreen() {
               }}
               activeOpacity={0.7}
             >
-              <FontAwesome name="refresh" size={16} color={colors.buttonSecondaryText} style={{ marginRight: 8 }} />
-              <Text style={[styles.notCandidateButtonText, { color: colors.buttonSecondaryText }]}>
-                Intentar de Nuevo
-              </Text>
+              <LinearGradient
+                colors={[colors.primary, colors.secondary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.notCandidatePrimaryButtonGradient}
+              >
+                <FontAwesome name="refresh" size={16} color="#ffffff" />
+                <Text style={styles.notCandidatePrimaryButtonText}>Intentar de Nuevo</Text>
+              </LinearGradient>
             </TouchableOpacity>
             
             <TouchableOpacity 
               style={[
-                styles.notCandidateButton, 
-                styles.secondaryButton, 
+                styles.notCandidateSecondaryButton, 
                 { 
-                  borderColor: colors.buttonSecondaryBorder,
-                  backgroundColor: colors.buttonSecondary
+                  backgroundColor: colors.buttonSecondary,
+                  borderColor: colors.buttonSecondaryBorder
                 }
               ]}
               onPress={() => router.back()}
               activeOpacity={0.7}
             >
-              <FontAwesome name="arrow-left" size={16} color={colors.buttonSecondaryText} style={{ marginRight: 8 }} />
-              <Text style={[styles.notCandidateButtonText, { color: colors.buttonSecondaryText }]}>
+              <FontAwesome name="arrow-left" size={16} color={colors.buttonSecondaryText} />
+              <Text style={[styles.notCandidateSecondaryButtonText, { color: colors.buttonSecondaryText }]}>
                 Volver Atrás
               </Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={[styles.notCandidateButton, styles.primaryButton]}
+              style={[styles.notCandidateLogoutButton, { borderColor: colors.error }]}
               onPress={logout}
               activeOpacity={0.7}
             >
-              <LinearGradient
-                colors={[colors.primary, colors.secondary]}
-                style={styles.buttonGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <FontAwesome name="sign-out" size={16} color="#ffffff" style={{ marginRight: 8 }} />
-                <Text style={[styles.notCandidateButtonText, { color: '#ffffff' }]}>
-                  Cerrar Sesión
-                </Text>
-              </LinearGradient>
+              <FontAwesome name="sign-out" size={16} color={colors.error} />
+              <Text style={[styles.notCandidateLogoutButtonText, { color: colors.error }]}>
+                Cerrar Sesión
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -755,41 +745,60 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   notCandidateButtonsContainer: {
-    flexDirection: 'column',
     width: '100%',
-    gap: 12,
+    backgroundColor: 'transparent',
   },
-  notCandidateButton: {
-    borderRadius: 12,
+  notCandidatePrimaryButton: {
+    borderRadius: 16,
     overflow: 'hidden',
-    minHeight: 50,
-  },
-  secondaryButton: {
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    elevation: 2,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-  },
-  primaryButton: {
     elevation: 3,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowRadius: 8,
+    marginBottom: 12,
   },
-  buttonGradient: {
-    flexDirection: 'row',
+  notCandidatePrimaryButtonGradient: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
-    minHeight: 50,
+    flexDirection: 'row',
   },
-  notCandidateButtonText: {
+  notCandidatePrimaryButtonText: {
+    color: '#ffffff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  notCandidateSecondaryButton: {
+    borderWidth: 2,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  notCandidateSecondaryButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  notCandidateLogoutButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  notCandidateLogoutButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
 });
