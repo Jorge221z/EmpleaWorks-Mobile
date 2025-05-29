@@ -60,12 +60,13 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => ({
   logoSection: {
     alignItems: 'center' as const,
     marginTop: 40,
-  },
-  logoContainer: {
+  },  logoContainer: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: colors.background === '#000000' 
+      ? 'rgba(60, 60, 70, 0.8)' 
+      : 'rgba(230, 230, 240, 0.85)',
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     marginBottom: 30,
