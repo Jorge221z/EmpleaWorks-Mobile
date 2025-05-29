@@ -1,53 +1,68 @@
 import React, { useState, useEffect } from 'react';
 import {
+  View,
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
+  Alert,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
   Animated,
   Dimensions,
-  View as RNView,
-  Text as RNText,
-  Modal
+  Platform,
+  Modal,
+  KeyboardAvoidingView,
 } from 'react-native';
-import { Text, View } from '@/components/Themed';
+import { Text } from '@/components/Themed';
 import { router } from 'expo-router';
-import { getPasswordSettings, updatePassword } from '@/api/axios';
 import { FontAwesome } from '@expo/vector-icons';
+import { updatePassword, getPasswordSettings } from '@/api/axios';
 import { useEmailVerificationGuard } from '@/hooks/useEmailVerification';
 import EmailVerificationScreen from '@/components/EmailVerificationScreen';
+import { useColorScheme } from '@/components/useColorScheme';
 
-// Enhanced design constants
-const COLORS = {
-  primary: '#4A2976',
-  primaryLight: '#6B46A3',
-  primaryDark: '#3d2c52',
-  secondary: '#9b6dff',
-  accent: '#f6c667',
-  background: '#f8f9fa',
-  text: '#333',
-  textLight: '#666',
-  error: '#e74c3c',
-  success: '#2ecc71',
-  white: '#ffffff',
-  border: 'rgba(43, 31, 60, 0.2)',
-  buttonText: '#ffffff',
-  buttonSecondaryText: '#4A2976',
-  disabledButton: '#a0a0a0',
-  shadow: 'rgba(0, 0, 0, 0.15)'
+// Helper function to get theme-based colors
+const getThemeColors = (colorScheme: string | null | undefined) => {
+  const isDark = colorScheme === 'dark';
+  return {
+    primary: '#4A2976',
+    primaryLight: isDark ? '#5e3a8a' : '#6B46A3',
+    primaryDark: '#3d2c52',
+    secondary: '#9b6dff',
+    accent: '#f6c667',
+    background: isDark ? '#121212' : '#f8f9fa',
+    cardBackground: isDark ? '#1e1e1e' : '#ffffff',
+    text: isDark ? '#f0f0f0' : '#333',
+    lightText: isDark ? '#bbbbbb' : '#666',
+    error: '#e74c3c',
+    success: '#2ecc71',
+    border: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(43, 31, 60, 0.2)',
+    buttonText: '#ffffff',
+    buttonSecondaryText: isDark ? '#f0f0f0' : '#4A2976',
+    disabledButton: '#a0a0a0',
+    shadowColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0, 0, 0, 0.15)',
+    inputBackground: isDark ? '#2d2d2d' : 'rgba(255, 255, 255, 0.8)',
+    iconColor: isDark ? '#b794f6' : '#4A2976',
+    headerTitleColor: '#ffffff',
+    errorBackground: isDark ? 'rgba(231, 76, 60, 0.2)' : 'rgba(231, 76, 60, 0.1)',
+    infoBackground: isDark ? 'rgba(155, 109, 255, 0.2)' : 'rgba(155, 109, 255, 0.1)',
+    infoBorder: isDark ? 'rgba(155, 109, 255, 0.4)' : 'rgba(155, 109, 255, 0.3)',
+    white: isDark ? '#1e1e1e' : '#ffffff',
+  };
 };
 
 export default function ChangePasswordScreen() {
+  const colorScheme = useColorScheme();
+  const COLORS = getThemeColors(colorScheme);
+  const styles = createStyles(COLORS);
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [isGoogleUser, setIsGoogleUser] = useState(false);  const [errors, setErrors] = useState({
+  const [isGoogleUser, setIsGoogleUser] = useState(false);
+  const [errors, setErrors] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
@@ -231,7 +246,7 @@ export default function ChangePasswordScreen() {
   if (initialLoading) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
-        <View style={styles.loaderContainer}>
+        <View style={styles.loaderCard}>
           <ActivityIndicator size="large" color={COLORS.secondary} />
           <Text style={styles.loadingText}>Cargando configuración...</Text>
         </View>
@@ -264,7 +279,7 @@ export default function ChangePasswordScreen() {
             <View style={styles.infoContainer}>
               <FontAwesome name="google" size={40} color={COLORS.secondary} style={styles.googleIcon} />
               <Text style={styles.infoText}>
-                No puedes cambiar la contraseña porque tu cuenta está vinculada a Google.{"\n"}
+                No puedes cambiar la contraseña porque tu cuenta está vinculada a Google.
                 Por favor, gestiona tu contraseña a través de tu cuenta de Google.
               </Text>
               <TouchableOpacity
@@ -272,10 +287,9 @@ export default function ChangePasswordScreen() {
                 onPress={() => router.push('/profile')}
                 activeOpacity={0.8}
               >
-                <RNView style={styles.buttonContentSimple}>
-                  <FontAwesome name="arrow-left" size={18} color={COLORS.buttonSecondaryText} style={styles.buttonIconLeft} />
-                  <RNText style={styles.buttonSecondaryText}>Volver al Perfil</RNText>
-                </RNView>
+                <View style={styles.buttonContentSimple}>
+                  <Text style={styles.buttonSecondaryText}>Volver al Perfil</Text>
+                </View>
               </TouchableOpacity>
             </View>
           ) : (
@@ -283,71 +297,58 @@ export default function ChangePasswordScreen() {
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Contraseña Actual</Text>
                 <View style={styles.inputWrapper}>
-                  <FontAwesome name="lock" size={18} color={COLORS.primary} style={styles.inputIcon} />
+                  <FontAwesome name="lock" size={20} color={COLORS.iconColor} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
+                    placeholder="Tu contraseña actual"
+                    placeholderTextColor={COLORS.lightText}
                     secureTextEntry
                     value={currentPassword}
                     onChangeText={setCurrentPassword}
-                    placeholder="Ingresa tu contraseña actual"
-                    placeholderTextColor="#999"
                   />
                 </View>
-                {errors.currentPassword ? (
-                  <Text style={styles.errorText}>
-                    <FontAwesome name="exclamation-circle" size={14} color={COLORS.error} /> {errors.currentPassword}
-                  </Text>
-                ) : null}
+                {errors.currentPassword ? <Text style={styles.errorText}>{errors.currentPassword}</Text> : null}
               </View>
 
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Nueva Contraseña</Text>
                 <View style={styles.inputWrapper}>
-                  <FontAwesome name="key" size={18} color={COLORS.primary} style={styles.inputIcon} />
+                  <FontAwesome name="key" size={20} color={COLORS.iconColor} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
+                    placeholder="Mínimo 8 caracteres"
+                    placeholderTextColor={COLORS.lightText}
                     secureTextEntry
                     value={newPassword}
                     onChangeText={setNewPassword}
-                    placeholder="Ingresa tu nueva contraseña"
-                    placeholderTextColor="#999"
                   />
                 </View>
-                {errors.newPassword ? (
-                  <Text style={styles.errorText}>
-                    <FontAwesome name="exclamation-circle" size={14} color={COLORS.error} /> {errors.newPassword}
-                  </Text>
-                ) : null}
+                {errors.newPassword ? <Text style={styles.errorText}>{errors.newPassword}</Text> : null}
               </View>
 
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Confirmar Nueva Contraseña</Text>
                 <View style={styles.inputWrapper}>
-                  <FontAwesome name="key" size={18} color={COLORS.primary} style={styles.inputIcon} />
+                  <FontAwesome name="key" size={20} color={COLORS.iconColor} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
+                    placeholder="Repite la nueva contraseña"
+                    placeholderTextColor={COLORS.lightText}
                     secureTextEntry
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
-                    placeholder="Confirma tu nueva contraseña"
-                    placeholderTextColor="#999"
                   />
                 </View>
-                {errors.confirmPassword ? (
-                  <Text style={styles.errorText}>
-                    <FontAwesome name="exclamation-circle" size={14} color={COLORS.error} /> {errors.confirmPassword}
-                  </Text>
-                ) : null}
+                {errors.confirmPassword ? <Text style={styles.errorText}>{errors.confirmPassword}</Text> : null}
               </View>
 
               {errors.general ? (
                 <View style={styles.generalErrorContainer}>
-                  <FontAwesome name="exclamation-triangle" size={20} color={COLORS.error} />
+                  <FontAwesome name="exclamation-circle" size={20} color={COLORS.error} style={styles.inputIcon} />
                   <Text style={styles.generalErrorText}>{errors.general}</Text>
                 </View>
               ) : null}
 
-              {/* Enhanced Vertical Button Layout */}
               <View style={styles.buttonContainer}>
                 <TouchableOpacity
                   style={[styles.buttonPrimary, loading && styles.buttonDisabled]}
@@ -355,28 +356,27 @@ export default function ChangePasswordScreen() {
                   disabled={loading}
                   activeOpacity={0.8}
                 >
-                  <RNView style={styles.buttonContent}>
+                  <View style={styles.buttonContent}>
                     {loading ? (
-                      <ActivityIndicator size="small" color={COLORS.white} />
+                      <ActivityIndicator color={COLORS.buttonText} />
                     ) : (
                       <>
-                        <FontAwesome name="check" size={18} color={COLORS.white} style={styles.buttonIconLeft} />
-                        <RNText style={styles.buttonPrimaryText}>Guardar Cambios</RNText>
+                        <FontAwesome name="save" size={18} color={COLORS.buttonText} style={styles.buttonIconLeft} />
+                        <Text style={styles.buttonPrimaryText}>Guardar Cambios</Text>
                       </>
                     )}
-                  </RNView>
+                  </View>
                 </TouchableOpacity>
-
                 <TouchableOpacity
                   style={styles.buttonSecondary}
-                  onPress={() => router.push('/profile')}
+                  onPress={() => router.back()}
                   disabled={loading}
                   activeOpacity={0.8}
                 >
-                  <RNView style={styles.buttonContent}>
-                    <FontAwesome name="arrow-left" size={18} color={COLORS.buttonSecondaryText} style={styles.buttonIconLeft} />
-                    <RNText style={styles.buttonSecondaryText}>Cancelar</RNText>
-                  </RNView>
+                  <View style={styles.buttonContentSimple}>
+                     <FontAwesome name="times" size={18} color={COLORS.buttonSecondaryText} style={styles.buttonIconLeft} />
+                    <Text style={styles.buttonSecondaryText}>Cancelar</Text>
+                  </View>
                 </TouchableOpacity>
               </View>
             </>
@@ -405,233 +405,218 @@ export default function ChangePasswordScreen() {
   );
 }
 
-const { width } = Dimensions.get('window');
-
-const styles = StyleSheet.create({
-  keyboardAvoidingView: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-  },
-  headerGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 180,
-    zIndex: 0,
-    backgroundColor: COLORS.primary,
-  },
-  headerContainer: {
-    paddingTop: 40,
-    paddingBottom: 20,
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-  },
-  loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loaderContainer: {
-    backgroundColor: COLORS.white,
-    padding: 25,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.white,
-    marginBottom: 5,
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  formContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 15,
-    padding: 20,
-    marginTop: 15,
-    marginBottom: 30,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-  },
-  inputContainer: {
-    width: '100%',
-    marginBottom: 20,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    paddingHorizontal: 12,
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 8,
-    fontWeight: '600',
-    color: COLORS.primary,
-    letterSpacing: 0.3,
-  },
-  input: {
-    flex: 1,
-    padding: 12,
-    fontSize: 16,
-    color: COLORS.text,
-  },
-  errorText: {
-    color: COLORS.error,
-    fontSize: 14,
-    marginTop: 5,
-    fontWeight: '500',
-  },
-  generalErrorContainer: {
-    backgroundColor: 'rgba(231, 76, 60, 0.1)',
-    borderRadius: 10,
-    padding: 15,
-    marginVertical: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  generalErrorText: {
-    color: COLORS.error,
-    fontSize: 15,
-    marginLeft: 10,
-    flex: 1,
-    fontWeight: '500',
-  },
-
-  // Enhanced Vertical Button Layout
-  buttonContainer: {
-    width: '100%',
-    marginTop: 30,
-    marginBottom: 10,
-    gap: 16, // Space between buttons
-  },
-
-  // Primary Button (Save Changes)
-  buttonPrimary: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 18,
-    paddingHorizontal: 24,
-    borderRadius: 14,
-    width: '100%',
-    elevation: 4,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    borderWidth: 0,
-  },
-
-  // Secondary Button (Cancel)
-  buttonSecondary: {
-    backgroundColor: COLORS.white,
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-    paddingVertical: 18,
-    paddingHorizontal: 24,
-    borderRadius: 14,
-    width: '100%',
-    elevation: 2,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-  },
-
-  buttonDisabled: {
-    backgroundColor: COLORS.disabledButton,
-    elevation: 1,
-    shadowOpacity: 0.1,
-  },
-
-  // Button Content Container
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-  },
-
-  buttonContentSimple: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-  },
-
-  // Button Text Styles
-  buttonPrimaryText: {
-    color: COLORS.white,
-    fontWeight: '700',
-    fontSize: 17,
-    letterSpacing: 0.5,
-    textAlign: 'center',
-    backgroundColor: 'transparent',
-  },
-
-  buttonSecondaryText: {
-    color: COLORS.buttonSecondaryText,
-    fontWeight: '700',
-    fontSize: 17,
-    letterSpacing: 0.5,
-    textAlign: 'center',
-    backgroundColor: 'transparent',
-  },
-
-  // Icon Positioning
-  buttonIconLeft: {
-    marginRight: 10,
-  },
-
-  loadingText: {
-    marginTop: 15,
-    fontSize: 16,
-    color: COLORS.primary,
-    fontWeight: '500',
-  },
-  infoContainer: {
-    backgroundColor: 'rgba(155, 109, 255, 0.1)',
-    borderRadius: 15,
-    padding: 25,
-    width: '100%',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(155, 109, 255, 0.3)',
-  },
-  googleIcon: {
-    marginBottom: 15,
-  },
-  infoText: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 25,
-    lineHeight: 24,
-    color: COLORS.text,
-    fontWeight: '500',
-  },
-});
+// Create styles dynamically based on theme
+const createStyles = (COLORS: ReturnType<typeof getThemeColors>) => {
+  const { width } = Dimensions.get('window');
+  return StyleSheet.create({
+    keyboardAvoidingView: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
+    headerGradient: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 180,
+      zIndex: 0,
+      backgroundColor: COLORS.primary,
+    },
+    headerContainer: {
+      paddingTop: Platform.OS === 'ios' ? 60 : 40,
+      paddingBottom: 20,
+      alignItems: 'center',
+      zIndex: 1,
+    },
+    scrollContainer: {
+      flexGrow: 1,
+      paddingHorizontal: 20,
+      paddingBottom: 30,
+    },
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loaderCard: {
+      backgroundColor: COLORS.cardBackground,
+      padding: 25,
+      borderRadius: 15,
+      alignItems: 'center',
+      justifyContent: 'center',
+      elevation: 5,
+      shadowColor: COLORS.shadowColor,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: COLORS.headerTitleColor,
+      marginBottom: 5,
+      textAlign: 'center',
+      textShadowColor: 'rgba(0, 0, 0, 0.3)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 2,
+    },
+    formContainer: {
+      backgroundColor: COLORS.cardBackground,
+      borderRadius: 15,
+      padding: 20,
+      marginTop: 15,
+      marginBottom: 30,
+      elevation: 5,
+      shadowColor: COLORS.shadowColor,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
+    },
+    inputContainer: {
+      width: '100%',
+      marginBottom: 20,
+    },
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: COLORS.border,
+      borderRadius: 10,
+      backgroundColor: COLORS.inputBackground,
+      paddingHorizontal: 12,
+    },
+    inputIcon: {
+      marginRight: 10,
+    },
+    label: {
+      fontSize: 16,
+      marginBottom: 8,
+      fontWeight: '600',
+      color: COLORS.text,
+      letterSpacing: 0.3,
+    },
+    input: {
+      flex: 1,
+      paddingVertical: 12,
+      paddingHorizontal: 8,
+      fontSize: 16,
+      color: COLORS.text,
+    },
+    errorText: {
+      color: COLORS.error,
+      fontSize: 14,
+      marginTop: 5,
+      fontWeight: '500',
+    },
+    generalErrorContainer: {
+      backgroundColor: COLORS.errorBackground,
+      borderRadius: 10,
+      padding: 15,
+      marginVertical: 15,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    generalErrorText: {
+      color: COLORS.error,
+      fontSize: 15,
+      marginLeft: 10,
+      flex: 1,
+      fontWeight: '500',
+    },
+    buttonContainer: {
+      width: '100%',
+      marginTop: 30,
+      marginBottom: 10,
+      gap: 16,
+    },
+    buttonPrimary: {
+      backgroundColor: COLORS.primary,
+      paddingVertical: 18,
+      paddingHorizontal: 24,
+      borderRadius: 14,
+      width: '100%',
+      elevation: 4,
+      shadowColor: COLORS.shadowColor,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.3,
+      shadowRadius: 6,
+      borderWidth: 0,
+    },
+    buttonSecondary: {
+      backgroundColor: COLORS.cardBackground,
+      borderWidth: 2,
+      borderColor: COLORS.primary,
+      paddingVertical: 18,
+      paddingHorizontal: 24,
+      borderRadius: 14,
+      width: '100%',
+      elevation: 2,
+      shadowColor: COLORS.shadowColor,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+    },
+    buttonDisabled: {
+      backgroundColor: COLORS.disabledButton,
+      elevation: 1,
+      shadowOpacity: 0.1,
+    },
+    buttonContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    buttonContentSimple: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    buttonPrimaryText: {
+      color: COLORS.buttonText,
+      fontWeight: '700',
+      fontSize: 17,
+      letterSpacing: 0.5,
+      textAlign: 'center',
+    },
+    buttonSecondaryText: {
+      color: COLORS.buttonSecondaryText,
+      fontWeight: '700',
+      fontSize: 17,
+      letterSpacing: 0.5,
+      textAlign: 'center',
+    },
+    buttonIconLeft: {
+      marginRight: 10,
+    },
+    loadingText: {
+      marginTop: 15,
+      fontSize: 16,
+      color: COLORS.primary,
+      fontWeight: '500',
+    },
+    infoContainer: {
+      backgroundColor: COLORS.infoBackground,
+      borderRadius: 15,
+      padding: 25,
+      width: '100%',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: COLORS.infoBorder,
+    },
+    googleIcon: {
+      marginBottom: 15,
+    },
+    infoText: {
+      fontSize: 16,
+      textAlign: 'center',
+      marginBottom: 25,
+      lineHeight: 24,
+      color: COLORS.text,
+      fontWeight: '500',
+    },
+  });
+};
