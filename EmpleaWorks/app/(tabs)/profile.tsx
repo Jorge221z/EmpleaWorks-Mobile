@@ -12,6 +12,11 @@ import Colors from '@/constants/Colors';
 import NotificationTestPanel from '@/components/NotificationTestPanel';
 import SimpleNotificationTest from '@/components/SimpleNotificationTest';
 import NotificationDebugger from '@/components/NotificationDebugger';
+import ScreenTransition from '@/components/ScreenTransition';
+import SmoothPressable from '@/components/SmoothPressable';
+import TabContentTransition from '@/components/TabContentTransition';
+import { useActiveTab } from '@/hooks/useActiveTab';
+import TabScreenWrapper from '@/components/TabScreenWrapper';
 
 // Constantes de diseño
 const getThemeColors = (colorScheme: string) => {
@@ -475,6 +480,7 @@ export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const COLORS = getThemeColors(colorScheme || 'light');
   const styles = createStyles(COLORS);
+  const { isTabActive } = useActiveTab();
 
   const { user: contextUser, logout, isAuthenticated, setUser } = useAuth();
   // Estado local para almacenar los datos del candidato
@@ -662,11 +668,10 @@ export default function ProfileScreen() {
         );
       }
 
-      // Forzar una recarga completa
-      loadUserData();
+      // Forzar una recarga completa      loadUserData();
 
       // Elimina el parámetro para evitar recargas futuras
-      expoRouter.setParams({ refresh: undefined, timestamp: undefined });
+      // expoRouter.setParams({ refresh: undefined, timestamp: undefined });
     }
   }, [params.refresh, params.timestamp, loadUserData, expoRouter]);
 
@@ -705,7 +710,8 @@ export default function ProfileScreen() {
   // Función para manejar el proceso de logout
   const handleLogout = async () => {
     try {
-      setLoading(true);      await logout();
+      setLoading(true);
+      await logout();
       // Después de cerrar sesión, redirige al usuario a la página de welcome
       router.replace('/welcome');
     } catch (error) {
@@ -731,7 +737,8 @@ export default function ProfileScreen() {
   useEffect(() => {
     if (!isAuthenticated) {
       router.replace('/welcome');
-    }  }, [isAuthenticated]);
+    }
+  }, [isAuthenticated]);
 
   // Función helper para acceder al apellido (con mejor depuración)
   const getSurname = (userData: any) => {
@@ -845,11 +852,9 @@ export default function ProfileScreen() {
     }
 
     router.push('/edit-profile');
-  };
-
-  const { width } = Dimensions.get('window');
-
+  };  const { width } = Dimensions.get('window');
   return (
+    <TabContentTransition isActive={isTabActive()} animationType="fade">
     <View style={styles.container}>
       {/* Enhanced header with gradient */}
       <LinearGradient
@@ -941,7 +946,9 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.emailContainer}>
               <FontAwesome name="envelope" size={14} color={COLORS.golden} style={styles.emailIcon} />
-              <Text style={styles.userEmail}>{user?.email || 'correo@ejemplo.com'}</Text>
+              <Text style={styles.userEmail}>
+                {user?.email || 'correo@ejemplo.com'}
+              </Text>
             </View>
 
             {error && (
@@ -1145,9 +1152,10 @@ export default function ProfileScreen() {
                 )}
               </LinearGradient>
             </TouchableOpacity>
-          </View>
-        </Animated.View>
+            </View>
+          </Animated.View>
       </ScrollView>
     </View>
+    </TabContentTransition>
   );
 }

@@ -7,6 +7,12 @@ import { router } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import ScreenTransition from '@/components/ScreenTransition';
+import SmoothPressable from '@/components/SmoothPressable';
+import { getScreenTransitionConfig, getUIElementConfig } from '@/constants/TransitionConfig';
+import TabContentTransition from '@/components/TabContentTransition';
+import { useActiveTab } from '@/hooks/useActiveTab';
+import TabScreenWrapper from '@/components/TabScreenWrapper';
 
 // Define interfaces para los tipos de datos
 interface Company {
@@ -433,8 +439,10 @@ export default function TabOneScreen() {
   const colorScheme = useColorScheme();
   const COLORS = getThemeColors(colorScheme || 'light');
   const styles = createStyles(COLORS);
-    // Obtenemos la función logout del contexto de autenticación
-  const { logout, isAuthenticated } = useAuth();  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const { isTabActive } = useActiveTab();
+  
+  // Obtenemos la función logout del contexto de autenticación
+  const { logout, isAuthenticated } = useAuth();const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -475,10 +483,9 @@ export default function TabOneScreen() {
     setRefreshing(false);
   };  useEffect(() => {
     fetchDashboardData();
-    
-    // Redirección si el usuario no está autenticado en el contexto
+      // Redirección si el usuario no está autenticado en el contexto
     if (!isAuthenticated) {
-      router.replace('/welcome');
+      router.replace('./welcome');
     }
   }, [isAuthenticated]);
 
@@ -496,18 +503,17 @@ export default function TabOneScreen() {
         duration: 300,
         useNativeDriver: true
       }).start();
-    }
-  }, [refreshing]);
+    }  }, [refreshing]);
       
-
   return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={[COLORS.primary, COLORS.primaryLight, COLORS.secondary]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerGradient}
-      />
+    <TabContentTransition isActive={isTabActive()} animationType="fade">
+      <View style={styles.container}>
+        <LinearGradient
+          colors={[COLORS.primary, COLORS.primaryLight, COLORS.secondary]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.headerGradient}
+        />
         <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -519,7 +525,8 @@ export default function TabOneScreen() {
             tintColor={COLORS.primary}
             progressBackgroundColor={COLORS.cardBackground}
           />
-        }        showsVerticalScrollIndicator={false}
+        }
+          showsVerticalScrollIndicator={false}
         bounces={true}
       >
         {/* Indicador de recarga */}
@@ -585,12 +592,16 @@ export default function TabOneScreen() {
         <View style={styles.offersSection}>
           {dashboardData && dashboardData.offers && dashboardData.offers.length > 0 ? (
             <View style={styles.offersContainer}>
-              {dashboardData.offers.map((offer) => (
-                <TouchableOpacity 
+                {dashboardData.offers.map((offer) => (
+                  <TouchableOpacity 
                   key={offer.id} 
-                  style={styles.offerCard}                  activeOpacity={0.9}
+                  style={styles.offerCard} 
+                  activeOpacity={0.9}
                   onPress={() => {
-                    router.push(`/showOffer?id=${offer.id}`);
+                    router.push({
+                      pathname: './showOffer',
+                      params: { id: offer.id }
+                    });
                   }}
                 >
                   {/* Priority Badge - Solo para ofertas nuevas */}
@@ -673,10 +684,14 @@ export default function TabOneScreen() {
                           </Text>
                         </View>
                       )}
-                    </View>
-                    <TouchableOpacity                      style={styles.offerActionButton}
-                      onPress={() => {
-                        router.push(`/showOffer?id=${offer.id}`);
+                      </View>
+                      <TouchableOpacity
+                        style={styles.offerActionButton}
+                        onPress={() => {
+                        router.push({
+                          pathname: './showOffer',
+                          params: { id: offer.id }
+                        });
                       }}
                     >
                       <FontAwesome name="eye" size={12} color="#ffffff" />
@@ -700,5 +715,6 @@ export default function TabOneScreen() {
         </View>
       </ScrollView>
     </View>
+    </TabContentTransition>
   );
 }

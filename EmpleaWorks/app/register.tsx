@@ -342,6 +342,7 @@ export default function RegisterScreen() {
       // El manejo de errores se realiza en el hook
     }
   };
+  
   return (
     <View style={styles.container}>
       <StatusBar
@@ -425,7 +426,8 @@ export default function RegisterScreen() {
                 autoComplete="email"
               />
             </View>
-              <View style={[
+            
+            <View style={[
               styles.inputWrapper,
               passwordFocused && styles.inputWrapperFocused
             ]}>
@@ -458,7 +460,8 @@ export default function RegisterScreen() {
                 />
               </TouchableOpacity>
             </View>
-              <View style={[
+            
+            <View style={[
               styles.inputWrapper,
               confirmPasswordFocused && styles.inputWrapperFocused
             ]}>

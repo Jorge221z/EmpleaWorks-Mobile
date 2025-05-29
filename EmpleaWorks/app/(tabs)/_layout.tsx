@@ -1,11 +1,13 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Link, Tabs } from 'expo-router';
-import { Pressable } from 'react-native';
+import { Pressable, Platform } from 'react-native';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import CustomTabBar from '@/components/CustomTabBar';
+import { TabTransitionProvider } from '@/context/TabTransitionContext';
 
 // You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
@@ -19,36 +21,20 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
-        headerShown: useClientOnlyValue(false, true),
-        // Personalización mejorada de la barra de tabs inferior
-        tabBarStyle: {
-          backgroundColor: Colors[colorScheme ?? 'light'].tabBarBackground,
-          borderTopColor: Colors[colorScheme ?? 'light'].tabBarBorder,
-          borderTopWidth: 1,
-          height: 60, // Altura un poco mayor para mejor visualización
-          paddingBottom: 5,
-          paddingTop: 5,
-        },
-        tabBarInactiveTintColor: colorScheme === 'dark' ? 'rgba(155, 109, 255, 0.4)' : 'rgba(124, 40, 235, 0.35)', // Versión "fantasma" con opacidad del color activo
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
-          marginTop: -2,
-        },
-        tabBarIconStyle: {
-          marginTop: 2,
-        },
-        // Personalización de la barra superior (header)
-        headerStyle: {
-          backgroundColor: Colors[colorScheme ?? 'light'].headerBackground,
-        },
-        headerTitleStyle: {
-          color: Colors[colorScheme ?? 'light'].text,
+    <TabTransitionProvider>
+      <Tabs
+        tabBar={(props) => <CustomTabBar {...props} />}
+        screenOptions={{
+          tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+          // Disable the static render of the header on web
+          // to prevent a hydration error in React Navigation v6.
+          headerShown: useClientOnlyValue(false, true),
+          // Personalización de la barra superior (header)
+          headerStyle: {
+            backgroundColor: Colors[colorScheme ?? 'light'].headerBackground,
+          },
+          headerTitleStyle: {
+            color: Colors[colorScheme ?? 'light'].text,
           fontWeight: '600',
         },
         headerTintColor: Colors[colorScheme ?? 'light'].text,
@@ -57,9 +43,9 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Ofertas',
-          tabBarIcon: ({ color }) => <TabBarIcon name="th-large" color={color} />, // Icono cambiado a 'th-large'
+          tabBarIcon: ({ color }) => <TabBarIcon name="th-large" color={color} />,
           headerRight: () => (
-            <Link href="/modal" asChild>
+            <Link href="./modal" asChild>
               <Pressable>
                 {({ pressed }) => (
                   <FontAwesome
@@ -89,5 +75,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </TabTransitionProvider>
   );
 }

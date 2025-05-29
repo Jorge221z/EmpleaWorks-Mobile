@@ -7,6 +7,9 @@ import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoogleAuthErrorInfo from '@/components/GoogleAuthErrorInfo';
+import ScreenTransition from '@/components/ScreenTransition';
+import SmoothPressable from '@/components/SmoothPressable';
+import { getScreenTransitionConfig, getUIElementConfig } from '@/constants/TransitionConfig';
 
 // Constantes de diseño para temas
 const getThemeColors = (colorScheme: string) => {
@@ -117,17 +120,17 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       maxWidth: 400,
       backgroundColor: colors.cardBackground,
       borderRadius: 20,
-      padding: 24,
+      padding: 20,
       elevation: 8,
       shadowColor: colors.shadowColor,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.15,
       shadowRadius: 12,
-      marginBottom: 20,
+      marginBottom: 15,
     },
     inputContainer: {
       width: '100%',
-      marginBottom: 20,
+      marginBottom: 15,
       backgroundColor: 'transparent',
     },
     inputWrapper: {
@@ -137,10 +140,9 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       borderColor: colors.border,
       borderRadius: 12,
       backgroundColor: colors.inputBackground,
-      marginBottom: 16,
+      marginBottom: 12,
       paddingHorizontal: 16,
-      height: 56,
-      elevation: 2,
+      height: 50,      elevation: 2,
       shadowColor: colors.shadowColor,
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.1,
@@ -151,17 +153,22 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       borderWidth: 2,
       elevation: 4,
       shadowOpacity: 0.2,
-    },    inputIcon: {
+    },
+    inputWrapperError: {
+      borderColor: colors.error,
+      borderWidth: 2,
+    },
+    inputIcon: {
       marginRight: 12,
     },
-    eyeIcon: {
-      marginLeft: 12,
-      padding: 4,
-    },
-    input: {
+    textInput: {
       flex: 1,
       fontSize: 16,
       color: colors.text,
+      paddingVertical: 0,
+    },    eyeIcon: {
+      marginLeft: 12,
+      padding: 4,
     },
     button: {
       borderRadius: 12,
@@ -173,12 +180,31 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       shadowRadius: 6,
       overflow: 'hidden',
     },
-    buttonGradient: {
+    loginButton: {
+      borderRadius: 12,
+      marginBottom: 16,
+      elevation: 4,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.3,
+      shadowRadius: 6,
+      overflow: 'hidden',
+    },
+    loginButtonDisabled: {
+      opacity: 0.7,
+    },
+    gradientButton: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: 18,
       paddingHorizontal: 24,
+    },
+    loginButtonText: {
+      color: colors.buttonText,
+      fontWeight: 'bold',
+      fontSize: 16,
+      backgroundColor: 'transparent',
     },
     buttonText: {
       color: colors.buttonText,
@@ -228,8 +254,14 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       fontSize: 14,
       flex: 1,
       backgroundColor: 'transparent',
+    },    divider: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: 15,
+      backgroundColor: 'transparent',
     },
-    divider: {
+    dividerContainer: {
       width: '100%',
       flexDirection: 'row',
       alignItems: 'center',
@@ -278,12 +310,23 @@ const createStyles = (colors: ReturnType<typeof getThemeColors>) => {
       fontSize: 16,
       marginLeft: 8,
       backgroundColor: 'transparent',
-    },
-    googleLoadingText: {
+    },    googleLoadingText: {
       color: colors.googleLoadingText,
       fontWeight: 'bold',
       fontSize: 16,
       marginLeft: 8,
+      backgroundColor: 'transparent',
+    },
+    googleButtonText: {
+      color: colors.googleButtonText,
+      fontWeight: 'bold',
+      fontSize: 16,
+      backgroundColor: 'transparent',
+    },
+    registerLink: {
+      color: colors.secondary,
+      fontWeight: 'bold',
+      fontSize: 16,
       backgroundColor: 'transparent',
     },
   });
@@ -296,6 +339,10 @@ export default function LoginScreen() {
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading, error } = useAuth();
+  
+  // Configuración de transiciones
+  const screenTransition = getScreenTransitionConfig('auth');
+  const buttonConfig = getUIElementConfig('button');
   const { login: googleLogin, isLoading: googleLoading, error: googleError } = useGoogleAuth();
   
   const colorScheme = useColorScheme();
@@ -321,185 +368,176 @@ export default function LoginScreen() {
       // Error handling is done in the hook
     }
   };  return (
-    <View style={styles.container}>
-      <StatusBar
-        barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
-        backgroundColor="transparent"
-        translucent
-      />
-      
-      {/* Botón de volver a Welcome */}
-      <TouchableOpacity 
-        style={styles.backButton}
-        onPress={() => router.push('/welcome')}
-        activeOpacity={0.7}
-      >
-        <FontAwesome name="arrow-left" size={20} color={COLORS.primary} />
-      </TouchableOpacity>
-      
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Logo and Title Section */}
-        <View style={styles.logoContainer}>
-          <View style={styles.logoIcon}>
-            <Image 
-              source={require('@/assets/images/logo.png')} 
-              style={styles.logoImage}
-            />
-          </View>
-          <Text style={styles.title}>Bienvenido</Text>
-          <Text style={styles.subtitle}>Inicia sesión en EmpleaWorks</Text>
-        </View>
+    <ScreenTransition {...screenTransition}>
+      <View style={styles.container}>
+        <StatusBar
+          barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
+          backgroundColor="transparent"
+          translucent
+        />
         
-        {/* Form Card */}
-        <View style={styles.formCard}>
-          <View style={styles.inputContainer}>
-            <View style={[
-              styles.inputWrapper,
-              emailFocused && styles.inputWrapperFocused
-            ]}>
-              <FontAwesome 
-                name="envelope" 
-                size={18} 
-                color={emailFocused ? COLORS.secondary : COLORS.lightText} 
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Email"
-                placeholderTextColor={COLORS.placeholderText}
-                value={email}
-                onChangeText={setEmail}
-                onFocus={() => setEmailFocused(true)}
-                onBlur={() => setEmailFocused(false)}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoComplete="email"
+        {/* Botón de volver a Welcome */}
+        <SmoothPressable 
+          style={styles.backButton}
+          onPress={() => router.push('/welcome')}
+          scaleValue={0.9}
+          animationType="scale"
+        >
+          <FontAwesome name="arrow-left" size={20} color={COLORS.primary} />
+        </SmoothPressable>
+        
+        
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Logo Section */}
+          <View style={styles.logoContainer}>
+            <View style={styles.logoIcon}>
+              <Image 
+                source={require('@/assets/images/logo.png')} 
+                style={styles.logoImage}
               />
             </View>
-              <View style={[
-              styles.inputWrapper,
-              passwordFocused && styles.inputWrapperFocused
-            ]}>
-              <FontAwesome 
-                name="lock" 
-                size={20} 
-                color={passwordFocused ? COLORS.secondary : COLORS.lightText} 
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Contraseña"
-                placeholderTextColor={COLORS.placeholderText}
-                value={password}
-                onChangeText={setPassword}
-                onFocus={() => setPasswordFocused(true)}
-                onBlur={() => setPasswordFocused(false)}
-                secureTextEntry={!showPassword}
-                autoComplete="password"
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.eyeIcon}
-                activeOpacity={0.7}
-              >
-                <FontAwesome
-                  name={showPassword ? "eye-slash" : "eye"}
-                  size={18}
-                  color={COLORS.lightText}
-                />
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.title}>Iniciar Sesión</Text>
+            <Text style={styles.subtitle}>Accede a tu cuenta de EmpleaWorks</Text>
           </View>
           
-          {/* Error Messages */}
-          {error && (
-            <View style={styles.errorContainer}>
-              <FontAwesome name="exclamation-circle" size={16} color={COLORS.error} />
-              <Text style={styles.errorText}>{error}</Text>
+          {/* Form Card */}
+          <View style={styles.formCard}>
+            {/* Email Input */}
+            <View style={styles.inputContainer}>
+              <View style={[
+                styles.inputWrapper,
+                emailFocused && styles.inputWrapperFocused,
+                error && styles.inputWrapperError
+              ]}>
+                <FontAwesome name="envelope" size={20} color={COLORS.lightText} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Correo electrónico"
+                  placeholderTextColor={COLORS.placeholderText}
+                  value={email}
+                  onChangeText={setEmail}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
             </View>
-          )}
-          
-          {googleError && (
-            <View style={styles.errorContainer}>
-              <FontAwesome name="exclamation-circle" size={16} color={COLORS.error} />
-              <Text style={styles.errorText}>{googleError}</Text>
+
+            {/* Password Input */}
+            <View style={styles.inputContainer}>
+              <View style={[
+                styles.inputWrapper,
+                passwordFocused && styles.inputWrapperFocused,
+                error && styles.inputWrapperError
+              ]}>
+                <FontAwesome name="lock" size={20} color={COLORS.lightText} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Contraseña"
+                  placeholderTextColor={COLORS.placeholderText}
+                  value={password}
+                  onChangeText={setPassword}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <SmoothPressable onPress={() => setShowPassword(!showPassword)} scaleValue={0.9}>
+                  <FontAwesome 
+                    name={showPassword ? "eye" : "eye-slash"} 
+                    size={20} 
+                    color={COLORS.lightText} 
+                  />
+                </SmoothPressable>
+              </View>
             </View>
-          )}
-          
-          {/* Show detailed info for Google client error */}
-          {googleError && <GoogleAuthErrorInfo error={googleError} />}
-          
-          {/* Login Button */}
-          <TouchableOpacity 
-            style={styles.button}
-            onPress={handleLogin}
-            disabled={isLoading || googleLoading}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={[COLORS.primary, COLORS.secondary]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.buttonGradient}
+
+            {/* Error Message */}
+            {error && (
+              <View style={styles.errorContainer}>
+                <FontAwesome name="exclamation-circle" size={16} color={COLORS.error} />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
+            
+            {/* Google Error */}
+            {googleError && (
+              <View style={styles.errorContainer}>
+                <FontAwesome name="exclamation-circle" size={16} color={COLORS.error} />
+                <Text style={styles.errorText}>{googleError}</Text>
+              </View>
+            )}
+
+            {/* Login Button */}
+            <SmoothPressable
+              style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+              onPress={handleLogin}
+              disabled={isLoading}
+              scaleValue={0.96}
+              animationType="scale"
             >
-              {isLoading ? (
+              <LinearGradient
+                colors={[COLORS.primary, COLORS.secondary]}
+                style={styles.gradientButton}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color={COLORS.buttonText} />
+                ) : (
+                  <Text style={styles.loginButtonText}>Iniciar Sesión</Text>
+                )}
+              </LinearGradient>
+            </SmoothPressable>
+
+            {/* Divider */}
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>o continúa con</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Google Login Button - DENTRO DE LA TARJETA */}
+            <TouchableOpacity
+              style={styles.googleButton}
+              onPress={handleGoogleLogin}
+              disabled={isLoading || googleLoading}
+              activeOpacity={0.8}
+            >
+              {googleLoading ? (
                 <View style={styles.loadingContainer}>
-                  <ActivityIndicator color={COLORS.buttonText} size="small" />
-                  <Text style={styles.loadingText}>Iniciando...</Text>
+                  <ActivityIndicator color={COLORS.googleButtonText} size="small" />
+                  <Text style={styles.googleLoadingText}>Conectando...</Text>
                 </View>
               ) : (
                 <>
-                  <FontAwesome name="sign-in" size={18} color={COLORS.buttonText} style={{ marginRight: 10 }} />
-                  <Text style={styles.buttonText}>Iniciar Sesión</Text>
+                  <Text style={[styles.buttonText, { color: COLORS.googleButtonText, fontWeight: 'bold' }]}>Continuar con </Text>
+                  <Image 
+                    source={require('@/assets/images/google-logo.png')}
+                    style={styles.googleIcon}
+                  />
                 </>
               )}
-            </LinearGradient>
-          </TouchableOpacity>
+            </TouchableOpacity>
 
-          {/* Divider */}
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>O continúa con</Text>
-            <View style={styles.dividerLine} />
           </View>
 
-          {/* Google Login Button */}
-          <TouchableOpacity
-            style={styles.googleButton}
-            onPress={handleGoogleLogin}
-            disabled={isLoading || googleLoading}
-            activeOpacity={0.8}
-          >
-            {googleLoading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator color={COLORS.googleButtonText} size="small" />
-                <Text style={styles.googleLoadingText}>Conectando...</Text>
-              </View>)
-              : (
-              <>
-                <Text style={[styles.buttonText, { color: COLORS.googleButtonText }]}>Continuar con </Text>
-                <Image
-                  source={require('@/assets/images/google-logo.png')}
-                  style={styles.googleIcon}
-                />
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-      
-      {/* Register Link */}
-      <View style={styles.registerContainer}>
-        <Text style={styles.registerText}>¿No tienes una cuenta? </Text>
-        <TouchableOpacity onPress={() => router.push('/register')} activeOpacity={0.7}>
-          <Text style={styles.linkText}>Regístrate</Text>
-        </TouchableOpacity>
+          {/* Register Link - FUERA DE LA TARJETA */}
+          <View style={styles.registerContainer}>
+            <Text style={styles.registerText}>¿No tienes cuenta? </Text>
+            <SmoothPressable onPress={() => router.push('/register')} scaleValue={0.98}>
+              <Text style={styles.registerLink}>Regístrate aquí</Text>
+            </SmoothPressable>
+          </View>
+        </ScrollView>
       </View>
-      <View style={{ height: 80 }} />
-    </ScrollView>
-  </View>
+    </ScreenTransition>
   );
 };

@@ -13,6 +13,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useColorScheme } from '@/components/useColorScheme';
+import ScreenTransition, { useScreenTransition } from '@/components/ScreenTransition';
+import SmoothPressable from '@/components/SmoothPressable';
 
 const { width, height } = Dimensions.get('window');
 
@@ -189,6 +191,9 @@ export default function WelcomeScreen() {
   const styles = createStyles(colors);
   const router = useRouter();
 
+  // Usar el hook de transición personalizado
+  const animatedStyle = useScreenTransition('slideUp');
+
   // Animaciones
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -224,137 +229,141 @@ export default function WelcomeScreen() {
   ];
 
   const handleLogin = () => {
-    router.push('/login');
+    router.push('/login' as any);
   };
 
   const handleRegister = () => {
-    router.push('/register');
+    router.push('/register' as any);
   };
-
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      
-      {/* Fondo con gradiente */}
-      <LinearGradient
-        colors={colors.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.gradientBackground}
-      />
+    <ScreenTransition animationType="slideUp" duration={300}>
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        
+        {/* Fondo con gradiente */}
+        <LinearGradient
+          colors={colors.gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        />
 
-      {/* Elementos decorativos */}
-      <View style={[styles.decorativeElement, styles.decorativeElement1]} />
-      <View style={[styles.decorativeElement, styles.decorativeElement2]} />
+        {/* Elementos decorativos */}
+        <View style={[styles.decorativeElement, styles.decorativeElement1]} />
+        <View style={[styles.decorativeElement, styles.decorativeElement2]} />
 
-      <ScrollView 
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
-        <Animated.View 
-          style={[
-            styles.content,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
         >
-          {/* Sección del Logo */}
-          <View style={styles.logoSection}>
-            <Animated.View 
-              style={[
-                styles.logoContainer,
-                {
-                  transform: [{ scale: scaleAnim }],
-                },
-              ]}
-            >
-              <Image 
-                source={require('@/assets/images/logo.png')} 
-                style={styles.logo}
-                resizeMode="contain"
-              />
-            </Animated.View>
-                      
-            <View style={styles.titleSection}>
-              <Text style={styles.title}>EmpleaWorks</Text>
-              <Text style={styles.subtitle}>
-                Tu plataforma ideal para encontrar{'\n'}trabajo en la zona de Yecla y alrededores
-              </Text>
-            </View>
-          </View>
-
-          {/* Sección de características */}
-          <View style={styles.featuresSection}>
-            {features.map((feature, index) => (
+          <Animated.View 
+            style={[
+              styles.content,
+              animatedStyle,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
+            {/* Sección del Logo */}
+            <View style={styles.logoSection}>
               <Animated.View 
-                key={index}
                 style={[
-                  styles.featureItem,
+                  styles.logoContainer,
                   {
-                    opacity: fadeAnim,
-                    transform: [
-                      {
-                        translateY: Animated.add(
-                          slideAnim,
-                          new Animated.Value(index * 10)
-                        ),
-                      },
-                    ],
+                    transform: [{ scale: scaleAnim }],
                   },
                 ]}
               >
-                <View style={styles.featureIcon}>
-                  <FontAwesome 
-                    name={feature.icon as any} 
-                    size={12} 
-                    color="rgba(255, 255, 255, 0.9)" 
-                  />
-                </View>
-                <Text style={styles.featureText}>{feature.text}</Text>
+                <Image 
+                  source={require('@/assets/images/logo.png')} 
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
               </Animated.View>
-            ))}
-          </View>
-
-          {/* Sección de botones */}
-          <View style={styles.buttonsSection}>
-            {/* Botón de Registro (Primario) */}
-            <TouchableOpacity 
-              style={styles.buttonContainer}
-              onPress={handleRegister}
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={[colors.primary, colors.secondary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.primaryButton}
-              >
-                <FontAwesome name="user-plus" size={18} color="#ffffff" />
-                <Text style={styles.buttonText}>Crear cuenta</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            {/* Botón de Login (Secundario) */}
-            <TouchableOpacity 
-              style={styles.buttonContainer}
-              onPress={handleLogin}
-              activeOpacity={0.8}
-            >
-              <View style={styles.secondaryButton}>
-                <FontAwesome name="sign-in" size={18} color="#ffffff" />
-                <Text style={styles.buttonText}>Iniciar sesión</Text>
+                        
+              <View style={styles.titleSection}>
+                <Text style={styles.title}>EmpleaWorks</Text>
+                <Text style={styles.subtitle}>
+                  Tu plataforma ideal para encontrar{'\n'}trabajo en la zona de Yecla y alrededores
+                </Text>
               </View>
-            </TouchableOpacity>
+            </View>
 
-            <Text style={styles.footerText}>
-              Únete a miles de profesionales que ya encontraron su empleo ideal
-            </Text>
-          </View>
-        </Animated.View>
-      </ScrollView>
-    </View>
+            {/* Sección de características */}
+            <View style={styles.featuresSection}>
+              {features.map((feature, index) => (
+                <Animated.View 
+                  key={index}
+                  style={[
+                    styles.featureItem,
+                    {
+                      opacity: fadeAnim,
+                      transform: [
+                        {
+                          translateY: Animated.add(
+                            slideAnim,
+                            new Animated.Value(index * 10)
+                          ),
+                        },
+                      ],
+                    },
+                  ]}
+                >
+                  <View style={styles.featureIcon}>
+                    <FontAwesome 
+                      name={feature.icon as any} 
+                      size={12} 
+                      color="rgba(255, 255, 255, 0.9)" 
+                    />
+                  </View>
+                  <Text style={styles.featureText}>{feature.text}</Text>
+                </Animated.View>
+              ))}
+            </View>
+
+            {/* Sección de botones */}
+            <View style={styles.buttonsSection}>
+              {/* Botón de Registro (Primario) */}
+              <SmoothPressable 
+                style={styles.buttonContainer}
+                onPress={handleRegister}
+                scaleValue={0.97}
+                animationType="both"
+              >
+                <LinearGradient
+                  colors={[colors.primary, colors.secondary]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.primaryButton}
+                >
+                  <FontAwesome name="user-plus" size={18} color="#ffffff" />
+                  <Text style={styles.buttonText}>Crear cuenta</Text>
+                </LinearGradient>
+              </SmoothPressable>
+
+              {/* Botón de Login (Secundario) */}
+              <SmoothPressable 
+                style={styles.buttonContainer}
+                onPress={handleLogin}
+                scaleValue={0.97}
+                animationType="both"
+              >
+                <View style={styles.secondaryButton}>
+                  <FontAwesome name="sign-in" size={18} color="#ffffff" />
+                  <Text style={styles.buttonText}>Iniciar sesión</Text>
+                </View>
+              </SmoothPressable>
+
+              <Text style={styles.footerText}>
+                Únete a miles de profesionales que ya encontraron su empleo ideal
+              </Text>
+            </View>
+          </Animated.View>
+        </ScrollView>
+      </View>
+    </ScreenTransition>
   );
 }

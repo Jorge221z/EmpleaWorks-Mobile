@@ -1,11 +1,11 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, Slot, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import 'react-native-reanimated';
 import { Platform } from 'react-native';
+import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
@@ -25,7 +25,7 @@ export const unstable_settings = {
 SplashScreen.preventAutoHideAsync();
 
 // Este componente se encarga de la redirección basada en autenticación
-function AuthRedirect() {
+function InitialLayout() {
   const { isAuthenticated, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
@@ -72,7 +72,7 @@ function AuthRedirect() {
         const authOnlyScreens = ['welcome', 'login', 'register'];
         if (!currentRoute || authOnlyScreens.includes(currentRoute)) {
           console.log('🔄 Redirigiendo usuario autenticado a tabs desde:', currentRoute || 'root');
-          router.replace('/(tabs)');
+          router.replace('/(tabs)' as any);
         }
       } 
       // If the user is not authenticated
@@ -87,8 +87,7 @@ function AuthRedirect() {
         // If user is not on an allowed route OR on root route (no segments), redirect to welcome
         if (!currentRoute || !allowedRoutes.includes(currentRoute)) {
           console.log('🔄 Redirigiendo usuario no autenticado a welcome desde:', currentRoute || 'root');
-          // Use push instead of replace for better navigation handling
-          router.push('/welcome');
+          router.replace('/welcome' as any);
         } else {
           console.log('✅ Usuario no autenticado ya en ruta permitida:', currentRoute);
         }
@@ -99,7 +98,94 @@ function AuthRedirect() {
     return () => clearTimeout(navigationTimeout);
   }, [isAuthenticated, segments, isLoading, router]);
 
-  return <Slot />;
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        // Configuración global de transiciones más suaves
+        presentation: 'card',
+        gestureEnabled: true,
+        gestureDirection: 'horizontal',
+        animationDuration: 300,
+        // Configuración específica por plataforma
+        ...(Platform.OS === 'android' && {
+          animationDuration: 250,
+        }),
+        // Configuración de transiciones
+        animationTypeForReplace: 'push',
+      }}
+    >
+      <Stack.Screen 
+        name="welcome" 
+        options={{
+          animationTypeForReplace: 'push',
+        }}
+      />
+      <Stack.Screen 
+        name="login" 
+        options={{
+          animationTypeForReplace: 'push',
+        }}
+      />
+      <Stack.Screen 
+        name="register" 
+        options={{
+          animationTypeForReplace: 'push',
+        }}
+      />
+      <Stack.Screen 
+        name="(tabs)" 
+        options={{
+          animationTypeForReplace: 'push',
+        }}
+      />
+      <Stack.Screen 
+        name="showOffer" 
+        options={{
+          presentation: 'modal',
+          animationDuration: 300,
+        }}
+      />
+      <Stack.Screen 
+        name="ApplyForm" 
+        options={{
+          presentation: 'modal',
+          animationDuration: 300,
+        }}
+      />
+      <Stack.Screen 
+        name="saved-offers" 
+        options={{
+          animationDuration: 250,
+        }}
+      />
+      <Stack.Screen 
+        name="edit-profile" 
+        options={{
+          animationDuration: 250,
+        }}
+      />
+      <Stack.Screen 
+        name="change-password" 
+        options={{
+          animationDuration: 250,
+        }}
+      />
+      <Stack.Screen 
+        name="my-applications" 
+        options={{
+          animationDuration: 250,
+        }}
+      />
+      <Stack.Screen 
+        name="modal" 
+        options={{
+          presentation: 'modal',
+          animationDuration: 300,
+        }}
+      />
+    </Stack>
+  );
 }
 
 export default function RootLayout() {
@@ -107,6 +193,8 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   });
+
+  const colorScheme = useColorScheme();
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
@@ -124,10 +212,12 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <NotificationProvider>
-        <AuthRedirect />
-      </NotificationProvider>
-    </AuthProvider>
+    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <AuthProvider>
+        <NotificationProvider>
+          <InitialLayout />
+        </NotificationProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

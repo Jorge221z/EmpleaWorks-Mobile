@@ -11,6 +11,10 @@ import { router } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'react-native';
+import TabContentTransition from '@/components/TabContentTransition';
+import { useActiveTab } from '@/hooks/useActiveTab';
+import ScreenTransition from '@/components/ScreenTransition';
+import SmoothPressable from '@/components/SmoothPressable';
 
 // Updated interfaces based on the actual API response
 interface Company {
@@ -65,6 +69,7 @@ export default function TabTwoScreen() {
   const { logout, isAuthenticated } = useAuth();
   const colorScheme = useColorScheme();
   const colors = getThemeColors(colorScheme || 'light');
+  const { isTabActive } = useActiveTab();
   
   const [dashboardData, setDashboardData] = useState<CandidateData | null>(null);
   const [savedOffersCount, setSavedOffersCount] = useState<number>(0);
@@ -158,34 +163,35 @@ export default function TabTwoScreen() {
   }, [refreshing]);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Full-width header gradient like profile - neutral colors */}
-      <LinearGradient
-        colors={
-          colorScheme === 'dark' 
-            ? ['#2a2a2a', '#1e1e1e', '#151515'] 
-            : ['#f8f9fa', '#e9ecef', '#dee2e6']
-        }
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerGradient}
-      />
-      
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-            progressBackgroundColor={colors.cardBackground}
-          />
-        }
-        bounces={true}
-      >
+    <TabContentTransition isActive={isTabActive()}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {/* Full-width header gradient like profile - neutral colors */}
+        <LinearGradient
+          colors={
+            colorScheme === 'dark' 
+              ? ['#2a2a2a', '#1e1e1e', '#151515'] 
+              : ['#f8f9fa', '#e9ecef', '#dee2e6']
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.headerGradient}
+        />
+        
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+              progressBackgroundColor={colors.cardBackground}
+            />
+          }
+          bounces={true}
+        >
         {/* Indicador de recarga */}
         {refreshing && (
           <Animated.View
@@ -359,6 +365,7 @@ export default function TabTwoScreen() {
         )}
       </ScrollView>
     </View>
+    </TabContentTransition>
   );
 }
 

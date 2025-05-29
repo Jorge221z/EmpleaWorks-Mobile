@@ -982,7 +982,7 @@ export default function EditProfileScreen() {
             </TouchableOpacity>
               <TouchableOpacity 
               style={styles.cancelButton} 
-              onPress={() => router.push('/profile')} 
+              onPress={() => router.push('/(tabs)/profile')} 
               disabled={loading}
               activeOpacity={0.8}
             >
