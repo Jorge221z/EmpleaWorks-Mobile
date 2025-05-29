@@ -381,7 +381,7 @@ export default function TabTwoScreen() {
                 end={{ x: 1, y: 1 }}
               >
                 <FontAwesome 
-                  name="briefcase" 
+                  name="inbox" 
                   size={32} 
                   color="#ffffff" 
                 />

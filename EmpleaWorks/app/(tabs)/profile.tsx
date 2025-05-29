@@ -1083,7 +1083,7 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-              <View style={[styles.divider, { backgroundColor: COLORS.cardBackground }]} />
+            <View style={[styles.divider, { backgroundColor: COLORS.cardBackground }]} />
 
             <View style={styles.descriptionContainer}>
               <Text style={styles.descriptionLabel}>Descripción:</Text>
@@ -1150,7 +1150,7 @@ export default function ProfileScreen() {
               </LinearGradient>
             </TouchableOpacity>
 
-            <View style={[styles.infoContainer, { height: 1 }]} />
+              <View style={[styles.divider, { backgroundColor: COLORS.cardBackground }]} />
 
             <TouchableOpacity
               style={styles.logoutButton}
