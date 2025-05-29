@@ -24,6 +24,8 @@ import { useColorScheme } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEmailVerificationGuard } from '@/hooks/useEmailVerification';
 import EmailVerificationScreen from '@/components/EmailVerificationScreen';
+import { useNotificationContext } from '@/context/NotificationContext';
+import * as Notifications from 'expo-notifications';
 
 // Theme colors (similar to showOffer.tsx)
 const getThemeColors = (colorScheme: string) => {
@@ -73,8 +75,8 @@ export default function ApplyFormScreen() {
   const colorScheme = useColorScheme();
   const COLORS = getThemeColors(colorScheme || 'light');
   const styles = createStyles(COLORS);
-  
-  const { user } = useAuth();
+    const { user } = useAuth();
+  const { sendNotification, scheduleNotification } = useNotificationContext();
   const params = useLocalSearchParams();
   const offerId = params.offerId as string;
   const offerTitle = params.offerTitle as string || 'esta oferta';
@@ -201,9 +203,45 @@ export default function ApplyFormScreen() {
         email: email.trim(),
         cl: coverLetter.trim(),
         offer_id: parseInt(offerId),
-      };
+      };      await applyToOffer(applicationData);
+        // 🔔 Enviar notificación de aplicación exitosa
+      try {
+        await sendNotification({
+          title: '✅ ¡Aplicación enviada exitosamente!',
+          body: `Tu aplicación para "${offerTitle}" ha sido enviada al empleador`,
+          data: {
+            type: 'application_sent',
+            offerId: offerId,
+            offerTitle: offerTitle,
+            timestamp: new Date().toISOString(),
+          },
+        });
+        console.log('📧 Notificación de aplicación enviada');
 
-      await applyToOffer(applicationData);
+        // 📅 Programar recordatorio para revisar el estado en 24 horas
+        const reminderTrigger: Notifications.TimeIntervalTriggerInput = {
+          seconds: 24 * 60 * 60, // 24 horas
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        };
+
+        await scheduleNotification(
+          {
+            title: '📋 Recordatorio: Revisa tu aplicación',
+            body: `Han pasado 24 horas desde que aplicaste a "${offerTitle}". ¿Ya revisaste el estado?`,
+            data: {
+              type: 'application_reminder',
+              offerId: offerId,
+              offerTitle: offerTitle,
+              screen: '/my-applications',
+            },
+          },
+          reminderTrigger
+        );
+        console.log('📅 Recordatorio programado para 24 horas');
+      } catch (notificationError) {
+        console.error('❌ Error enviando notificación:', notificationError);
+        // No detener el flujo principal si falla la notificación
+      }
       
       Alert.alert(
         'Aplicación enviada',

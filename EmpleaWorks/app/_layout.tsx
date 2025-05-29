@@ -9,6 +9,7 @@ import { Platform } from 'react-native';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { NotificationProvider } from '@/context/NotificationContext';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -124,7 +125,9 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <AuthRedirect />
+      <NotificationProvider>
+        <AuthRedirect />
+      </NotificationProvider>
     </AuthProvider>
   );
 }

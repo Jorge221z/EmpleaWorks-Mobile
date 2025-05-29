@@ -9,6 +9,9 @@ import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'react-native';
 import Colors from '@/constants/Colors';
+import NotificationTestPanel from '@/components/NotificationTestPanel';
+import SimpleNotificationTest from '@/components/SimpleNotificationTest';
+import NotificationDebugger from '@/components/NotificationDebugger';
 
 // Constantes de diseño
 const getThemeColors = (colorScheme: string) => {
@@ -1108,8 +1111,12 @@ export default function ProfileScreen() {
               >
                 <FontAwesome name="key" size={18} color={COLORS.white === '#ffffff' ? '#ffffff' : '#f0f0f0'} style={styles.buttonIcon} />
                 <Text style={styles.buttonText}>Cambiar Contraseña</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+              </LinearGradient>            </TouchableOpacity>
+
+            <View style={[styles.infoContainer, { height: 1 }]} />            {/* Panel de pruebas de notificaciones - Temporal para desarrollo */}
+            <NotificationDebugger />
+            <SimpleNotificationTest />
+            <NotificationTestPanel />
 
             <View style={[styles.infoContainer, { height: 1 }]} />
 
