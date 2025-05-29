@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import CustomAlert, { AlertType } from './CustomAlert'; // Import CustomAlert
 
 // Configurar el handler de notificaciones
 Notifications.setNotificationHandler({
@@ -16,6 +17,24 @@ Notifications.setNotificationHandler({
 export default function SimpleNotificationTest() {
   const [permissionStatus, setPermissionStatus] = useState<string>('unknown');
   const [lastNotification, setLastNotification] = useState<string>('');
+
+  // Estados para CustomAlert
+  const [customAlertVisible, setCustomAlertVisible] = useState(false);
+  const [customAlertMessage, setCustomAlertMessage] = useState('');
+  const [customAlertType, setCustomAlertType] = useState<AlertType>('info');
+  const [customAlertTitle, setCustomAlertTitle] = useState('');
+
+  // Funciones para manejar CustomAlert
+  const showAppAlert = (type: AlertType, message: string, title: string) => {
+    setCustomAlertType(type);
+    setCustomAlertMessage(message);
+    setCustomAlertTitle(title);
+    setCustomAlertVisible(true);
+  };
+
+  const handleCloseCustomAlert = () => {
+    setCustomAlertVisible(false);
+  };
 
   useEffect(() => {
     checkPermissions();
@@ -66,13 +85,13 @@ export default function SimpleNotificationTest() {
       console.log('📋 Nuevos permisos:', status);
       
       if (status === 'granted') {
-        Alert.alert('Éxito', 'Permisos concedidos');
+        showAppAlert('success', 'Permisos concedidos', 'Éxito');
       } else {
-        Alert.alert('Error', 'Permisos denegados');
+        showAppAlert('error', 'Permisos denegados', 'Error');
       }
     } catch (error) {
       console.error('Error requesting permissions:', error);
-      Alert.alert('Error', 'No se pudieron solicitar permisos');
+      showAppAlert('error', 'No se pudieron solicitar permisos', 'Error');
     }
   };
 
@@ -91,20 +110,20 @@ export default function SimpleNotificationTest() {
           showBadge: true,
         });
         console.log('✅ Canal configurado');
-        Alert.alert('Éxito', 'Canal de Android configurado');
+        showAppAlert('success', 'Canal de Android configurado', 'Éxito');
       } catch (error) {
         console.error('Error setting up Android channel:', error);
-        Alert.alert('Error', 'No se pudo configurar el canal');
+        showAppAlert('error', 'No se pudo configurar el canal', 'Error');
       }
     } else {
-      Alert.alert('Info', 'Los canales son específicos de Android');
+      showAppAlert('info', 'Los canales son específicos de Android', 'Info');
     }
   };
 
   const sendSimpleNotification = async () => {
     try {
       if (permissionStatus !== 'granted') {
-        Alert.alert('Error', 'Los permisos no están concedidos');
+        showAppAlert('warning', 'Los permisos no están concedidos. Por favor, solicítalos primero.', 'Permisos Requeridos');
         return;
       }
 
@@ -129,14 +148,14 @@ export default function SimpleNotificationTest() {
     } catch (error) {
       console.error('Error sending notification:', error);
       const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
-      Alert.alert('Error', `No se pudo enviar: ${errorMsg}`);
+      showAppAlert('error', `No se pudo enviar: ${errorMsg}`, 'Error');
     }
   };
 
   const sendScheduledNotification = async () => {
     try {
       if (permissionStatus !== 'granted') {
-        Alert.alert('Error', 'Los permisos no están concedidos');
+        showAppAlert('warning', 'Los permisos no están concedidos. Por favor, solicítalos primero.', 'Permisos Requeridos');
         return;
       }
 
@@ -157,17 +176,24 @@ export default function SimpleNotificationTest() {
       });
 
       console.log('✅ Notificación programada, ID:', notificationId);
-      Alert.alert('Programada', 'Notificación programada para 3 segundos');
+      showAppAlert('info', 'Notificación programada para 3 segundos', 'Programada');
       
     } catch (error) {
       console.error('Error scheduling notification:', error);
       const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
-      Alert.alert('Error', `No se pudo programar: ${errorMsg}`);
+      showAppAlert('error', `No se pudo programar: ${errorMsg}`, 'Error');
     }
   };
 
   return (
     <View style={styles.container}>
+      <CustomAlert
+        isVisible={customAlertVisible}
+        message={customAlertMessage}
+        type={customAlertType}
+        onClose={handleCloseCustomAlert}
+        title={customAlertTitle}
+      />
       <Text style={styles.title}>🔬 Test Simple de Notificaciones</Text>
       
       <View style={styles.statusContainer}>

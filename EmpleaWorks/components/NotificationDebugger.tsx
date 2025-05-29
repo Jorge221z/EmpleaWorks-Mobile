@@ -1,12 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Platform, AppState } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import CustomAlert, { AlertType } from './CustomAlert'; // Import CustomAlert
 
 export default function NotificationDebugger() {
   const [permissionStatus, setPermissionStatus] = useState<string>('unknown');
   const [appState, setAppState] = useState(AppState.currentState);
   const [notificationCount, setNotificationCount] = useState(0);
   const [lastError, setLastError] = useState<string>('');
+
+  // Estados para CustomAlert
+  const [customAlertVisible, setCustomAlertVisible] = useState(false);
+  const [customAlertMessage, setCustomAlertMessage] = useState('');
+  const [customAlertType, setCustomAlertType] = useState<AlertType>('info');
+  const [customAlertTitle, setCustomAlertTitle] = useState('');
+
+  // Funciones para manejar CustomAlert
+  const showAppAlert = (type: AlertType, message: string, title: string) => {
+    setCustomAlertType(type);
+    setCustomAlertMessage(message);
+    setCustomAlertTitle(title);
+    setCustomAlertVisible(true);
+  };
+
+  const handleCloseCustomAlert = () => {
+    setCustomAlertVisible(false);
+  };
 
   useEffect(() => {
     checkEverything();
@@ -31,10 +50,10 @@ export default function NotificationDebugger() {
       
       // Mostrar alert si la app está en primer plano
       if (appState === 'active') {
-        Alert.alert(
-          '🔔 Notificación Recibida',
+        showAppAlert(
+          'info',
           `${notification.request.content.title}\n${notification.request.content.body}`,
-          [{ text: 'OK' }]
+          '🔔 Notificación Recibida'
         );
       }
     });
@@ -42,10 +61,10 @@ export default function NotificationDebugger() {
     // Listener para respuestas a notificaciones
     const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
       console.log('👆 NOTIFICACIÓN TOCADA:', response);
-      Alert.alert(
-        '👆 Notificación Tocada',
+      showAppAlert(
+        'info',
         `${response.notification.request.content.title}`,
-        [{ text: 'OK' }]
+        '👆 Notificación Tocada'
       );
     });
 
@@ -103,7 +122,7 @@ export default function NotificationDebugger() {
       console.error('❌ Error:', error);
       const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
       setLastError(errorMsg);
-      Alert.alert('Error', errorMsg);
+      showAppAlert('error', errorMsg, 'Error');
     }
   };
   const testScheduledNotification = async () => {
@@ -127,13 +146,13 @@ export default function NotificationDebugger() {
       });
 
       console.log('✅ Notificación programada, ID:', notificationId);
-      Alert.alert('✅ Programada', 'Notificación en 5 segundos\nPrueba minimizando la app');
+      showAppAlert('success', 'Notificación en 5 segundos\nPrueba minimizando la app', '✅ Programada');
       
     } catch (error) {
       console.error('❌ Error:', error);
       const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
       setLastError(errorMsg);
-      Alert.alert('Error', errorMsg);
+      showAppAlert('error', errorMsg, 'Error');
     }
   };
   const testWithAppBackground = async () => {
@@ -152,10 +171,10 @@ export default function NotificationDebugger() {
         } as Notifications.TimeIntervalTriggerInput,
       });
 
-      Alert.alert(
-        '📱 Test Background',
+      showAppAlert(
+        'info',
         'Notificación programada para 3 segundos\n\n¡MINIMIZA LA APP AHORA!',
-        [{ text: 'OK, minimizando...' }]
+        '📱 Test Background'
       );
       
     } catch (error) {
@@ -170,14 +189,22 @@ export default function NotificationDebugger() {
       await Notifications.cancelAllScheduledNotificationsAsync();
       await Notifications.dismissAllNotificationsAsync();
       setNotificationCount(0);
-      Alert.alert('✅ Limpiado', 'Todas las notificaciones canceladas');
+      showAppAlert('success', 'Todas las notificaciones canceladas', '✅ Limpiado');
     } catch (error) {
       console.error('Error clearing notifications:', error);
+      showAppAlert('error', 'No se pudieron limpiar las notificaciones', 'Error');
     }
   };
 
   return (
     <View style={styles.container}>
+      <CustomAlert
+        isVisible={customAlertVisible}
+        message={customAlertMessage}
+        type={customAlertType}
+        onClose={handleCloseCustomAlert}
+        title={customAlertTitle}
+      />
       <Text style={styles.title}>🔬 Debugger de Notificaciones</Text>
       
       <View style={styles.infoContainer}>

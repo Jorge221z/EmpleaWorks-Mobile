@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // Assuming you use Expo and have vector icons
+import { Ionicons } from '@expo/vector-icons';
 
 export type AlertType = 'success' | 'error' | 'warning' | 'info';
 
@@ -41,30 +41,38 @@ const alertConfig = {
 
 const CustomAlert: React.FC<CustomAlertProps> = ({ isVisible, message, type, onClose, title }) => {
   const slideAnim = React.useRef(new Animated.Value(0)).current;
-  const [actuallyVisible, setActuallyVisible] = React.useState(false);
+  const [isModalRendered, setIsModalRendered] = React.useState(false);
 
+  // Effect 1: Control presence of Modal in the tree
   React.useEffect(() => {
     if (isVisible) {
-      setActuallyVisible(true); // Show modal first
+      setIsModalRendered(true); // Render the modal
+    }
+    // For hiding, the animation effect (Effect 2) will set setIsModalRendered to false later
+  }, [isVisible]);
+
+  // Effect 2: Control animation
+  React.useEffect(() => {
+    if (isVisible && isModalRendered) { // Animate in
+      slideAnim.setValue(0); // Ensure animation starts from 0
       Animated.timing(slideAnim, {
-        toValue: 1, // Animate to visible state
+        toValue: 1,
         duration: 300,
         useNativeDriver: true,
       }).start();
-    } else {
-      // Animate to hidden state then hide modal
+    } else if (!isVisible && isModalRendered) { // Animate out
       Animated.timing(slideAnim, {
-        toValue: 0, // Animate to hidden state
+        toValue: 0,
         duration: 300,
         useNativeDriver: true,
       }).start(() => {
-        setActuallyVisible(false); // Hide modal after animation
+        setIsModalRendered(false); // Un-render the modal after animation
       });
     }
-  }, [isVisible, slideAnim]);
+  }, [isVisible, isModalRendered, slideAnim]);
 
-  if (!actuallyVisible) {
-    return null; // Don't render if not actually visible
+  if (!isModalRendered) {
+    return null; // Don't render Modal if it's not supposed to be in the tree
   }
 
   const config = alertConfig[type];
@@ -78,7 +86,7 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ isVisible, message, type, onC
   return (
     <Modal
       transparent
-      visible={actuallyVisible} // Modal visibility controlled by internal state
+      visible={true} // Modal is always "visible" when rendered; its presence in tree is controlled by isModalRendered
       animationType="none" // We are using Animated API for custom animation
       onRequestClose={onClose}
     >

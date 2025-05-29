@@ -5,7 +5,7 @@ import {
   TextInput, 
   TouchableOpacity, 
   ActivityIndicator, 
-  Alert, 
+  // Alert, // Alert será reemplazado o usado selectivamente
   ScrollView, 
   Image, 
   Animated,
@@ -14,6 +14,7 @@ import {
   View as RNView,
   Modal
 } from 'react-native';
+import { Alert } from 'react-native'; // Mantener Alert para confirmaciones
 import { Text } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
 import { updateProfile, getProfile } from '@/api/axios';
@@ -26,6 +27,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { FontAwesome } from '@expo/vector-icons';
 import { useColorScheme } from '@/components/useColorScheme';
 import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
+import CustomAlert, { AlertType } from '@/components/CustomAlert'; // Importar CustomAlert
 
 // Constantes de diseño
 const getThemeColors = (colorScheme: string) => {
@@ -380,10 +382,17 @@ export default function EditProfileScreen() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingCV, setUploadingCV] = useState(false);
-  const [imageRemoved, setImageRemoved] = useState(false); // Nuevo estado para rastrear si la imagen fue eliminada
-  // Añadir estados para rastrear si un campo se ha modificado
+  const [imageRemoved, setImageRemoved] = useState(false); 
   const [newCvSelected, setNewCvSelected] = useState(false);
   const [newImageSelected, setNewImageSelected] = useState(false);
+
+  // Estados para CustomAlert
+  const [customAlertVisible, setCustomAlertVisible] = useState(false);
+  const [customAlertMessage, setCustomAlertMessage] = useState('');
+  const [customAlertType, setCustomAlertType] = useState<AlertType>('info');
+  const [customAlertTitle, setCustomAlertTitle] = useState<string | undefined>(undefined);
+  const [customAlertOnCloseCallback, setCustomAlertOnCloseCallback] = useState<(() => void) | null>(null);
+
 
   // Email verification
   const [showEmailVerification, setShowEmailVerification] = useState(false);
@@ -516,15 +525,35 @@ export default function EditProfileScreen() {
     return cleanName || 'archivo';
   };
 
+  // Funciones para CustomAlert
+  const showAppAlert = (type: AlertType, message: string, title?: string, onCloseCallback?: () => void) => {
+    setCustomAlertType(type);
+    setCustomAlertMessage(message);
+    setCustomAlertTitle(title);
+    setCustomAlertVisible(true);
+    if (onCloseCallback) {
+      setCustomAlertOnCloseCallback(() => onCloseCallback);
+    } else {
+      setCustomAlertOnCloseCallback(null);
+    }
+  };
+
+  const handleCloseCustomAlert = () => {
+    setCustomAlertVisible(false);
+    if (customAlertOnCloseCallback) {
+      customAlertOnCloseCallback();
+      setCustomAlertOnCloseCallback(null); 
+    }
+  };
+
   // Función para seleccionar imagen de la galería
   const pickImage = async () => {
     try {
       setUploadingImage(true);
       
-      // Solicitar permisos
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permiso denegado', 'Necesitamos permisos para acceder a tu galería');
+        showAppAlert('warning', 'Necesitamos permisos para acceder a tu galería', 'Permiso denegado');
         setUploadingImage(false);
         return;
       }
@@ -541,16 +570,11 @@ export default function EditProfileScreen() {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const selectedImage = result.assets[0];
         
-        // Guardar toda la información de la imagen, no solo la URI
         setProfileImage(selectedImage.uri);
 
-        //
         const fileExtension = selectedImage.uri.split('.').pop()?.toLowerCase();
         if (!['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension || '')) {
-          Alert.alert(
-            'Formato no soportado', 
-            'Por favor selecciona una imagen en formato JPG, PNG o GIF.'
-          );
+          showAppAlert('error', 'Por favor selecciona una imagen en formato JPG, PNG o GIF.', 'Formato no soportado');
           return;
         }
         
@@ -559,7 +583,7 @@ export default function EditProfileScreen() {
       }
     } catch (error) {
       console.error('Error seleccionando imagen:', error);
-      Alert.alert('Error', 'No se pudo cargar la imagen');
+      showAppAlert('error', 'No se pudo cargar la imagen', 'Error');
     } finally {
       setUploadingImage(false);
     }
@@ -580,12 +604,12 @@ export default function EditProfileScreen() {
         const selectedFile = result.assets[0];
         setCv(selectedFile);
         setCvName(selectedFile.name || extractFileName(selectedFile.uri));
-        setNewCvSelected(true); // Marcamos que se ha seleccionado un nuevo CV
+        setNewCvSelected(true); 
         console.log('Documento seleccionado:', selectedFile.uri);
       }
     } catch (error) {
       console.error('Error seleccionando CV:', error);
-      Alert.alert('Error', 'No se pudo cargar el documento');
+      showAppAlert('error', 'No se pudo cargar el documento', 'Error');
     } finally {
       setUploadingCV(false);
     }
@@ -613,7 +637,7 @@ export default function EditProfileScreen() {
 
   // Función para eliminar la imagen de perfil actual
   const removeProfileImage = () => {
-    Alert.alert(
+    Alert.alert( // Mantener Alert.alert para confirmación
       'Eliminar imagen de perfil',
       '¿Estás seguro de que quieres eliminar tu foto de perfil actual?',
       [
@@ -623,8 +647,8 @@ export default function EditProfileScreen() {
           style: 'destructive', 
           onPress: () => {
             setProfileImage(null);
-            setImageRemoved(true); // Marcamos que la imagen ha sido eliminada explícitamente
-            setNewImageSelected(true); // Marcamos que ha habido un cambio en la imagen
+            setImageRemoved(true); 
+            setNewImageSelected(true); 
             console.log('Imagen de perfil eliminada');
           }
         }
@@ -651,7 +675,6 @@ export default function EditProfileScreen() {
     try {
       console.log('Preparando datos para actualización de perfil');
       
-      // Crear un objeto FormData para enviar archivos correctamente
       const formData = new FormData();
       
       // Añadir campos de texto básicos
@@ -740,30 +763,23 @@ export default function EditProfileScreen() {
         console.error('Error limpiando caché:', e);
       }
       
-      Alert.alert('Perfil actualizado', 'Tus datos han sido guardados.', [
-        {
-          text: 'OK',
-          onPress: () => {
-            // Forzar una recarga completa al volver a la pantalla de perfil
-            router.replace({
-              pathname: '/(tabs)/profile',
-              params: { refresh: 'true', timestamp: Date.now().toString() }
-            });
-          },
-        },
-      ]);
+      showAppAlert('success', 'Tus datos han sido guardados.', 'Perfil actualizado', () => {
+        router.replace({
+          pathname: '/(tabs)/profile',
+          params: { refresh: 'true', timestamp: Date.now().toString() }
+        });
+      });
     } catch (error: any) {
       console.error('Error en actualización de perfil:', error);
       
-      // Mostrar mensaje de error más detallado si está disponible
       if (error?.errors) {
         const errorMessages = Object.entries(error.errors)
           .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(' ') : msgs}`)
           .join('\n');
         
-        Alert.alert('Error al guardar', errorMessages);
+        showAppAlert('error', errorMessages, 'Error al guardar');
       } else {
-        Alert.alert('Error', error?.message || 'No se pudo actualizar el perfil');
+        showAppAlert('error', error?.message || 'No se pudo actualizar el perfil', 'Error');
       }
     } finally {
       setLoading(false);
@@ -803,67 +819,33 @@ export default function EditProfileScreen() {
               }
             ]}
           >
-            {/* Selector de imagen de perfil */}
+            {/* Sección de Imagen de Perfil */}
             <View style={styles.imageSection}>
-              <View style={styles.profileImageWrapper}>
-                <Animated.View 
-                  style={[
-                    styles.profileImageContainer,
-                    { transform: [{ scale: imageScale }] }
-                  ]}
-                >
-                  <TouchableOpacity 
-                    style={styles.profileImageTouchable} 
-                    onPress={pickImage}
-                    disabled={uploadingImage}
-                    activeOpacity={0.8}
-                  >
-                    {profileImage ? (
-                      <Image 
-                        source={{ uri: profileImage }} 
-                        style={styles.profileImage} 
-                        defaultSource={require('@/assets/images/default-avatar.png')}
-                        onError={(e) => {
-                          console.log('Error loading profile image:', e.nativeEvent.error);
-                          setProfileImage(null);
-                        }}
-                      />
-                    ) : (
-                      <Image 
-                        source={require('@/assets/images/default-avatar.png')} 
-                        style={styles.profileImage} 
-                      />
-                    )}
-                    {uploadingImage ? (
-                      <View style={styles.imageOverlay}>
-                        <ActivityIndicator color="#fff" size="small" />
-                      </View>
-                    ) : (
-                      <View style={styles.imageOverlay}>
-                        <FontAwesome name="camera" size={24} color="#fff" />
-                        <Text style={styles.changeImageText}>Cambiar</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                </Animated.View>
+              <Animated.View style={[styles.profileImageWrapper, { transform: [{ scale: imageScale }] }]}>
+                <TouchableOpacity onPress={pickImage} style={styles.profileImageTouchable}>
+                  <Image 
+                    source={profileImage ? { uri: profileImage } : require("@/assets/images/default-avatar.png")} 
+                    style={styles.profileImage} 
+                  />
+                  <View style={styles.imageOverlay}>
+                    <FontAwesome name="camera" size={16} color={COLORS.changeImageText} />
+                    <Text style={styles.changeImageText}>Cambiar</Text>
+                  </View>
+                </TouchableOpacity>
+              </Animated.View>
+              {profileImage && (
+                <TouchableOpacity onPress={removeProfileImage} style={styles.removeImageButton}>
+                  <FontAwesome name="trash" size={16} color={COLORS.white} />
+                  <Text style={styles.removeImageText}>Eliminar Imagen</Text>
+                </TouchableOpacity>
+              )}
+            </View>
 
-                {/* Botón para eliminar la imagen de perfil */}
-                {profileImage && !uploadingImage && (
-                  <TouchableOpacity 
-                    style={styles.removeImageButton}
-                    onPress={removeProfileImage}
-                  >
-                    <FontAwesome name="trash" size={16} color="#fff" />
-                    <Text style={styles.removeImageText}>Eliminar</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              </View>
-              
+            {/* Campos del formulario */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Nombre</Text>
               <View style={styles.inputWrapper}>
-                <FontAwesome name="user" size={18} color={COLORS.iconColor} style={styles.inputIcon} />
+                <FontAwesome name="user" size={18} color={COLORS.primary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Tu nombre"
@@ -877,7 +859,7 @@ export default function EditProfileScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Apellidos</Text>
               <View style={styles.inputWrapper}>
-                <FontAwesome name="user" size={18} color={COLORS.iconColor} style={styles.inputIcon} />
+                <FontAwesome name="users" size={18} color={COLORS.primary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Tus apellidos"
@@ -889,12 +871,12 @@ export default function EditProfileScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Correo electrónico</Text>
+              <Text style={styles.inputLabel}>Email</Text>
               <View style={styles.inputWrapper}>
-                <FontAwesome name="envelope" size={18} color={COLORS.iconColor} style={styles.inputIcon} />
+                <FontAwesome name="envelope" size={18} color={COLORS.primary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="tu@email.com"
+                  placeholder="Tu correo electrónico"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -903,112 +885,102 @@ export default function EditProfileScreen() {
                 />
               </View>
             </View>
-            
-            {/* Selector de CV */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Curriculum Vitae</Text>
-              <View style={styles.cvContainer}>
-                <TouchableOpacity 
-                  style={styles.cvButton}
-                  onPress={pickCV}
-                  disabled={uploadingCV}
-                >
-                  {uploadingCV ? (
-                    <ActivityIndicator color={COLORS.secondary} />                  ) : (
-                    <>
-                      <FontAwesome name="file-pdf-o" size={24} color={COLORS.iconColor} style={styles.cvIcon} />
-                      <Text 
-                        style={styles.cvButtonText}
-                        numberOfLines={1}
-                        ellipsizeMode="middle"
-                      >
-                        {cvName ? cvName : "Seleccionar CV"}
-                      </Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-
-                {/* Botón para quitar el CV si existe uno seleccionado */}
-                {cvName ? (
-                  <TouchableOpacity 
-                    style={styles.removeCvButton}
-                    onPress={removeCV}
-                    disabled={uploadingCV}
-                  >
-                    <FontAwesome name="times" size={20} color={COLORS.error} />
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-            </View>
-            
-            {/* Nota explicativa */}
-            <View style={styles.noteContainer}>
-              <FontAwesome name="info-circle" size={18} color={COLORS.secondary} />
-              <Text style={styles.noteText}>
-                Solo los campos que modifiques serán actualizados. Los demás se mantendrán con sus valores actuales.
-              </Text>
-            </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Descripción</Text>
+              <Text style={styles.inputLabel}>Descripción (Opcional)</Text>
               <View style={styles.textAreaWrapper}>
                 <TextInput
                   style={styles.textArea}
-                  placeholder="Cuéntanos sobre ti..."
+                  placeholder="Una breve descripción sobre ti..."
                   value={description}
                   onChangeText={setDescription}
-                  multiline={true}
-                  numberOfLines={6}
+                  multiline
                   textAlignVertical="top"
                   placeholderTextColor={COLORS.lightText}
                 />
               </View>
             </View>
+
+            {/* Sección de CV */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Currículum Vitae (PDF, DOC, DOCX)</Text>
+              <View style={styles.cvContainer}>
+                <TouchableOpacity onPress={pickCV} style={styles.cvButton}>
+                  <FontAwesome name="file-text" size={20} color={COLORS.iconColor} style={styles.cvIcon} />
+                  <Text style={styles.cvButtonText} numberOfLines={1} ellipsizeMode="middle">
+                    {uploadingCV ? 'Subiendo CV...' : (cvName || 'Seleccionar o arrastrar CV')}
+                  </Text>
+                </TouchableOpacity>
+                {cvName && !uploadingCV && (
+                  <TouchableOpacity onPress={removeCV} style={styles.removeCvButton}>
+                    <FontAwesome name="times" size={20} color={COLORS.error} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
             
+            {/* Nota informativa */}
+            <View style={styles.noteContainer}>
+              <FontAwesome name="info-circle" size={20} color={COLORS.primary} />
+              <Text style={styles.noteText}>
+                Asegúrate de que tu información de contacto (email y nombre) esté actualizada. 
+                Tu CV y foto de perfil son importantes para los reclutadores.
+              </Text>
+            </View>
+
+            {/* Botón de Guardar */}
             <TouchableOpacity 
-              style={[styles.saveButton, loading && styles.buttonDisabled]} 
-              onPress={handleSave} 
-              disabled={loading}
-              activeOpacity={0.8}
+              style={[styles.saveButton, (loading || initialLoading) && styles.buttonDisabled]} 
+              onPress={handleSave}
+              disabled={loading || initialLoading}
             >
               {loading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator size="small" color={COLORS.saveButtonText} style={styles.buttonIcon} />
               ) : (
-                <>
-                  <FontAwesome name="check" size={18} color="#fff" style={styles.buttonIcon} />
-                  <Text style={styles.saveButtonText}>Guardar Cambios</Text>
-                </>
+                <FontAwesome name="save" size={18} color={COLORS.saveButtonText} style={styles.buttonIcon} />
               )}
+              <Text style={styles.saveButtonText}>{loading ? 'Guardando...' : 'Guardar Cambios'}</Text>
             </TouchableOpacity>
-              <TouchableOpacity 
+
+            {/* Botón de Cancelar */}
+            <TouchableOpacity 
               style={styles.cancelButton} 
-              onPress={() => router.push('/(tabs)/profile')} 
+              onPress={() => router.back()}
               disabled={loading}
-              activeOpacity={0.8}
             >
               <FontAwesome name="times" size={18} color={COLORS.cancelButtonText} style={styles.buttonIcon} />
               <Text style={styles.cancelButtonText}>Cancelar</Text>
             </TouchableOpacity>
-          </Animated.View>        )}
+          </Animated.View>
+        )}
       </ScrollView>
 
-      {/* Modal de Verificación de Email */}
-      <Modal
-        visible={showEmailVerification}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowEmailVerification(false)}
-      >
-        <EmailVerificationScreen
-          email={verificationState?.email}
-          onGoBack={() => setShowEmailVerification(false)}
-          onVerificationSent={() => {
-            // Opcionalmente puedes cerrar el modal después de enviar
-            // setShowEmailVerification(false);
-          }}
-          showAsModal={true}
-        />
-      </Modal>
+      {/* Pantalla de verificación de email */}
+      {showEmailVerification && (
+        <Modal
+          transparent={true}
+          animationType="fade"
+          visible={showEmailVerification}
+          onRequestClose={() => setShowEmailVerification(false)} // Esto es para el comportamiento nativo del modal (ej. botón atrás en Android)
+        >
+          <EmailVerificationScreen 
+            onGoBack={() => setShowEmailVerification(false)} // Cambiado de onClose a onGoBack
+            onVerified={() => {
+              setShowEmailVerification(false);
+              handleSave(); // Reintentar guardar después de verificar
+            }}
+            email={email} // Pasar el email actual
+          />
+        </Modal>
+      )}
+
+      <CustomAlert
+        isVisible={customAlertVisible}
+        message={customAlertMessage}
+        type={customAlertType}
+        onClose={handleCloseCustomAlert}
+        title={customAlertTitle}
+      />
     </View>
   );
 }

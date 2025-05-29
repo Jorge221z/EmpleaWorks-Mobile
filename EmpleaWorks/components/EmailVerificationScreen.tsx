@@ -4,58 +4,72 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   SafeAreaView,
   StatusBar,
   ScrollView,
 } from 'react-native';
+import { Alert } from 'react-native'; // Mantener para confirmaciones
 import { Ionicons } from '@expo/vector-icons';
 import { resendEmailVerification } from '../api/axios';
+import CustomAlert, { AlertType } from './CustomAlert'; // Importar CustomAlert
 
 interface EmailVerificationScreenProps {
   email?: string;
-  onGoBack: () => void;
+  onGoBack: () => void; // Esta es la prop que se usa para cerrar/volver
   onVerificationSent?: () => void;
   showAsModal?: boolean;
+  // Se añade onVerified para ser llamada cuando el usuario indica que ya verificó (ej. al cerrar el modal)
+  onVerified?: () => void; 
 }
 
 const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   email,
-  onGoBack,
+  onGoBack, // Usar esta para la acción principal de "volver" o "cerrar"
   onVerificationSent,
-  showAsModal = false
+  showAsModal = false,
+  onVerified, // Nueva prop
 }) => {
   const [isResending, setIsResending] = useState(false);
+  // Estados para CustomAlert
+  const [customAlertVisible, setCustomAlertVisible] = useState(false);
+  const [customAlertMessage, setCustomAlertMessage] = useState('');
+  const [customAlertType, setCustomAlertType] = useState<AlertType>('info');
+  const [customAlertTitle, setCustomAlertTitle] = useState<string | undefined>(undefined);
+
+  const showAppAlert = (type: AlertType, message: string, title?: string) => {
+    setCustomAlertType(type);
+    setCustomAlertMessage(message);
+    setCustomAlertTitle(title);
+    setCustomAlertVisible(true);
+  };
+
+  const handleCloseCustomAlert = () => {
+    setCustomAlertVisible(false);
+  };
 
   const handleResendEmail = async () => {
     setIsResending(true);
     try {
       const response = await resendEmailVerification();
-      
-      Alert.alert(
-        '✅ Email Enviado',
-        'Se ha enviado un nuevo email de verificación. Por favor revisa tu bandeja de entrada y spam.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              onVerificationSent?.();
-            }
-          }
-        ]
-      );
+      showAppAlert('success', 'Se ha enviado un nuevo email de verificación. Por favor revisa tu bandeja de entrada y spam.', 'Email Enviado');
+      onVerificationSent?.();
     } catch (error) {
       console.error('Error al reenviar email:', error);
-      Alert.alert(
-        '❌ Error',
-        (error instanceof Error && error.message) ? error.message : 'No se pudo enviar el email de verificación. Inténtalo de nuevo.',
-        [{ text: 'OK' }]
-      );
+      const errorMessage = (error instanceof Error && error.message) ? error.message : 'No se pudo enviar el email de verificación. Inténtalo de nuevo.';
+      showAppAlert('error', errorMessage, 'Error');
     } finally {
       setIsResending(false);
     }
   };
+
+  // Esta función se llamará cuando el usuario cierre el modal, 
+  // implicando que podría haber verificado su email.
+  const handleModalClose = () => {
+    onVerified?.(); // Llama a onVerified si está definida
+    onGoBack(); // Llama a la función original para cerrar/volver
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
@@ -64,7 +78,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton} 
-          onPress={onGoBack}
+          onPress={handleModalClose} // Usar handleModalClose aquí
           testID="back-button"
         >
           <Ionicons name="arrow-back" size={24} color="#333" />
@@ -145,7 +159,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
 
           <TouchableOpacity
             style={[styles.button, styles.backButtonBottom]}
-            onPress={onGoBack}
+            onPress={handleModalClose} // Usar handleModalClose también para el botón de "Volver"
             testID="go-back-button"
           >
             <Ionicons name="arrow-back" size={20} color="#4A90E2" style={styles.buttonIcon} />
@@ -153,6 +167,13 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <CustomAlert
+        isVisible={customAlertVisible}
+        message={customAlertMessage}
+        type={customAlertType}
+        onClose={handleCloseCustomAlert}
+        title={customAlertTitle}
+      />
     </SafeAreaView>
   );
 };

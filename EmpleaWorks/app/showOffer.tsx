@@ -9,6 +9,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEmailVerificationGuard } from '@/hooks/useEmailVerification';
 import EmailVerificationScreen from '@/components/EmailVerificationScreen';
+import CustomAlert, { AlertType } from '@/components/CustomAlert'; // Import CustomAlert
 
 // Define interfaces para los tipos de datos
 interface Company {
@@ -529,6 +530,24 @@ export default function ShowOfferScreen() {
   const [showEmailVerification, setShowEmailVerification] = useState(false);
   const { verificationState, checkBeforeAction, handleApiError } = useEmailVerificationGuard();
 
+  // Estados para CustomAlert
+  const [customAlertVisible, setCustomAlertVisible] = useState(false);
+  const [customAlertMessage, setCustomAlertMessage] = useState('');
+  const [customAlertType, setCustomAlertType] = useState<AlertType>('info');
+  const [customAlertTitle, setCustomAlertTitle] = useState('');
+
+  // Funciones para manejar CustomAlert
+  const showAppAlert = (type: AlertType, message: string, title: string) => {
+    setCustomAlertType(type);
+    setCustomAlertMessage(message);
+    setCustomAlertTitle(title);
+    setCustomAlertVisible(true);
+  };
+
+  const handleCloseCustomAlert = () => {
+    setCustomAlertVisible(false);
+  };
+
   // Función para determinar si una oferta es nueva (4 días o menos)
   const isOfferNew = (createdAt: string): boolean => {
     const offerDate = new Date(createdAt);
@@ -596,10 +615,10 @@ export default function ShowOfferScreen() {
     
     // Si el usuario ya aplicó, mostrar mensaje informativo
     if (hasApplied) {
-      Alert.alert(
-        'Ya aplicaste',
+      showAppAlert(
+        'info',
         'Ya has enviado tu aplicación a esta oferta. Puedes revisar el estado en la sección "Mis Solicitudes".',
-        [{ text: 'OK' }]
+        'Ya aplicaste'
       );
       return;
     }
@@ -618,10 +637,10 @@ export default function ShowOfferScreen() {
     
     // Si el usuario ya aplicó a esta oferta, no puede guardarla
     if (hasApplied) {
-      Alert.alert(
-        'No disponible',
+      showAppAlert(
+        'warning',
         'No puedes guardar ofertas a las que ya has aplicado.',
-        [{ text: 'OK' }]
+        'No disponible'
       );
       return;
     }
@@ -657,10 +676,10 @@ export default function ShowOfferScreen() {
       // await checkSavedStatus();
       
       // Mostrar mensaje de confirmación
-      Alert.alert(
-        'Éxito',
+      showAppAlert(
+        'success',
         response.message || 'Operación completada exitosamente',
-        [{ text: 'OK' }]
+        'Éxito'
       );
       
     } catch (error: any) {
@@ -682,10 +701,10 @@ export default function ShowOfferScreen() {
         errorMessage = error.message;
       }
       
-      Alert.alert(
-        'Error',
+      showAppAlert(
+        'error',
         errorMessage,
-        [{ text: 'OK' }]
+        'Error'
       );
     } finally {
       setSavingOffer(false);
@@ -796,6 +815,13 @@ const SaveButton = ({ isSaved, isLoading, onPress }: { isSaved: boolean; isLoadi
 
   return (
     <View style={styles.container}>
+      <CustomAlert
+        isVisible={customAlertVisible}
+        message={customAlertMessage}
+        type={customAlertType}
+        onClose={handleCloseCustomAlert}
+        title={customAlertTitle}
+      />
       <LinearGradient
         colors={[COLORS.primary, COLORS.primaryLight, COLORS.secondary]}
         start={{ x: 0, y: 0 }}

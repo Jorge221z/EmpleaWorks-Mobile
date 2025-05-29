@@ -17,6 +17,7 @@ import SmoothPressable from '@/components/SmoothPressable';
 import TabContentTransition from '@/components/TabContentTransition';
 import { useActiveTab } from '@/hooks/useActiveTab';
 import TabScreenWrapper from '@/components/TabScreenWrapper';
+import CustomAlert, { AlertType } from '@/components/CustomAlert'; // Import CustomAlert
 
 // Constantes de diseño
 const getThemeColors = (colorScheme: string) => {
@@ -513,6 +514,29 @@ export default function ProfileScreen() {
   const headerHeight = useRef(new Animated.Value(180)).current;
   const avatarScale = useRef(new Animated.Value(0.8)).current;
 
+  // Estados para CustomAlert
+  const [customAlertVisible, setCustomAlertVisible] = useState(false);
+  const [customAlertMessage, setCustomAlertMessage] = useState('');
+  const [customAlertType, setCustomAlertType] = useState<AlertType>('info');
+  const [customAlertTitle, setCustomAlertTitle] = useState('');
+  const [customAlertOnCloseCallback, setCustomAlertOnCloseCallback] = useState<(() => void) | null>(null);
+
+  // Funciones para manejar CustomAlert
+  const showAppAlert = (type: AlertType, message: string, title: string, onCloseCallback: (() => void) | null = null) => {
+    setCustomAlertType(type);
+    setCustomAlertMessage(message);
+    setCustomAlertTitle(title);
+    setCustomAlertOnCloseCallback(() => onCloseCallback);
+    setCustomAlertVisible(true);
+  };
+
+  const handleCloseCustomAlert = () => {
+    setCustomAlertVisible(false);
+    if (customAlertOnCloseCallback) {
+      customAlertOnCloseCallback();
+    }
+  };
+
   // Combinar usuario local y datos del candidato
   const user = {
     ...localUser,
@@ -574,19 +598,19 @@ export default function ProfileScreen() {
     try {
       setIsResendingVerification(true);
       await resendEmailVerification();
-      Alert.alert(
-        'Email enviado',
+      showAppAlert(
+        'success',
         'Se ha enviado un nuevo email de verificación. Por favor, revisa tu correo.',
-        [{ text: 'OK' }]
+        'Email enviado'
       );
       // Recargar el estado después de enviar
       await loadEmailVerificationStatus();
     } catch (error) {
       console.error('Error al reenviar email de verificación:', error);
-      Alert.alert(
-        'Error',
+      showAppAlert(
+        'error',
         'No se pudo enviar el email de verificación. Inténtalo de nuevo.',
-        [{ text: 'OK' }]
+        'Error'
       );
     } finally {
       setIsResendingVerification(false);
@@ -865,6 +889,14 @@ export default function ProfileScreen() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.headerGradient}
+      />
+
+      <CustomAlert
+        isVisible={customAlertVisible}
+        message={customAlertMessage}
+        type={customAlertType}
+        onClose={handleCloseCustomAlert}
+        title={customAlertTitle}
       />
 
       <ScrollView

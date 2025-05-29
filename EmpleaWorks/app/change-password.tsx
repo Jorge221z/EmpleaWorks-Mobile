@@ -5,7 +5,7 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
+  // Alert, // Reemplazado para notificaciones
   ScrollView,
   Animated,
   Dimensions,
@@ -13,6 +13,7 @@ import {
   Modal,
   KeyboardAvoidingView,
 } from 'react-native';
+import { Alert } from 'react-native'; // Mantener para confirmaciones
 import { Text } from '@/components/Themed';
 import { router } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -20,6 +21,7 @@ import { updatePassword, getPasswordSettings } from '@/api/axios';
 import { useEmailVerificationGuard } from '@/hooks/useEmailVerification';
 import EmailVerificationScreen from '@/components/EmailVerificationScreen';
 import { useColorScheme } from '@/components/useColorScheme';
+import CustomAlert, { AlertType } from '@/components/CustomAlert'; // Importar CustomAlert
 
 // Helper function to get theme-based colors
 const getThemeColors = (colorScheme: string | null | undefined) => {
@@ -68,6 +70,13 @@ export default function ChangePasswordScreen() {
     confirmPassword: '',
     general: ''
   });
+
+  // Estados para CustomAlert
+  const [customAlertVisible, setCustomAlertVisible] = useState(false);
+  const [customAlertMessage, setCustomAlertMessage] = useState('');
+  const [customAlertType, setCustomAlertType] = useState<AlertType>('info');
+  const [customAlertTitle, setCustomAlertTitle] = useState<string | undefined>(undefined);
+  const [customAlertOnCloseCallback, setCustomAlertOnCloseCallback] = useState<(() => void) | null>(null);
 
   // Email verification
   const [showEmailVerification, setShowEmailVerification] = useState(false);
@@ -122,6 +131,28 @@ export default function ChangePasswordScreen() {
     loadPasswordSettings();
   }, []);
 
+  // Funciones para CustomAlert
+  const showAppAlert = (type: AlertType, message: string, title?: string, onCloseCallback?: () => void) => {
+    setCustomAlertType(type);
+    setCustomAlertMessage(message);
+    setCustomAlertTitle(title);
+    setCustomAlertVisible(true);
+    if (onCloseCallback) {
+      setCustomAlertOnCloseCallback(() => onCloseCallback); // Asegúrate de que esto envuelva la función
+    } else {
+      setCustomAlertOnCloseCallback(null);
+    }
+  };
+
+  const handleCloseCustomAlert = () => {
+    setCustomAlertVisible(false);
+    if (customAlertOnCloseCallback) {
+      const callback = customAlertOnCloseCallback; // Copia el callback antes de limpiarlo
+      setCustomAlertOnCloseCallback(null); 
+      callback(); // Ejecuta el callback
+    }
+  };
+
   // Validar el formulario antes de enviar
   const validateForm = () => {
     let isValid = true;
@@ -156,10 +187,11 @@ export default function ChangePasswordScreen() {
   // Manejar el envío del formulario
   const handleSubmit = async () => {
     if (isGoogleUser) {
-      Alert.alert(
-        'No permitido',
-        'No puedes cambiar la contraseña porque tu cuenta está vinculada a Google.',
-        [{ text: 'Entendido' }]
+      // Usar CustomAlert para notificar que no se puede cambiar la contraseña para usuarios de Google
+      showAppAlert(
+        'info',
+        'No puedes cambiar la contraseña porque tu cuenta está vinculada a Google. Gestiona tu contraseña a través de tu cuenta de Google.',
+        'No permitido'
       );
       return;
     }
@@ -178,6 +210,7 @@ export default function ChangePasswordScreen() {
     console.log('✅ Email verificado, procediendo con cambio de contraseña');
 
     if (!validateForm()) {
+      // Los errores de validación se muestran en el formulario, no se necesita alerta aquí
       return;
     }
 
@@ -189,15 +222,14 @@ export default function ChangePasswordScreen() {
         password_confirmation: confirmPassword
       });
 
-      Alert.alert(
-        'Éxito',
-        'Tu contraseña ha sido actualizada correctamente',
-        [{ text: 'Aceptar', onPress: () => router.back() }]
-      );
+      showAppAlert('success', 'Tu contraseña ha sido actualizada correctamente', 'Éxito', () => {
+        router.back();
+      });
+
     } catch (error: any) {
       console.error('Error al actualizar contraseña:', error);
 
-      // Manejar diferentes tipos de errores de la API
+      let errorMessage = 'Error al actualizar la contraseña';
       if (error && typeof error === 'object') {
         if (error.current_password) {
           setErrors(prev => ({
@@ -206,6 +238,7 @@ export default function ChangePasswordScreen() {
               ? error.current_password[0]
               : 'La contraseña actual es incorrecta'
           }));
+          errorMessage = Array.isArray(error.current_password) ? error.current_password[0] : 'La contraseña actual es incorrecta';
         } else if (error.password) {
           setErrors(prev => ({
             ...prev,
@@ -213,31 +246,46 @@ export default function ChangePasswordScreen() {
               ? error.password[0]
               : 'Error en la nueva contraseña'
           }));
+          errorMessage = Array.isArray(error.password) ? error.password[0] : 'Error en la nueva contraseña';
         } else if (error.error && typeof error.error === 'object') {
-          // Manejar estructuras de error anidadas
-          const errorMessages: Record<string, string> = {};
+          const errorMessagesObj: Record<string, string> = {};
+          let firstMessage = '';
           Object.keys(error.error).forEach(key => {
             if (key === 'current_password' && Array.isArray(error.error.current_password)) {
-              errorMessages.currentPassword = error.error.current_password[0];
+              errorMessagesObj.currentPassword = error.error.current_password[0];
+              if(!firstMessage) firstMessage = error.error.current_password[0];
             } else if (key === 'password' && Array.isArray(error.error.password)) {
-              errorMessages.newPassword = error.error.password[0];
+              errorMessagesObj.newPassword = error.error.password[0];
+              if(!firstMessage) firstMessage = error.error.password[0];
             }
           });
-          setErrors(prev => ({ ...prev, ...errorMessages }));
-        } else {
-          setErrors(prev => ({
-            ...prev,
-            general: typeof error.message === 'string'
-              ? error.message
-              : 'Error al actualizar la contraseña'
-          }));
+          setErrors(prev => ({ ...prev, ...errorMessagesObj }));
+          errorMessage = firstMessage || 'Error en los datos ingresados.';
+        } else if (typeof error.message === 'string') {
+          errorMessage = error.message;
         }
-      } else {
-        setErrors(prev => ({
-          ...prev,
-          general: 'Error al actualizar la contraseña'
-        }));
       }
+      // Mostrar el error general con CustomAlert si no se manejó específicamente en los campos
+      if (!errors.currentPassword && !errors.newPassword) {
+         showAppAlert('error', errorMessage, 'Error al Actualizar');
+      }
+      // Si hay errores específicos de campo, estos se mostrarán en el formulario.
+      // Si el error es más genérico (ej. error.message), se muestra con CustomAlert.
+      // La lógica actual de setErrors ya actualiza los mensajes junto a los campos.
+      // Solo mostramos un CustomAlert genérico si no hay errores específicos de campo que ya se estén mostrando.
+      const fieldErrorsPresent = errors.currentPassword || errors.newPassword || errors.confirmPassword;
+      if (!fieldErrorsPresent && errorMessage) {
+        showAppAlert('error', errorMessage, 'Error al Actualizar');
+      } else if (fieldErrorsPresent) {
+        // Si hay errores de campo, podemos opcionalmente mostrar una alerta genérica también
+        // o confiar en que el usuario vea los errores en los campos.
+        // Por ahora, si hay errores de campo, no mostraremos una alerta genérica adicional
+        // para evitar redundancia, a menos que el error sea muy general.
+        if (errorMessage === 'Error al actualizar la contraseña' || (error && error.message && !error.current_password && !error.password)){
+            showAppAlert('error', errorMessage, 'Error');
+        }
+      }
+
     } finally {
       setLoading(false);
     }
@@ -304,7 +352,7 @@ export default function ChangePasswordScreen() {
                     placeholderTextColor={COLORS.lightText}
                     secureTextEntry
                     value={currentPassword}
-                    onChangeText={setCurrentPassword}
+                    onChangeText={(text) => { setCurrentPassword(text); if(errors.currentPassword) setErrors(prev => ({...prev, currentPassword: ''})); if(errors.general) setErrors(prev => ({...prev, general: ''})); }}
                   />
                 </View>
                 {errors.currentPassword ? <Text style={styles.errorText}>{errors.currentPassword}</Text> : null}
@@ -320,7 +368,7 @@ export default function ChangePasswordScreen() {
                     placeholderTextColor={COLORS.lightText}
                     secureTextEntry
                     value={newPassword}
-                    onChangeText={setNewPassword}
+                    onChangeText={(text) => { setNewPassword(text); if(errors.newPassword) setErrors(prev => ({...prev, newPassword: ''})); if(errors.general) setErrors(prev => ({...prev, general: ''})); }}
                   />
                 </View>
                 {errors.newPassword ? <Text style={styles.errorText}>{errors.newPassword}</Text> : null}
@@ -336,13 +384,13 @@ export default function ChangePasswordScreen() {
                     placeholderTextColor={COLORS.lightText}
                     secureTextEntry
                     value={confirmPassword}
-                    onChangeText={setConfirmPassword}
+                    onChangeText={(text) => { setConfirmPassword(text); if(errors.confirmPassword) setErrors(prev => ({...prev, confirmPassword: ''})); if(errors.general) setErrors(prev => ({...prev, general: ''})); }}
                   />
                 </View>
                 {errors.confirmPassword ? <Text style={styles.errorText}>{errors.confirmPassword}</Text> : null}
               </View>
 
-              {errors.general ? (
+              {errors.general && !errors.currentPassword && !errors.newPassword && !errors.confirmPassword ? (
                 <View style={styles.generalErrorContainer}>
                   <FontAwesome name="exclamation-circle" size={20} color={COLORS.error} style={styles.inputIcon} />
                   <Text style={styles.generalErrorText}>{errors.general}</Text>
@@ -388,19 +436,27 @@ export default function ChangePasswordScreen() {
       <Modal
         visible={showEmailVerification}
         animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowEmailVerification(false)}
+        presentationStyle="pageSheet" // Mantenido como estaba
+        onRequestClose={() => setShowEmailVerification(false)} // Acción al cerrar el modal (ej. botón atrás Android)
       >
         <EmailVerificationScreen
-          email={verificationState?.email}
-          onGoBack={() => setShowEmailVerification(false)}
-          onVerificationSent={() => {
-            // Opcionalmente puedes cerrar el modal después de enviar
-            // setShowEmailVerification(false);
+          email={verificationState?.email} // Asumiendo que verificationState tiene el email
+          onGoBack={() => setShowEmailVerification(false)} // Para el botón de "volver" dentro del componente
+          onVerified={() => { // Se llama cuando el usuario cierra el modal, implicando que pudo haber verificado
+            setShowEmailVerification(false);
+            handleSubmit(); // Reintentar el submit después de que el usuario interactuó con la verificación
           }}
           showAsModal={true}
         />
       </Modal>
+
+      <CustomAlert
+        isVisible={customAlertVisible}
+        message={customAlertMessage}
+        type={customAlertType}
+        onClose={handleCloseCustomAlert}
+        title={customAlertTitle}
+      />
     </KeyboardAvoidingView>
   );
 }

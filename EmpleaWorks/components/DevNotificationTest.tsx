@@ -1,12 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, AppState, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, AppState, Platform } from 'react-native';
 import { useNotificationContext } from '../context/NotificationContext';
 import * as Notifications from 'expo-notifications';
+import CustomAlert, { AlertType } from './CustomAlert'; // Import CustomAlert
 
 export default function DevNotificationTest() {
   const { sendNotification, scheduleNotification } = useNotificationContext();
   const [appState, setAppState] = useState(AppState.currentState);
   const [testResults, setTestResults] = useState<string[]>([]);
+
+  // Estados para CustomAlert
+  const [customAlertVisible, setCustomAlertVisible] = useState(false);
+  const [customAlertMessage, setCustomAlertMessage] = useState('');
+  const [customAlertType, setCustomAlertType] = useState<AlertType>('info');
+  const [customAlertTitle, setCustomAlertTitle] = useState('');
+
+  // Funciones para manejar CustomAlert
+  const showAppAlert = (type: AlertType, message: string, title: string) => {
+    setCustomAlertType(type);
+    setCustomAlertMessage(message);
+    setCustomAlertTitle(title);
+    setCustomAlertVisible(true);
+  };
+
+  const handleCloseCustomAlert = () => {
+    setCustomAlertVisible(false);
+  };
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState) => {
@@ -50,15 +69,16 @@ export default function DevNotificationTest() {
       addTestResult('✅ Notificación programada para 3 segundos');
       addTestResult('⚠️ PON LA APP EN SEGUNDO PLANO AHORA!');
       
-      Alert.alert(
-        '⚠️ Instrucción Importante',
+      showAppAlert(
+        'warning',
         'Notificación programada para 3 segundos.\n\nPon la app en segundo plano AHORA presionando el botón home o cambiando de app para ver la notificación.',
-        [{ text: 'OK, entendido' }]
+        '⚠️ Instrucción Importante'
       );
 
     } catch (error) {
       console.error('Error in background test:', error);
       addTestResult('❌ Error en test de background');
+      showAppAlert('error', 'Ocurrió un error durante el test de background.', 'Error en Test');
     }
   };
 
@@ -166,6 +186,13 @@ export default function DevNotificationTest() {
 
   return (
     <View style={styles.container}>
+      <CustomAlert
+        isVisible={customAlertVisible}
+        message={customAlertMessage}
+        type={customAlertType}
+        onClose={handleCloseCustomAlert}
+        title={customAlertTitle}
+      />
       <Text style={styles.title}>🧪 Test Development Build</Text>
       
       <View style={styles.statusContainer}>

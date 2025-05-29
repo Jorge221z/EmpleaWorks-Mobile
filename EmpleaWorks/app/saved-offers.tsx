@@ -7,6 +7,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'react-native';
+import CustomAlert, { AlertType } from '@/components/CustomAlert'; // Importar CustomAlert
 
 // Interface para la información de la empresa
 interface Company {
@@ -66,6 +67,12 @@ export default function SavedOffersScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [removingOfferId, setRemovingOfferId] = useState<number | null>(null);
+
+  // Estados para CustomAlert
+  const [customAlertVisible, setCustomAlertVisible] = useState(false);
+  const [customAlertMessage, setCustomAlertMessage] = useState('');
+  const [customAlertType, setCustomAlertType] = useState<AlertType>('info');
+  const [customAlertTitle, setCustomAlertTitle] = useState<string | undefined>(undefined);
 
   // Función para obtener las ofertas guardadas
   const fetchSavedOffers = async (isRefresh = false) => {
@@ -153,20 +160,27 @@ export default function SavedOffersScreen() {
               
               // Actualizar la lista local removiendo la oferta
               setSavedOffers(prev => prev.filter(offer => offer.id !== offerId));
+
+              // Mostrar CustomAlert de éxito
+              setCustomAlertMessage(`"${offerName}" ha sido removida de tus ofertas guardadas.`);
+              setCustomAlertType('success');
+              setCustomAlertTitle('Oferta Removida');
+              setCustomAlertVisible(true);
               
             } catch (error) {
               console.error("Error al remover oferta:", error);
-              Alert.alert(
-                'Error',
-                'No se pudo remover la oferta de guardados. Inténtalo de nuevo.',
-                [{ text: 'OK' }]
-              );
+              // Mostrar CustomAlert de error
+              setCustomAlertMessage('No se pudo remover la oferta de guardados. Inténtalo de nuevo.');
+              setCustomAlertType('error');
+              setCustomAlertTitle('Error al Remover');
+              setCustomAlertVisible(true);
             } finally {
               setRemovingOfferId(null);
             }
           },
         },
-      ]    );
+      ]
+    );
   };
 
   // Función para aplicar a la oferta
@@ -235,6 +249,10 @@ export default function SavedOffersScreen() {
   const onRefresh = useCallback(() => {
     fetchSavedOffers(true);
   }, []);
+
+  const handleCloseCustomAlert = () => {
+    setCustomAlertVisible(false);
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -518,6 +536,14 @@ export default function SavedOffersScreen() {
           </View>
         )}
       </ScrollView>
+
+      <CustomAlert
+        isVisible={customAlertVisible}
+        message={customAlertMessage}
+        type={customAlertType}
+        onClose={handleCloseCustomAlert}
+        title={customAlertTitle}
+      />
     </View>
   );
 }
