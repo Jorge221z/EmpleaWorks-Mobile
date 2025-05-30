@@ -587,13 +587,15 @@ export default function TabOneScreen() {
               </View>
             </View>
           </View>
-        )}
-
-        {/* Offers Section */}
+          )}
+          
+          {/* Offers Section */}
         <View style={styles.offersSection}>
           {dashboardData && dashboardData.offers && dashboardData.offers.length > 0 ? (
             <View style={styles.offersContainer}>
-                {dashboardData.offers.map((offer) => (
+                {dashboardData.offers
+                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                  .map((offer) => (
                   <TouchableOpacity 
                   key={offer.id} 
                   style={styles.offerCard} 
