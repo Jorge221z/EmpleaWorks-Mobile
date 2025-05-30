@@ -661,7 +661,7 @@ export default function ProfileScreen() {
       await loadEmailVerificationStatus();
     } catch (e) {
       Logger.error('Error al recargar datos del usuario:', e);
-      setError('No se pudieron cargar los datos actualizados');
+      setError('No se pudieron cargar los datos. Revisa tu conexión a internet o inténtalo más tarde.');
     } finally {
       setRefreshing(false);
     }

@@ -118,7 +118,25 @@ export default function TabTwoScreen() {
       if (errorMessage === "Usuario no es candidato." || errorMessage.includes("no es candidato")) {
         setIsNotCandidate(true);
       } else {
-        setError(errorMessage);
+        // Mejorar el manejo de errores para ser más amigable al usuario
+        let friendlyErrorMessage = 'No se pudieron cargar tus solicitudes. Revisa tu conexión a internet o inténtalo más tarde.';
+        
+        // Verificar si es un error de red/conexión
+        if (error && typeof error === 'object') {
+          const errorObj = error as any;
+          if (errorObj.code === 'NETWORK_ERROR' || 
+              errorObj.message?.includes('Network Error') ||
+              errorObj.message?.includes('fetch') ||
+              !navigator.onLine) {
+            friendlyErrorMessage = 'Sin conexión a internet. Revisa tu conexión e inténtalo de nuevo.';
+          } else if (errorObj.message?.includes('timeout')) {
+            friendlyErrorMessage = 'La conexión tardó demasiado. Inténtalo de nuevo.';
+          } else if (errorObj.response?.status >= 500) {
+            friendlyErrorMessage = 'El servidor no está disponible temporalmente. Inténtalo más tarde.';
+          }
+        }
+        
+        setError(friendlyErrorMessage);
       }
       
       setLoading(false);
@@ -134,6 +152,24 @@ export default function TabTwoScreen() {
       setSavedOffersCount(Array.isArray(savedOffers) ? savedOffers.length : 0);
     } catch (error) {
       Logger.error("Error al obtener ofertas guardadas:", error);
+      
+      // Manejo de errores más amigable para ofertas guardadas
+      let friendlyErrorMessage = 'No se pudieron cargar las ofertas guardadas. Revisa tu conexión a internet.';
+      
+      if (error && typeof error === 'object') {
+        const errorObj = error as any;
+        if (errorObj.code === 'NETWORK_ERROR' || 
+            errorObj.message?.includes('Network Error') ||
+            errorObj.message?.includes('fetch') ||
+            !navigator.onLine) {
+          friendlyErrorMessage = 'Sin conexión a internet para cargar ofertas guardadas.';
+        } else if (errorObj.message?.includes('timeout')) {
+          friendlyErrorMessage = 'Tiempo de espera agotado al cargar ofertas guardadas.';
+        }
+      }
+      
+      // Solo mostrar error en log, no mostrar al usuario para ofertas guardadas
+      Logger.warn('Error en ofertas guardadas:', friendlyErrorMessage);
       setSavedOffersCount(0);
     } finally {
       setLoadingSavedOffers(false);
@@ -364,6 +400,21 @@ export default function TabTwoScreen() {
           </View>
         </View>
 
+        {/* Error Display - Between subtitle and main cards */}
+        {error && (
+          <View style={[styles.errorContainer, { 
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.error,
+            marginHorizontal: 16,
+            marginBottom: 20
+          }]}>
+            <FontAwesome name="exclamation-triangle" size={20} color={colors.error} />
+            <Text style={[styles.errorText, { color: colors.error }]}>
+              {error}
+            </Text>
+          </View>
+        )}
+
         {/* Main Cards Section */}
         <View style={[styles.cardsContainer, { backgroundColor: colors.background }]}>
           
@@ -494,15 +545,6 @@ export default function TabTwoScreen() {
             </LinearGradient>
           </View>
         </View>
-
-        {/* Error Display */}
-        {error && (
-          <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
-            <Text style={[styles.errorText, { color: colors.error }]}>
-              Error: {error}
-            </Text>
-          </View>
-        )}
       </ScrollView>
     </View>
     </TabContentTransition>
@@ -658,14 +700,20 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   errorContainer: {
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 8,
+    flexDirection: 'row',
     alignItems: 'center',
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   errorText: {
+    marginLeft: 8,
     fontSize: 14,
-    textAlign: 'center',
+    flex: 1,
   },
   // Estilos para el indicador de recarga
   refreshIndicator: {

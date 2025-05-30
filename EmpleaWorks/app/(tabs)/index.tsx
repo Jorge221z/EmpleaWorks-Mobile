@@ -458,7 +458,6 @@ export default function TabOneScreen() {
     const daysDifference = Math.floor((currentDate.getTime() - offerDate.getTime()) / (1000 * 60 * 60 * 24));
     return daysDifference <= 4;
   };
-
   // Función para obtener datos del dashboard
   const fetchDashboardData = async () => {
     try {
@@ -471,8 +470,26 @@ export default function TabOneScreen() {
       setLoading(false); //dejamos de cargar ya que se ha producido éxito
     } catch (error) {
       Logger.error("Failed while trying to fetch dashboard data: ", error);
-      setError(error instanceof Error ? error.message : String(error)); 
       
+      // Mejorar el manejo de errores para ser más amigable al usuario
+      let friendlyErrorMessage = 'No se pudieron cargar las ofertas. Revisa tu conexión a internet o inténtalo más tarde.';
+      
+      // Verificar si es un error de red/conexión
+      if (error && typeof error === 'object') {
+        const errorObj = error as any;
+        if (errorObj.code === 'NETWORK_ERROR' || 
+            errorObj.message?.includes('Network Error') ||
+            errorObj.message?.includes('fetch') ||
+            !navigator.onLine) {
+          friendlyErrorMessage = 'Sin conexión a internet. Revisa tu conexión e inténtalo de nuevo.';
+        } else if (errorObj.message?.includes('timeout')) {
+          friendlyErrorMessage = 'La conexión tardó demasiado. Inténtalo de nuevo.';
+        } else if (errorObj.response?.status >= 500) {
+          friendlyErrorMessage = 'El servidor no está disponible temporalmente. Inténtalo más tarde.';
+        }
+      }
+      
+      setError(friendlyErrorMessage);
       setLoading(false);
     }
   };
