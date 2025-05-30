@@ -366,8 +366,14 @@ export default function SavedOffersScreen() {
                 style={[styles.offerCard, { backgroundColor: colors.card }]}
                 onPress={() => navigateToOffer(offer.id)}
                 activeOpacity={0.7}
-                >
-                          
+              >
+                {/* New badge in top left corner - same style as index.tsx but mirrored */}
+                {isOfferNew(offer.created_at) && (
+                  <View style={styles.offerBadge}>
+                    <Text style={styles.offerBadgeText}>NUEVO</Text>
+                  </View>
+                )}
+
                 {/* Card header with saved indicator where chevron was */}
                 <View style={[styles.cardHeader, { backgroundColor: colors.card }]}>
                   <LinearGradient
@@ -516,20 +522,12 @@ export default function SavedOffersScreen() {
                     </LinearGradient>
                   </TouchableOpacity>
                 </View>
-
-                {/* Badges in bottom right corner */}
-                {(isOfferNew(offer.created_at) || isOfferClosingSoon(offer.closing_date)) && (
+                {/* Badges in bottom right corner - only closing soon */}
+                {isOfferClosingSoon(offer.closing_date) && (
                   <View style={styles.bottomRightBadgesContainer}>
-                    {isOfferNew(offer.created_at) && (
-                      <View style={[styles.badge, styles.newBadge, styles.bottomBadge]}>
-                        <Text style={styles.badgeText}>NUEVO</Text>
-                      </View>
-                    )}
-                    {isOfferClosingSoon(offer.closing_date) && (
-                      <View style={[styles.badge, styles.urgentBadge, styles.bottomBadge]}>
-                        <Text style={styles.badgeText}>CIERRA PRONTO</Text>
-                      </View>
-                    )}
+                    <View style={[styles.badge, styles.urgentBadge, styles.bottomBadge]}>
+                      <Text style={styles.badgeText}>CIERRA PRONTO</Text>
+                    </View>
                   </View>
                 )}
               </TouchableOpacity>
@@ -690,7 +688,8 @@ const  styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     position: 'relative',
-  },  cardHeader: {
+    overflow: 'visible',
+  },cardHeader: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
@@ -840,19 +839,44 @@ const  styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 10,
     fontWeight: '600',
-  },
-  topLeftSavedContainer: {
+  },  topLeftSavedContainer: {
     position: 'absolute',
     top: 12,
     left: 12,
     zIndex: 15,
-  },  topLeftSavedIndicator: {
+  },  topLeftBadgeContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    zIndex: 15,
+    overflow: 'hidden',
+  },  offerBadge: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    backgroundColor: '#2ecc71', // Verde para "NUEVO" 
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    zIndex: 999,
+    elevation: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },offerBadgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: 'bold',
+    backgroundColor: 'transparent',
+    letterSpacing: 0.2,
+    textAlign: 'center',
+  },
+  topLeftSavedIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-  },  savedIndicatorInHeader: {
+  },savedIndicatorInHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 6,
