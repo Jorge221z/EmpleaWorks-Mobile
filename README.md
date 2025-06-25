@@ -41,7 +41,6 @@ The project's directory structure is as follows:
 * `src`: Contains the app's source code
 * `android`: Contains the Android-specific code generated in the builds
 * `ios`: Contains the iOS-specific code
-* `ios`: Contains the iOS-specific code
 * `package.json`: Contains project metadata
 
 ## Contributing Guidelines
